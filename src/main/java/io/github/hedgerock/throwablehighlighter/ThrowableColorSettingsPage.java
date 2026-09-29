@@ -1,0 +1,92 @@
+package io.github.hedgerock.throwablehighlighter;
+
+import com.intellij.lexer.EmptyLexer;
+import com.intellij.lexer.Lexer;
+import com.intellij.openapi.editor.colors.TextAttributesKey;
+import com.intellij.openapi.fileTypes.SyntaxHighlighter;
+import com.intellij.openapi.options.colors.AttributesDescriptor;
+import com.intellij.openapi.options.colors.ColorDescriptor;
+import com.intellij.openapi.options.colors.ColorSettingsPage;
+import com.intellij.openapi.util.NlsContexts;
+import com.intellij.psi.tree.IElementType;
+import org.jetbrains.annotations.NonNls;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import javax.swing.*;
+import java.util.Map;
+
+public final class ThrowableColorSettingsPage implements ColorSettingsPage {
+
+    private static final AttributesDescriptor[] DESCRIPTIONS = {
+            new AttributesDescriptor(
+                    "Throwable class",
+                    ThrowableHighlighting.THROWABLE_CLASS
+            )
+    };
+
+    @Override
+    public @Nullable Icon getIcon() {
+        return null;
+    }
+
+    @Override
+    public @NotNull SyntaxHighlighter getHighlighter() {
+        return new SyntaxHighlighter() {
+            @Override
+            public @NotNull Lexer getHighlightingLexer() {
+                return new EmptyLexer();
+            }
+
+            @Override
+            public TextAttributesKey @NotNull [] getTokenHighlights(IElementType iElementType) {
+                return TextAttributesKey.EMPTY_ARRAY;
+            }
+        };
+    }
+
+    @Override
+    public @NonNls @NotNull String getDemoText() {
+        return """
+            class <throwable>ApplicationException</throwable>
+                    extends <throwable>RuntimeException</throwable> {
+            }
+
+            class Example {
+
+                private <throwable>ApplicationException</throwable> exception;
+
+                void execute() throws <throwable>ApplicationException</throwable> {
+                    try {
+                        throw new <throwable>ApplicationException</throwable>();
+                    } catch (<throwable>ApplicationException</throwable> exception) {
+                        // Handle exception
+                    }
+                }
+            }
+            """;
+    }
+
+    @Override
+    public @Nullable Map<String, TextAttributesKey> getAdditionalHighlightingTagToDescriptorMap() {
+        return Map.of(
+                "throwable",
+                ThrowableHighlighting.THROWABLE_CLASS
+        );
+    }
+
+    @Override
+    public AttributesDescriptor @NotNull [] getAttributeDescriptors() {
+        return DESCRIPTIONS;
+    }
+
+    @Override
+    public ColorDescriptor @NotNull [] getColorDescriptors() {
+        return ColorDescriptor.EMPTY_ARRAY;
+    }
+
+    @Override
+    public @NlsContexts.ConfigurableName @NotNull String getDisplayName() {
+        return "Throwable Highlighter";
+    }
+}

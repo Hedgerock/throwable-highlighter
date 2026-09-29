@@ -1,0 +1,19 @@
+### Gradle ###
+.gradle/
+build/
+.kotlin/
+
+### IntelliJ IDEA ###
+.idea/
+.intellijPlatform/
+*.iws
+*.iml
+*.ipr
+out/
+
+### VS Code ###
+.vscode/
+
+### OS ###
+.DS_Store
+Thumbs.db

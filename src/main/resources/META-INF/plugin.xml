@@ -1,0 +1,46 @@
+<idea-plugin>
+    <id>io.github.hedgerock.throwable-highlighter</id>
+    <name>Throwable Highlighter</name>
+    <vendor>Hedgerock</vendor>
+
+    <description>
+        <![CDATA[
+    Highlights Java classes that inherit from <code>Throwable</code>.
+
+    <p>
+        Throwable highlighting is applied to class declarations and references,
+        including usages in fields, local variables, constructors, catch clauses,
+        throws clauses, and inheritance declarations.
+    </p>
+
+    <p>
+        The highlighting style can be configured under
+        <b>Editor | Color Scheme | Throwable Highlighter</b>.
+    </p>
+    ]]>
+    </description>
+
+    <change-notes>
+        <![CDATA[
+    <h3>1.0.0</h3>
+    <ul>
+        <li>Highlights Java classes inheriting from Throwable.</li>
+        <li>Highlights both class declarations and references.</li>
+        <li>Supports transitive Throwable inheritance.</li>
+        <li>Adds configurable highlighting under the IDE color scheme settings.</li>
+    </ul>
+    ]]>
+    </change-notes>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.java</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <annotator
+                language="JAVA"
+                implementationClass="io.github.hedgerock.throwablehighlighter.ThrowableAnnotator"/>
+
+        <colorSettingsPage
+                implementation="io.github.hedgerock.throwablehighlighter.ThrowableColorSettingsPage"/>
+    </extensions>
+</idea-plugin>
