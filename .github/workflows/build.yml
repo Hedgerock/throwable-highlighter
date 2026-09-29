@@ -23,3 +23,9 @@ jobs:
 
       - name: Run tests
         run: ./gradlew test
+
+      - name: Verify plugin
+        run: ./gradlew verifyPlugin
+
+      - name: Build plugin
+        run: ./gradlew buildPlugin
