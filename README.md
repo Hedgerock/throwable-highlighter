@@ -1,5 +1,7 @@
 # Throwable Highlighter
 
+[![Build](https://github.com/Hedgerock/throwable-highlighter/actions/workflows/build.yml/badge.svg)](https://github.com/Hedgerock/throwable-highlighter/actions/workflows/build.yml)
+
 Throwable Highlighter is an IntelliJ IDEA plugin that highlights Java classes
 inheriting from `Throwable`.
 
@@ -30,24 +32,26 @@ The highlighting style can be configured under:
 
 ## Installation
 
-### From JetBrains Marketplace
+### JetBrains Marketplace
 
 Coming soon.
 
-### From disk
+### Manual installation
 
-1. Download the plugin ZIP.
+1. Download the plugin ZIP from the latest GitHub release.
 2. Open `Settings | Plugins`.
-3. Select `Install Plugin from Disk...`.
+3. Click the gear icon and select `Install Plugin from Disk...`.
 4. Select the downloaded ZIP.
 5. Restart IntelliJ IDEA.
 
 ## Development
 
-### Build
+The project requires JDK 21.
+
+### Run tests
 
 ```shell
-./gradlew buildPlugin
+./gradlew test
 ```
 
 ### Run in the IntelliJ Platform sandbox
@@ -56,18 +60,24 @@ Coming soon.
 ./gradlew runIde
 ```
 
-### Run tests
-
-```shell
-./gradlew test
-```
-
 ### Verify plugin
 
 ```shell
 ./gradlew verifyPlugin
 ```
 
+### Build plugin
+
+```shell
+./gradlew buildPlugin
+```
+
+The plugin distribution will be created under:
+
+```text
+build/distributions/
+```
+
 ## License
 
-Licensed under the Apache License 2.0.
+Licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
