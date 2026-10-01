@@ -1,6 +1,7 @@
 # Throwable Highlighter
 
 [![Build](https://github.com/Hedgerock/throwable-highlighter/actions/workflows/build.yml/badge.svg)](https://github.com/Hedgerock/throwable-highlighter/actions/workflows/build.yml)
+[![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/34660-throwable-highlighter.svg?label=Marketplace)](https://plugins.jetbrains.com/plugin/34660-throwable-highlighter)
 
 Throwable Highlighter is an IntelliJ IDEA plugin that highlights Java classes
 inheriting from `Throwable`.
@@ -34,7 +35,12 @@ The highlighting style can be configured under:
 
 ### JetBrains Marketplace
 
-Coming soon.
+1. Open `Settings | Plugins | Marketplace`.
+2. Search for `Throwable Highlighter`.
+3. Click `Install`.
+
+You can also install it directly from the
+[JetBrains Marketplace](https://plugins.jetbrains.com/plugin/34660-throwable-highlighter).
 
 ### Manual installation
 
