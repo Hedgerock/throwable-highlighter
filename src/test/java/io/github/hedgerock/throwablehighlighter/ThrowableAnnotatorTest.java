@@ -1,5 +1,6 @@
 package io.github.hedgerock.throwablehighlighter;
 
+import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.testFramework.LightProjectDescriptor;
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase;
 import org.jetbrains.annotations.NotNull;
@@ -10,6 +11,60 @@ public final class ThrowableAnnotatorTest
     @Override
     protected @NotNull LightProjectDescriptor getProjectDescriptor() {
         return JAVA_21;
+    }
+
+    public void testShouldNotHighlightRegularImport() {
+        myFixture.configureByText(
+                "Example.java",
+                """
+                        import java.lang.String;
+
+                        class Example {
+                        }
+                        """
+        );
+
+        long count = myFixture.doHighlighting().stream()
+                .filter(highlight ->
+                        ThrowableHighlighting.THROWABLE_IMPORT.equals(
+                                highlight.forcedTextAttributesKey
+                        ))
+                .count();
+
+        assertEquals(0, count);
+    }
+
+    public void testShouldHighlightExplicitThrowableImport() {
+        myFixture.configureByText(
+                "Example.java",
+                """
+                import java.io.IOException;
+
+                class Example {
+                }
+                """
+        );
+
+        long count = myFixture.doHighlighting().stream()
+                .filter(highlight ->
+                        "IOException".equals(highlight.getText())
+                                && HighlightSeverity.TEXT_ATTRIBUTES.equals(
+                                highlight.getSeverity()
+                        )
+                        && ThrowableHighlighting.THROWABLE_IMPORT.equals(
+                                highlight.forcedTextAttributesKey
+                        )
+                )
+                .count();
+
+        assertEquals(1, count);
+    }
+
+    public void testThrowableImportInheritsThrowableClassColor() {
+        assertSame(
+                ThrowableHighlighting.THROWABLE_CLASS,
+                ThrowableHighlighting.THROWABLE_IMPORT.getFallbackAttributeKey()
+        );
     }
 
     public void testShouldHighlightCustomThrowableDeclarationAndReference() {

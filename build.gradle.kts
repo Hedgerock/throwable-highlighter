@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "io.github.hedgerock"
-version = "1.0.0"
+version = "1.1.0"
 
 repositories {
     mavenCentral()
@@ -15,6 +15,7 @@ repositories {
 }
 
 dependencies {
+
     intellijPlatform {
         intellijIdea("2026.2")
         bundledPlugin("com.intellij.java")
@@ -26,6 +27,21 @@ dependencies {
     }
 
     testImplementation("junit:junit:4.13.2")
+}
+
+intellijPlatform {
+    signing {
+        certificateChain =
+            providers.environmentVariable("CERTIFICATE_CHAIN")
+        privateKey =
+            providers.environmentVariable("PRIVATE_KEY")
+        password =
+            providers.environmentVariable("PRIVATE_KEY_PASSWORD")
+    }
+
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
+    }
 }
 
 java {

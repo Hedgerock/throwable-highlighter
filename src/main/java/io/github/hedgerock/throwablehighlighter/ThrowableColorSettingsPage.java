@@ -22,6 +22,10 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
             new AttributesDescriptor(
                     "Throwable class",
                     ThrowableHighlighting.THROWABLE_CLASS
+            ),
+            new AttributesDescriptor(
+                    "Throwable import",
+                    ThrowableHighlighting.THROWABLE_IMPORT
             )
     };
 
@@ -48,6 +52,8 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
     @Override
     public @NonNls @NotNull String getDemoText() {
         return """
+            import java.io.<throwableImport>IOException</throwableImport>;
+
             class <throwable>ApplicationException</throwable>
                     extends <throwable>RuntimeException</throwable> {
             }
@@ -70,8 +76,8 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
     @Override
     public @Nullable Map<String, TextAttributesKey> getAdditionalHighlightingTagToDescriptorMap() {
         return Map.of(
-                "throwable",
-                ThrowableHighlighting.THROWABLE_CLASS
+                "throwable", ThrowableHighlighting.THROWABLE_CLASS,
+                "throwableImport", ThrowableHighlighting.THROWABLE_IMPORT
         );
     }
 

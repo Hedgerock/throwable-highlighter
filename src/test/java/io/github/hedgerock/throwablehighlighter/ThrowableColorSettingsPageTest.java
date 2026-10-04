@@ -15,10 +15,14 @@ public final class ThrowableColorSettingsPageTest extends TestCase {
         AttributesDescriptor[] descriptors =
                 page.getAttributeDescriptors();
 
-        assertEquals(1, descriptors.length);
+        assertEquals(2, descriptors.length);
         assertEquals(
                 ThrowableHighlighting.THROWABLE_CLASS,
                 descriptors[0].getKey()
+        );
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_IMPORT,
+                descriptors[1].getKey()
         );
     }
 

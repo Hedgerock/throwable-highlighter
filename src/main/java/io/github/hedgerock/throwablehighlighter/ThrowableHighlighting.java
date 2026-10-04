@@ -11,6 +11,12 @@ public final class ThrowableHighlighting {
                     DefaultLanguageHighlighterColors.CLASS_NAME
             );
 
+    public static final TextAttributesKey THROWABLE_IMPORT =
+            TextAttributesKey.createTextAttributesKey(
+                    "THROWABLE_IMPORT",
+                    THROWABLE_CLASS
+            );
+
     private ThrowableHighlighting() {
 
     }

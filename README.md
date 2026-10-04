@@ -52,7 +52,7 @@ You can also install it directly from the
 
 ## Development
 
-The project requires JDK 21.
+The project requires JDK 25.
 
 ### Run tests
 
