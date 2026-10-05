@@ -2,7 +2,7 @@
 
 ## Расположение настроек
 
-Настройка плагина находится в разделе:
+Настройки плагина находятся в разделе:
 
 ```text
 Settings | Editor | Color Scheme | Throwable Highlighter
@@ -23,6 +23,8 @@ Settings | Editor | Color Scheme | Throwable Highlighter
 - ссылкам на такие классы в Java-коде.
 
 По умолчанию ключ наследует стандартный цвет Java-класса из активной цветовой схемы IDE.
+
+![Настройка цвета Throwable class](images/throwable-class-color.png)
 
 ### `Throwable import`
 
@@ -50,6 +52,8 @@ import java.io.IOException;
 Отдельная настройка `Throwable import` влияет только на явные импорты классов, наследующих `Throwable`.
 
 Чтобы вернуть наследование, необходимо сбросить явно заданные атрибуты для `Throwable import` в настройках цветовой схемы.
+
+![Наследование цвета Throwable import](images/throwable-import-inheritance.png)
 
 ---
 
