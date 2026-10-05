@@ -8,13 +8,19 @@
     Highlights Java classes that inherit from <code>Throwable</code>.
 
     <p>
-        Throwable highlighting is applied to class declarations and references,
-        including usages in fields, local variables, constructors, catch clauses,
-        throws clauses, and inheritance declarations.
+        Highlights class declarations and references, including uses in fields,
+        local variables, constructor calls, catch clauses, throws clauses, and
+        inheritance declarations.
     </p>
 
     <p>
-        The highlighting style can be configured under
+        Highlights the class name in explicit imports of <code>Throwable</code>
+        subclasses. Import highlighting inherits the <code>Throwable class</code>
+        color by default.
+    </p>
+
+    <p>
+        Configure colors under
         <b>Editor | Color Scheme | Throwable Highlighter</b>.
     </p>
     ]]>
@@ -24,7 +30,7 @@
         <![CDATA[
     <h3>1.1.0</h3>
     <ul>
-        <li>Adds configurable highlighting for import of Throwable subclasses.</li>
+        <li>Adds configurable highlighting for imports of Throwable subclasses.</li>
         <li>Highlights only the imported class name.</li>
         <li>Import highlighting inherits the Throwable class color by default.</li>
     </ul>
