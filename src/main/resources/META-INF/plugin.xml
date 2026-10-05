@@ -5,7 +5,7 @@
 
     <description>
         <![CDATA[
-    Highlights Java classes that inherit from <code>Throwable</code>.
+    Highlights <code>Throwable</code> and Java classes that inherit from it.
 
     <p>
         Highlights class declarations and references, including uses in fields,
@@ -15,8 +15,8 @@
 
     <p>
         Highlights the class name in explicit imports of <code>Throwable</code>
-        subclasses. Import highlighting inherits the <code>Throwable class</code>
-        color by default.
+        and its subclasses. Import highlighting inherits the
+        <code>Throwable class</code> color by default.
     </p>
 
     <p>
@@ -30,8 +30,8 @@
         <![CDATA[
     <h3>1.1.0</h3>
     <ul>
-        <li>Adds configurable highlighting for imports of Throwable subclasses.</li>
-        <li>Highlights only the imported class name.</li>
+        <li>Adds configurable highlighting for imports of Throwable and its subclasses.</li>
+        <li>Highlights Throwable and its subclasses.</li>
         <li>Import highlighting inherits the Throwable class color by default.</li>
     </ul>
 

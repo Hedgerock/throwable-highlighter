@@ -3,8 +3,7 @@
 [![Build](https://github.com/Hedgerock/throwable-highlighter/actions/workflows/build.yml/badge.svg)](https://github.com/Hedgerock/throwable-highlighter/actions/workflows/build.yml)
 [![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/34660-throwable-highlighter.svg?label=Marketplace)](https://plugins.jetbrains.com/plugin/34660-throwable-highlighter)
 
-Throwable Highlighter is an IntelliJ IDEA plugin that highlights Java classes
-that inherit from `Throwable`.
+Highlights Throwable and Java classes that inherit from it.
 
 ## Preview
 
@@ -12,9 +11,9 @@ that inherit from `Throwable`.
 
 ## Features
 
-- Highlights declarations and references to classes that inherit from `Throwable`.
+- Highlights declarations and references to Throwable and its subclasses.
 - Supports custom exception classes and transitive inheritance.
-- Highlights the class name in explicit imports of `Throwable` subclasses.
+- Highlights the class name in explicit imports of Throwable and its subclasses.
 - Does not highlight package names or wildcard imports.
 - Provides configurable highlighting through the IDE color scheme.
 - Uses the standard Java class color as the default for `Throwable class`.

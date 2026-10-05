@@ -2,7 +2,7 @@
 
 ## Текущее состояние
 
-Throwable Highlighter поддерживает Java-код и выделяет классы, наследующие `Throwable`.
+Throwable Highlighter поддерживает Java-код и выделяет Throwable и его наследников.
 
 Плагин обрабатывает:
 

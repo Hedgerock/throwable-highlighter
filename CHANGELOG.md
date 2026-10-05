@@ -11,13 +11,13 @@ The project follows Semantic Versioning.
 - Added project documentation for architecture, configuration, roadmap, and
   documentation language rules.
 - Updated the README and plugin description to document import highlighting.
+- Clarified that highlighting applies to `Throwable` and its subclasses.
 
 ## [1.1.0] - 2026-10-05
 
 ### Added
 
-- Configurable highlighting for explicit imports of classes that inherit from
-  `Throwable`.
+- Configurable highlighting for explicit imports of `Throwable` and its subclasses.
 - The `Throwable import` color key.
 
 ### Changed
@@ -30,8 +30,7 @@ The project follows Semantic Versioning.
 ### Added
 
 - Initial release of Throwable Highlighter.
-- Highlighting for declarations and references to classes that inherit from
-  `Throwable`.
+- Highlighting for declarations and references to `Throwable` and its subclasses.
 - Support for custom exception classes and transitive inheritance.
 - Configurable highlighting through the IntelliJ IDEA color scheme.
 
