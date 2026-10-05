@@ -4,7 +4,7 @@
 [![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/34660-throwable-highlighter.svg?label=Marketplace)](https://plugins.jetbrains.com/plugin/34660-throwable-highlighter)
 
 Throwable Highlighter is an IntelliJ IDEA plugin that highlights Java classes
-inheriting from `Throwable`.
+that inherit from `Throwable`.
 
 ## Preview
 
@@ -12,19 +12,38 @@ inheriting from `Throwable`.
 
 ## Features
 
-- Highlights `Throwable` and its subclasses.
-- Supports custom exception classes.
-- Supports transitive inheritance.
-- Highlights both declarations and references.
-- Works in fields, local variables, `new`, `throws`, `catch`, and `extends`.
+- Highlights declarations and references to classes that inherit from `Throwable`.
+- Supports custom exception classes and transitive inheritance.
+- Highlights the class name in explicit imports of `Throwable` subclasses.
+- Does not highlight package names or wildcard imports.
 - Provides configurable highlighting through the IDE color scheme.
-- Uses the standard Java class highlighting as a fallback.
+- Uses the standard Java class color as the default for `Throwable class`.
+- Uses the `Throwable class` color as the default for `Throwable import`.
 
 ## Configuration
 
-The highlighting style can be configured under:
+Configure highlighting under:
 
 `Settings | Editor | Color Scheme | Throwable Highlighter`
+
+The color scheme provides two keys:
+
+- `Throwable class` for class declarations and references;
+- `Throwable import` for class names in explicit imports.
+
+`Throwable import` inherits the `Throwable class` color until it receives an
+explicit color setting.
+
+See the [configuration guide](docs/configuration.md) for details. The guide is
+available in Russian.
+
+## Documentation
+
+Project documentation is available in Russian:
+
+- [Architecture](docs/architecture.md)
+- [Configuration](docs/configuration.md)
+- [Roadmap](docs/roadmap.md)
 
 ## Requirements
 
