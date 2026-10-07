@@ -13,6 +13,10 @@ The project follows Semantic Versioning.
 - Updated the README and plugin description to document import highlighting.
 - Clarified that highlighting applies to `Throwable` and its subclasses.
 
+### Fixed
+
+- Color settings preview preserves standard Java syntax highlighting for non-Throwable code.
+
 ## [1.1.0] - 2026-10-05
 
 ### Added

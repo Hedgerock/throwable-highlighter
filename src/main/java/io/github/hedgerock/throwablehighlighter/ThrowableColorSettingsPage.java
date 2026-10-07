@@ -1,14 +1,12 @@
 package io.github.hedgerock.throwablehighlighter;
 
-import com.intellij.lexer.EmptyLexer;
-import com.intellij.lexer.Lexer;
+import com.intellij.ide.highlighter.JavaFileHighlighter;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.openapi.fileTypes.SyntaxHighlighter;
 import com.intellij.openapi.options.colors.AttributesDescriptor;
 import com.intellij.openapi.options.colors.ColorDescriptor;
 import com.intellij.openapi.options.colors.ColorSettingsPage;
 import com.intellij.openapi.util.NlsContexts;
-import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,17 +34,7 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
 
     @Override
     public @NotNull SyntaxHighlighter getHighlighter() {
-        return new SyntaxHighlighter() {
-            @Override
-            public @NotNull Lexer getHighlightingLexer() {
-                return new EmptyLexer();
-            }
-
-            @Override
-            public TextAttributesKey @NotNull [] getTokenHighlights(IElementType iElementType) {
-                return TextAttributesKey.EMPTY_ARRAY;
-            }
-        };
+        return new JavaFileHighlighter();
     }
 
     @Override
@@ -54,15 +42,15 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
         return """
             import java.io.<throwableImport>IOException</throwableImport>;
 
-            class <throwable>ApplicationException</throwable>
+            public final class <throwable>ApplicationException</throwable>
                     extends <throwable>RuntimeException</throwable> {
             }
 
-            class Example {
+            public final class Example {
 
                 private <throwable>ApplicationException</throwable> exception;
 
-                void execute() throws <throwable>ApplicationException</throwable> {
+                public void execute() throws <throwable>ApplicationException</throwable> {
                     try {
                         throw new <throwable>ApplicationException</throwable>();
                     } catch (<throwable>ApplicationException</throwable> exception) {
@@ -74,7 +62,7 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
     }
 
     @Override
-    public @Nullable Map<String, TextAttributesKey> getAdditionalHighlightingTagToDescriptorMap() {
+    public @NotNull Map<String, TextAttributesKey> getAdditionalHighlightingTagToDescriptorMap() {
         return Map.of(
                 "throwable", ThrowableHighlighting.THROWABLE_CLASS,
                 "throwableImport", ThrowableHighlighting.THROWABLE_IMPORT
