@@ -18,7 +18,7 @@ Throwable Highlighter выделяет в Java-коде Throwable и его на
 
 `ThrowableAnnotator` реализует интерфейс `Annotator` и обрабатывает PSI-элементы Java.
 
-Компонент определяет три контекста:
+Компонент обрабатывает три PSI-сценария:
 
 - `PsiClass` — объявление класса;
 - `PsiJavaCodeReferenceElement` — ссылка на класс;
@@ -35,6 +35,25 @@ IntelliJ Platform.
 пакета.
 
 Ссылки внутри `PsiImportStatement` не обрабатываются как обычные ссылки. Это исключает повторную подсветку импорта.
+
+### `ThrowableHighlightingContext`
+
+`ThrowableHighlightingContext` определяет стиль подсветки для внутреннего контекста.
+
+Для каждого контекста задаются:
+
+- severity;
+- цветовой ключ.
+
+Текущие контексты:
+
+| Контекст | Severity          | Цветовой ключ      |
+|----------|-------------------|--------------------|
+| `CLASS`  | `INFORMATION`     | `THROWABLE_CLASS`  |
+| `IMPORT` | `TEXT_ATTRIBUTES` | `THROWABLE_IMPORT` |
+
+Контекст не определяет тип PSI-элемента и не проверяет отношение типа к `Throwable`. Эти задачи остаются в
+`ThrowableAnnotator`.
 
 ### `ThrowableHighlighting`
 
@@ -73,7 +92,8 @@ PSI-элемент Java
     → определение контекста
     → разрешение ссылки в PsiClass
     → проверка типа Throwable или наследования от него
-    → выбор цветового ключа
+    → выбор ThrowableHighlightingContext
+    → severity и цветовой ключ контекста
     → отображение с настройками текущей цветовой схемы
 ```
 
