@@ -13,6 +13,41 @@ public final class ThrowableAnnotatorTest
         return JAVA_21;
     }
 
+    public void testShouldNotHighlightWildcardImport() {
+        myFixture.configureByText(
+                "Example.java",
+                """
+                        import java.io.*;
+
+                        class Example {
+                        }
+                        """
+        );
+
+        assertEquals(0, countImportHighlights());
+    }
+
+    public void testShouldHighlightExplicitThrowableImport() {
+        myFixture.configureByText(
+                "Example.java",
+                """
+                        import java.lang.Throwable;
+
+                        class Example {
+                        }
+                        """
+        );
+
+        assertEquals(1, countImportHighlights());
+        assertEquals(
+                1,
+                countImportHighlights(
+                        "Throwable",
+                        HighlightSeverity.TEXT_ATTRIBUTES
+                )
+        );
+    }
+
     public void testShouldNotHighlightRegularImport() {
         myFixture.configureByText(
                 "Example.java",
@@ -34,7 +69,7 @@ public final class ThrowableAnnotatorTest
         assertEquals(0, count);
     }
 
-    public void testShouldHighlightExplicitThrowableImport() {
+    public void testShouldHighlightExplicitThrowableSubclassImport() {
         myFixture.configureByText(
                 "Example.java",
                 """
@@ -45,19 +80,14 @@ public final class ThrowableAnnotatorTest
                 """
         );
 
-        long count = myFixture.doHighlighting().stream()
-                .filter(highlight ->
-                        "IOException".equals(highlight.getText())
-                                && HighlightSeverity.TEXT_ATTRIBUTES.equals(
-                                highlight.getSeverity()
-                        )
-                        && ThrowableHighlighting.THROWABLE_IMPORT.equals(
-                                highlight.forcedTextAttributesKey
-                        )
+        assertEquals(1, countImportHighlights());
+        assertEquals(
+                1,
+                countImportHighlights(
+                        "IOException",
+                        HighlightSeverity.TEXT_ATTRIBUTES
                 )
-                .count();
-
-        assertEquals(1, count);
+        );
     }
 
     public void testThrowableImportInheritsThrowableClassColor() {
@@ -163,6 +193,31 @@ public final class ThrowableAnnotatorTest
                         text.equals(highlight.getText())
                                 && ThrowableHighlighting.THROWABLE_CLASS.equals(
                                 highlight.forcedTextAttributesKey
+                        )
+                )
+                .count();
+    }
+
+    private long countImportHighlights() {
+        return myFixture.doHighlighting().stream()
+                .filter(highlightInfo ->
+                        ThrowableHighlighting.THROWABLE_IMPORT.equals(
+                                highlightInfo.forcedTextAttributesKey
+                        )
+                )
+                .count();
+    }
+
+    private long countImportHighlights(
+            String text,
+            HighlightSeverity severity
+    ) {
+        return myFixture.doHighlighting().stream()
+                .filter(highlightInfo ->
+                        text.equals(highlightInfo.getText())
+                        && severity.equals(highlightInfo.getSeverity())
+                        && ThrowableHighlighting.THROWABLE_IMPORT.equals(
+                                highlightInfo.forcedTextAttributesKey
                         )
                 )
                 .count();

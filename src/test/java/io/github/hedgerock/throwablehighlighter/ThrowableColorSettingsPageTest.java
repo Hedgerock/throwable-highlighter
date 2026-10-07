@@ -11,6 +11,24 @@ public final class ThrowableColorSettingsPageTest extends TestCase {
     private final ThrowableColorSettingsPage page =
             new ThrowableColorSettingsPage();
 
+    public void testShouldContainThrowableImportTagInDemoText() {
+        String demoText = page.getDemoText();
+
+        assertTrue(demoText.contains("<throwableImport>"));
+        assertTrue(demoText.contains("</throwableImport>"));
+    }
+
+    public void testShouldMapDemoTagToThrowableImportHighlighting() {
+        Map<String, TextAttributesKey> highlighting =
+                page.getAdditionalHighlightingTagToDescriptorMap();
+
+        assertNotNull(highlighting);
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_IMPORT,
+                highlighting.get("throwableImport")
+        );
+    }
+
     public void testShouldExposeThrowableHighlightingDescriptor() {
         AttributesDescriptor[] descriptors =
                 page.getAttributeDescriptors();
