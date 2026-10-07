@@ -8,8 +8,8 @@ The project follows Semantic Versioning.
 
 ### Documentation
 
-- Added project documentation for architecture, configuration, roadmap, and
-  documentation language rules.
+- Added project documentation for architecture, configuration, roadmap,
+  documentation language rules, and architectural decisions.
 - Updated the README and plugin description to document import highlighting.
 - Clarified that highlighting applies to `Throwable` and its subclasses.
 

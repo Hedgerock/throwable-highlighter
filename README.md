@@ -43,6 +43,7 @@ Project documentation is available in Russian:
 - [Architecture](docs/architecture.md)
 - [Configuration](docs/configuration.md)
 - [Roadmap](docs/roadmap.md)
+- [Architecture decisions](docs/decisions/README.md)
 
 ## Requirements
 

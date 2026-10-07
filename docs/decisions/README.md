@@ -91,3 +91,10 @@ NNNN-краткое-название.md
 
 Ссылки на связанные ADR, issue, pull request или раздел roadmap.
 ```
+
+---
+
+## Принятые решения
+
+- [ADR-0001: Разделение контекстов подсветки](0001-separate-highlighting-contexts.md)
+- [ADR-0002: Отдельная подсветка типов Throwable в catch](0002-catch-throwable-highlighting.md)
