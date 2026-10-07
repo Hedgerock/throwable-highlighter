@@ -2,7 +2,6 @@ package io.github.hedgerock.throwablehighlighter;
 
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
-import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiIdentifier;
@@ -52,7 +51,7 @@ public final class ThrowableAnnotator implements Annotator {
 
         PsiElement resolved = importStatement.resolve();
 
-        if (!(resolved instanceof PsiClass psiClass) || !isThrowable(psiClass)) {
+        if (!(resolved instanceof PsiClass psiClass)) {
             return;
         }
 
@@ -69,30 +68,30 @@ public final class ThrowableAnnotator implements Annotator {
             return;
         }
 
-        annotationHolder.newSilentAnnotation(HighlightSeverity.TEXT_ATTRIBUTES)
-                .range(className)
-                .textAttributes(ThrowableHighlighting.THROWABLE_IMPORT)
-                .create();
+        annotateThrowableType(
+                psiClass,
+                className,
+                ThrowableHighlightingContext.IMPORT,
+                annotationHolder
+        );
     }
 
     private void annotateDeclaration(
             PsiClass psiClass,
             AnnotationHolder annotationHolder
     ) {
-        if (!isThrowable(psiClass)) {
-            return;
-        }
-
         PsiIdentifier identifier = psiClass.getNameIdentifier();
 
         if (identifier == null) {
             return;
         }
 
-        annotationHolder.newSilentAnnotation(HighlightSeverity.INFORMATION)
-                .range(identifier)
-                .textAttributes(ThrowableHighlighting.THROWABLE_CLASS)
-                .create();
+        annotateThrowableType(
+                psiClass,
+                identifier,
+                ThrowableHighlightingContext.CLASS,
+                annotationHolder
+        );
     }
 
     private void annotateReference(
@@ -101,17 +100,46 @@ public final class ThrowableAnnotator implements Annotator {
     ) {
         PsiElement resolved = referenceElement.resolve();
 
-        if (!(resolved instanceof PsiClass psiClass) || !isThrowable(psiClass)) {
+        if (!(resolved instanceof PsiClass psiClass)) {
             return;
         }
 
-        annotationHolder.newSilentAnnotation(HighlightSeverity.INFORMATION)
-                .range(referenceElement)
-                .textAttributes(ThrowableHighlighting.THROWABLE_CLASS)
+        annotateThrowableType(
+                psiClass,
+                referenceElement,
+                ThrowableHighlightingContext.CLASS,
+                annotationHolder
+        );
+    }
+
+    private void annotateThrowableType(
+            PsiClass psiClass,
+            PsiElement range,
+            ThrowableHighlightingContext context,
+            AnnotationHolder annotationHolder
+    ) {
+        if (!isThrowableType(psiClass)) {
+            return;
+        }
+
+        applyHighlight(range, context, annotationHolder);
+    }
+
+    private void applyHighlight(
+            PsiElement range,
+            ThrowableHighlightingContext context,
+            AnnotationHolder annotationHolder
+    ) {
+        annotationHolder.newSilentAnnotation(context.getSeverity())
+                .range(range)
+                .textAttributes(context.getTextAttributesKey())
                 .create();
     }
 
-    private boolean isThrowable(PsiClass psiClass) {
-        return InheritanceUtil.isInheritor(psiClass, Throwable.class.getName());
+    private boolean isThrowableType(PsiClass psiClass) {
+        return InheritanceUtil.isInheritor(
+                psiClass,
+                Throwable.class.getName()
+        );
     }
 }
