@@ -31,7 +31,7 @@
     <h3>1.1.0</h3>
     <ul>
         <li>Adds configurable highlighting for imports of Throwable and its subclasses.</li>
-        <li>Highlights Throwable and its subclasses.</li>
+        <li>Highlights only the imported class name.</li>
         <li>Import highlighting inherits the Throwable class color by default.</li>
     </ul>
 
