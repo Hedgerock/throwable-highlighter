@@ -17,6 +17,12 @@ public final class ThrowableHighlighting {
                     THROWABLE_CLASS
             );
 
+    public static final TextAttributesKey THROWABLE_CATCH =
+            TextAttributesKey.createTextAttributesKey(
+                    "THROWABLE_CATCH",
+                    THROWABLE_CLASS
+            );
+
     private ThrowableHighlighting() {
 
     }

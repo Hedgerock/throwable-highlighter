@@ -37,10 +37,10 @@ Throwable Highlighter поддерживает Java-код и выделяет T
 параметре `catch`.
 
 Функция реализуется согласно
-[ADR-0002: Отдельная подсветка типов Throwable в catch](decisions/0002-catch-throwable-highlighting.md).
+[ADR-0003: Наследование цвета Throwable catch от Throwable class](decisions/0003-catch-throwable-highlighting.md).
 
-Контекст `CATCH` использует ключ `THROWABLE_CATCH` и наследует стандартный цвет
-Java-класса.
+Контекст `CATCH` использует ключ `THROWABLE_CATCH` и наследует цвет от
+`THROWABLE_CLASS`.
 
 Функция включает настройку цвета, демонстрационный пример, тесты обычного
 `catch` и multi-catch, а также обновление пользовательской документации.

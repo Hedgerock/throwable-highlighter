@@ -13,6 +13,10 @@ enum ThrowableHighlightingContext {
     IMPORT(
             HighlightSeverity.TEXT_ATTRIBUTES,
             ThrowableHighlighting.THROWABLE_IMPORT
+    ),
+    CATCH(
+            HighlightSeverity.INFORMATION,
+            ThrowableHighlighting.THROWABLE_CATCH
     );
 
     private final HighlightSeverity severity;

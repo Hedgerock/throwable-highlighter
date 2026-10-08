@@ -2,11 +2,14 @@ package io.github.hedgerock.throwablehighlighter;
 
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
+import com.intellij.psi.PsiCatchSection;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiIdentifier;
 import com.intellij.psi.PsiImportStatement;
 import com.intellij.psi.PsiJavaCodeReferenceElement;
+import com.intellij.psi.PsiParameter;
+import com.intellij.psi.PsiTypeElement;
 import com.intellij.psi.util.InheritanceUtil;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
@@ -104,11 +107,49 @@ public final class ThrowableAnnotator implements Annotator {
             return;
         }
 
+        ThrowableHighlightingContext context =
+                getReferenceHighlightingContext(referenceElement);
+
         annotateThrowableType(
                 psiClass,
                 referenceElement,
-                ThrowableHighlightingContext.CLASS,
+                context,
                 annotationHolder
+        );
+    }
+
+    private ThrowableHighlightingContext getReferenceHighlightingContext(
+            PsiJavaCodeReferenceElement referenceElement
+    ) {
+        return isCatchParameterType(referenceElement)
+                ? ThrowableHighlightingContext.CATCH
+                : ThrowableHighlightingContext.CLASS;
+    }
+
+    private boolean isCatchParameterType(
+            PsiJavaCodeReferenceElement referenceElement
+    ) {
+        PsiCatchSection catchSection = PsiTreeUtil.getParentOfType(
+                referenceElement,
+                PsiCatchSection.class
+        );
+
+        if (catchSection == null) {
+            return false;
+        }
+
+        PsiParameter parameter = catchSection.getParameter();
+
+        if (parameter == null) {
+            return false;
+        }
+
+        PsiTypeElement typeElement = parameter.getTypeElement();
+
+        return PsiTreeUtil.isAncestor(
+                        typeElement,
+                referenceElement,
+                false
         );
     }
 

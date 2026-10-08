@@ -13,6 +13,65 @@ public final class ThrowableAnnotatorTest
         return JAVA_21;
     }
 
+    public void testShouldUseCatchContextForEveryThrowableTypeInMultiCatch() {
+        configureJava("""
+        class Example {
+
+            void execute() {
+                try {
+                } catch (
+                        IllegalArgumentException
+                        | IllegalStateException exception
+                ) {
+                }
+            }
+        }
+        """);
+
+        assertEquals(
+                1,
+                countCatchHighlights("IllegalArgumentException")
+        );
+
+        assertEquals(
+                1,
+                countCatchHighlights("IllegalStateException")
+        );
+
+        assertEquals(
+                0,
+                countThrowableHighlights("IllegalArgumentException")
+        );
+
+        assertEquals(
+                0,
+                countThrowableHighlights("IllegalStateException")
+        );
+    }
+
+    public void testShouldUseCatchContextForThrowableCatchType() {
+        configureJava("""
+        class Example {
+
+            void execute() {
+                try {
+                } catch (RuntimeException exception) {
+                    RuntimeException copy = exception;
+                }
+            }
+        }
+        """);
+
+        assertEquals(
+                1,
+                countCatchHighlights("RuntimeException")
+        );
+        assertEquals(
+                1,
+                countThrowableHighlights("RuntimeException")
+        );
+    }
+
     public void testShouldNotHighlightWildcardImport() {
         myFixture.configureByText(
                 "Example.java",
@@ -173,8 +232,38 @@ public final class ThrowableAnnotatorTest
             """);
 
         assertEquals(
-                7,
+                6,
                 countThrowableHighlights("CustomException")
+        );
+
+        assertEquals(
+                1,
+                countCatchHighlights("CustomException")
+        );
+    }
+
+    public void testShouldNotHighlightNonThrowableCatchType() {
+        myFixture.configureByText(
+                "Example.java",
+                """
+                        class Example {
+    
+                            void execute() {
+                                try {
+                                } catch (String value) {
+                                }
+                            }
+                        }
+                        """
+        );
+
+        assertEquals(
+                0,
+                countCatchHighlights("String")
+        );
+        assertEquals(
+                0,
+                countThrowableHighlights("String")
         );
     }
 
@@ -202,6 +291,17 @@ public final class ThrowableAnnotatorTest
         return myFixture.doHighlighting().stream()
                 .filter(highlightInfo ->
                         ThrowableHighlighting.THROWABLE_IMPORT.equals(
+                                highlightInfo.forcedTextAttributesKey
+                        )
+                )
+                .count();
+    }
+
+    private long countCatchHighlights(String text) {
+        return myFixture.doHighlighting().stream()
+                .filter(highlightInfo ->
+                        text.equals(highlightInfo.getText())
+                        && ThrowableHighlighting.THROWABLE_CATCH.equals(
                                 highlightInfo.forcedTextAttributesKey
                         )
                 )

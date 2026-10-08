@@ -97,4 +97,10 @@ NNNN-краткое-название.md
 ## Принятые решения
 
 - [ADR-0001: Разделение контекстов подсветки](0001-separate-highlighting-contexts.md)
+- [ADR-0003: Наследование цвета Throwable catch от Throwable class](0003-catch-throwable-highlighting.md)
+
+---
+
+## Заменённые решения
+
 - [ADR-0002: Отдельная подсветка типов Throwable в catch](0002-catch-throwable-highlighting.md)

@@ -9,6 +9,27 @@ import static org.junit.Assert.assertEquals;
 public class ThrowableHighlightingTest {
 
     @Test
+    public void testShouldUseCatchStyleForCatchContext() {
+        assertEquals(
+                HighlightSeverity.INFORMATION,
+                ThrowableHighlightingContext.CATCH.getSeverity()
+        );
+
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_CATCH,
+                ThrowableHighlightingContext.CATCH.getTextAttributesKey()
+        );
+    }
+
+    @Test
+    public void testCatchShouldFallbackToThrowableClassHighlighting() {
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_CLASS,
+                ThrowableHighlighting.THROWABLE_CATCH.getFallbackAttributeKey()
+        );
+    }
+
+    @Test
     public void testShouldUseClassStyleForClassContext() {
         assertEquals(
                 HighlightSeverity.INFORMATION,
