@@ -6,6 +6,8 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-09
+
 ### Added
 
 - Configurable highlighting for Throwable types in `catch` clauses.
@@ -15,7 +17,7 @@ The project follows Semantic Versioning.
 
 - Added project documentation for architecture, configuration, roadmap,
   documentation language rules, and architectural decisions.
-- Updated the README and plugin description to document import highlighting.
+- Updated the README and plugin description to document import and catch highlighting.
 - Clarified that highlighting applies to `Throwable` and its subclasses.
 
 ### Fixed
@@ -43,6 +45,7 @@ The project follows Semantic Versioning.
 - Support for custom exception classes and transitive inheritance.
 - Configurable highlighting through the IntelliJ IDEA color scheme.
 
-[Unreleased]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Hedgerock/throwable-highlighter/releases/tag/v1.0.0
