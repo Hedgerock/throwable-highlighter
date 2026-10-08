@@ -2,17 +2,20 @@
 
 ## Текущее состояние
 
-Throwable Highlighter поддерживает Java-код и выделяет Throwable и его наследников.
+Throwable Highlighter поддерживает Java-код и выделяет `Throwable` и его
+наследников.
 
 Плагин обрабатывает:
 
 - объявления классов;
 - ссылки на классы;
-- явные импорты классов.
+- явные импорты классов;
+- типы `Throwable` и его наследников в параметрах `catch`.
 
-Для настройки подсветки используются ключи `THROWABLE_CLASS` и `THROWABLE_IMPORT`.
+Для настройки подсветки используются ключи `THROWABLE_CLASS`, `THROWABLE_IMPORT` и `THROWABLE_CATCH`.
 
-`THROWABLE_IMPORT` наследует цвет от `THROWABLE_CLASS`, пока для импорта не задан отдельный цвет.
+`THROWABLE_IMPORT` и `THROWABLE_CATCH` наследуют цвет от `THROWABLE_CLASS`, пока для соответствующего контекста
+не задан отдельный цвет.
 
 ---
 
@@ -31,19 +34,16 @@ Throwable Highlighter поддерживает Java-код и выделяет T
 
 ---
 
-## Ближайшая функция
+## Реализованная функция
 
-Ближайшая функция — отдельная подсветка типов `Throwable` и его наследников в
+Плагин поддерживает отдельную подсветку типов `Throwable` и его наследников в
 параметре `catch`.
-
-Функция реализуется согласно
-[ADR-0003: Наследование цвета Throwable catch от Throwable class](decisions/0003-catch-throwable-highlighting.md).
 
 Контекст `CATCH` использует ключ `THROWABLE_CATCH` и наследует цвет от
 `THROWABLE_CLASS`.
 
-Функция включает настройку цвета, демонстрационный пример, тесты обычного
-`catch` и multi-catch, а также обновление пользовательской документации.
+Реализация соответствует
+[ADR-0003: Наследование цвета Throwable catch от Throwable class](decisions/0003-catch-throwable-highlighting.md).
 
 ---
 

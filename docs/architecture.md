@@ -8,7 +8,8 @@ Throwable Highlighter выделяет в Java-коде Throwable и его на
 
 - объявлений классов;
 - ссылок на классы;
-- явных импортов классов.
+- явных импортов классов;
+- типов `Throwable` и его наследников в параметрах `catch`.
 
 ---
 
@@ -36,6 +37,12 @@ IntelliJ Platform.
 
 Ссылки внутри `PsiImportStatement` не обрабатываются как обычные ссылки. Это исключает повторную подсветку импорта.
 
+Для обычных ссылок аннотатор определяет контекст подсветки. Если `PsiJavaCodeReferenceElement` находится в
+`PsiTypeElement` параметра `PsiCatchSection`, используется контекст `CATCH`. Во всех остальных случаях используется
+контекст `CLASS`.
+
+Проверка принадлежности к `PsiTypeElement` исключает применение контекста `CATCH` к ссылкам внутри тела блока `catch`.
+
 ### `ThrowableHighlightingContext`
 
 `ThrowableHighlightingContext` определяет стиль подсветки для внутреннего контекста.
@@ -51,6 +58,7 @@ IntelliJ Platform.
 |----------|-------------------|--------------------|
 | `CLASS`  | `INFORMATION`     | `THROWABLE_CLASS`  |
 | `IMPORT` | `TEXT_ATTRIBUTES` | `THROWABLE_IMPORT` |
+| `CATCH`  | `INFORMATION`     | `THROWABLE_CATCH`  |
 
 Контекст не определяет тип PSI-элемента и не проверяет отношение типа к `Throwable`. Эти задачи остаются в
 `ThrowableAnnotator`.
@@ -60,19 +68,21 @@ IntelliJ Platform.
 `ThrowableHighlighting` объявляет цветовые ключи плагина:
 
 - `THROWABLE_CLASS` — основной ключ для классов и ссылок;
-- `THROWABLE_IMPORT` — ключ для явных импортов.
+- `THROWABLE_IMPORT` — ключ для явных импортов;
+- `THROWABLE_CATCH` — ключ для типов в параметрах `catch`.
 
 `THROWABLE_CLASS` наследует стандартный цвет Java-класса.
 
-`THROWABLE_IMPORT` наследует цвет от `THROWABLE_CLASS`. Изменение цвета `THROWABLE_CLASS` применяется к импортам,
-пока для `THROWABLE_IMPORT` не задан отдельный цвет.
+`THROWABLE_IMPORT` и `THROWABLE_CATCH` наследуют цвет от
+`THROWABLE_CLASS`. Изменение `THROWABLE_CLASS` применяется к этим контекстам, пока для соответствующего ключа не задан
+отдельный цвет.
 
 ### `ThrowableColorSettingsPage`
 
 `ThrowableColorSettingsPage` добавляет раздел `Throwable Highlighter` в настройки цветовой схемы IDE.
 
-Страница предоставляет настройку обоих цветовых ключей и демонстрационный код, содержащий объявления, ссылки и импорт класса-наследника
-`Throwable`.
+Страница предоставляет настройку трёх цветовых ключей и демонстрационный код, содержащий объявления, ссылки, явный
+импорт и параметр `catch` класса-наследника `Throwable`.
 
 ### `plugin.xml`
 
@@ -105,5 +115,5 @@ PSI-элемент Java
 
 Плагин не выполняет статический анализ исключений и не заменяет встроенные инспекции IntelliJ IDEA.
 
-Плагин не добавляет отдельные цветовые ключи для `catch`, `throws`, `throw` и других синтаксических конструкций. В этих
+Плагин не добавляет отдельные цветовые ключи для `throws`, `throw` и других синтаксических конструкций. В этих
 случаях используется `THROWABLE_CLASS`.

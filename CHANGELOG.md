@@ -6,6 +6,11 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Added
+
+- Configurable highlighting for Throwable types in `catch` clauses.
+- The `Throwable catch` color key, which inherits the `Throwable class` color by default.
+
 ### Documentation
 
 - Added project documentation for architecture, configuration, roadmap,

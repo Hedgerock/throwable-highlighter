@@ -8,10 +8,11 @@
 Settings | Editor | Color Scheme | Throwable Highlighter
 ```
 
-Раздел содержит два цветовых ключа:
+Раздел содержит три цветовых ключа:
 
 - `Throwable class`;
-- `Throwable import`.
+- `Throwable import`;
+- `Throwable catch`.
 
 ### `Throwable class`
 
@@ -38,17 +39,35 @@ import java.io.IOException;
 
 Импорты с символом `*` не подсвечиваются.
 
+### `Throwable catch`
+
+Ключ `Throwable catch` соответствует `THROWABLE_CATCH`.
+
+Он применяется к `Throwable` и его наследникам в параметре `catch`.
+
+```java
+catch (IOException exception) {
+        ^^^^^^^^^^^
+}
+```
+
+![Наследование цвета Throwable catch](images/throwable-catch-inheritance.png)
+
 ---
 
 ## Наследование цвета
 
-По умолчанию `Throwable import` наследует цвет от `Throwable class`.
+По умолчанию `Throwable import` и `Throwable catch` наследуют цвет от `Throwable class`.
 
-Изменение цвета `Throwable class` применяется к импортам, если для `Throwable import` не задано отдельное значение.
+Изменение цвета `Throwable class` применяется к импортам и типам в `catch`, если ни для `Throwable import`, ни для
+`Throwable catch` не задано отдельное значение.
 
 Отдельная настройка `Throwable import` влияет только на явные импорты `Throwable` и его наследников.
 
-Чтобы вернуть наследование, необходимо сбросить явно заданные атрибуты для `Throwable import` в настройках цветовой схемы.
+Отдельная настройка `Throwable catch` влияет только на типы `Throwable` и его наследников в параметрах `catch`.
+
+Чтобы вернуть наследование, необходимо сбросить явно заданные атрибуты для `Throwable import` или `Throwable catch`
+в настройках цветовой схемы.
 
 ![Наследование цвета Throwable import](images/throwable-import-inheritance.png)
 
