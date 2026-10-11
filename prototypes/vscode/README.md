@@ -2,16 +2,37 @@
 
 Технический прототип интеграции Throwable Highlighter с VS Code.
 
-## Цель
+## Назначение
 
-Проверить возможность выделять стандартные Throwable-типы через Semantic Tokens и сохранить разделение контекстов:
+Прототип проверяет возможность реализовать контракт Java-подсветки Throwable в VS Code без изменения стандартной Java-подсветки.
 
-- `throwableClass`;
-- `throwableImport`;
-- `throwableCatch`.
+Первый этап проверил Semantic Tokens. Подход не позволил добавить собственные токены поверх используемой Java-поддержки.
 
-Прототип не реализует разрешение пользовательских наследников, настройки цветов, публикацию в Marketplace и перенос
-IntelliJ-реализации.
+Текущий этап проверяет editor decorations.
+
+Прототип не является поддерживаемым пользовательским расширением.
+
+## Поддерживаемые сценарии
+
+Прототип выделяет известные стандартные типы:
+
+- `Throwable`;
+- `Exception`;
+- `RuntimeException`;
+- `IOException`;
+- `IllegalArgumentException`;
+- `IllegalStateException`.
+
+Прототип определяет целевые типы по известному имени и не использует разрешение Java-символов. Его поведение пока не является
+полным соответствием контракту Java-подсветки.
+
+Подсветка различает контексты:
+
+- `CLASS` — объявление и обычная ссылка на тип;
+- `IMPORT` — тип в явном импорте;
+- `CATCH` — тип в параметре `catch`.
+
+Комментарии, строковые литералы, символьные литералы и text blocks не участвуют в поиске типов.
 
 ---
 
@@ -28,20 +49,43 @@ npm run compile
 3. Запустить конфигурацию `Run Throwable Highlighter Prototype` клавишей F5.
 4. В открытом Extension Development Host открыть Java-файл.
 
+После изменения TypeScript-кода необходимо повторно выполнить `npm run compile` и перезапустить Extension Development Host.
+
 ---
+
+## Настройка цветов
+
+Прототип предоставляет следующие настройки:
+
+| Настройка                                    | Назначение                      | Значение по умолчанию        |
+|----------------------------------------------|---------------------------------|------------------------------|
+| `throwableHighlighter.prototype.classColor`  | Цвет типов в контексте `CLASS`  | Стандартный цвет Java-класса |
+| `throwableHighlighter.prototype.importColor` | Цвет типов в контексте `IMPORT` | Наследует `classColor`       |
+| `throwableHighlighter.prototype.catchColor`  | Цвет типов в контексте `CATCH`  | Наследует `classColor`       |
+
+Пустое значение цвета не создаёт foreground-decoration и сохраняет стандартный цвет Java-класса.
+
+Настройки можно изменить через Settings или в Workspace Settings JSON:
+
+```json
+{
+  "throwableHighlighter.prototype.classColor": "#4EC9B0",
+  "throwableHighlighter.prototype.importColor": "#CE9178",
+  "throwableHighlighter.prototype.catchColor": "#C586C0"
+}
+```
 
 ## Проверка
 
-Для первого эксперимента используются стандартные типы:
+Для проверки используются fixtures из контракта Java-подсветки:
 
-- `Throwable`;
-- `Exception`;
-- `RuntimeException`;
-- `IOException`;
-- `IllegalStateException`;
-- `IllegalArgumentException`.
+- `import-context.java` — типы в явных импортах используют `IMPORT`;
+- `catch-context.java` — тип параметра `catch` использует `CATCH`, ссылка внутри тела блока использует `CLASS`;
+- `multi-catch-context.java` — каждый тип использует `CATCH`;
+- `syntax-preservation.java` — комментарии, модификаторы, ключевые слова и нецелевые элементы сохраняют стандартную
+  Java-подсветку.
 
-Проверять результат следует через команду `Developer: Inspect Editor Tokens and Scopes`.
+После очистки всех трёх настроек целевые типы должны вернуться к стандартному цвету Java-класса.
 
 ---
 
@@ -49,15 +93,27 @@ npm run compile
 
 Semantic Tokens provider успешно активируется в Extension Development Host.
 
-Стандартная Java-поддержка VS Code сохраняет токен `class` для `RuntimeException`. Пользовательский токен `throwableClass`
-не применяется.
+Стандартная Java-поддержка VS Code сохраняет токен `class` для `RuntimeException`. Пользовательский токен `throwableClass` не
+применяется.
 
 Проверка Semantic Tokens завершена с отрицательным результатом.
 
 ---
 
+## Результат editor decorations
+
+Editor decorations применяются поверх стандартной Java-подсветки и не заменяют её.
+
+Прототип различает контексты `CLASS`, `IMPORT` и `CATCH`, поддерживает отдельные настройки цветов и наследование цветов от
+`CLASS`.
+
+Проверка editor decorations завершена успешно.
+
+---
+
 ## Следующий шаг
 
-Следующий этап прототипа проверяет editor decorations.
+Следующий шаг определяет способ разрешения пользовательских Java-типов и проверяет поддержку пользовательских наследников
+Throwable.
 
 Поддержка VS Code как пользовательской платформы по-прежнему требует отдельного ADR.

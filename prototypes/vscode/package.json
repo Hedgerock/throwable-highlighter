@@ -17,23 +17,26 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "semanticTokenTypes": [
-      {
-        "id": "throwableClass",
-        "description": "Throwable type in a class context.",
-        "superType": "class"
-      },
-      {
-        "id": "throwableImport",
-        "description": "Throwable type in an import context.",
-        "superType": "class"
-      },
-      {
-        "id": "throwableCatch",
-        "description": "Throwable type in a catch parameter context.",
-        "superType": "class"
+    "configuration": {
+      "title": "Throwable Highlighter Prototype",
+      "properties": {
+        "throwableHighlighter.prototype.classColor": {
+          "type": "string",
+          "default": "",
+          "description": "Foreground color for Throwable types. Leave empty to preserve the native Java class color."
+        },
+        "throwableHighlighter.prototype.importColor": {
+          "type": "string",
+          "default": "",
+          "description": "Foreground color for Throwable types in explicit imports. Leave empty to inherit the class color."
+        },
+        "throwableHighlighter.prototype.catchColor": {
+          "type": "string",
+          "default": "",
+          "description": "Foreground color for Throwable types in catch parameters. Leave empty to inherit the class color."
+        }
       }
-    ]
+    }
   },
   "scripts": {
     "compile": "tsc -p .",
