@@ -3,6 +3,7 @@ import {ThrowableDecorationController} from "./decorations/ThrowableDecorationCo
 import {ThrowableHighlightingContext} from "./decorations/highlighting/ThrowableHighlightingContext";
 import {ThrowableHighlightingFinder} from "./decorations/highlighting/ThrowableHighlightingFinder";
 import {JavaCodeMask} from "./decorations/highlighting/JavaCodeMask";
+import {DefinitionProbe, INSPECT_DEFINITION_COMMAND} from "./resolution/DefinitionProbe";
 
 export function activate(context: vscode.ExtensionContext): void {
     const throwableHighlightingContext = new ThrowableHighlightingContext();
@@ -18,6 +19,8 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     outputChannel.appendLine("Decoration controller activated.");
+
+    const definitionProbe = new DefinitionProbe(outputChannel);
 
     context.subscriptions.push(
         controller,
@@ -37,6 +40,10 @@ export function activate(context: vscode.ExtensionContext): void {
                     controller.refreshConfiguration();
                 }
             }
+        ),
+        vscode.commands.registerCommand(
+            INSPECT_DEFINITION_COMMAND,
+            () => definitionProbe.inspectActiveSelection()
         )
     );
 

@@ -13,10 +13,25 @@
     "Other"
   ],
   "activationEvents": [
-    "onLanguage:java"
+    "onLanguage:java",
+    "onCommand:throwableHighlighter.prototype.inspectDefinition"
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "throwableHighlighter.prototype.inspectDefinition",
+        "title": "Throwable Highlighter Prototype: Inspect Definition"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "throwableHighlighter.prototype.inspectDefinition",
+          "when": "editorLangId == java"
+        }
+      ]
+    },
     "configuration": {
       "title": "Throwable Highlighter Prototype",
       "properties": {
