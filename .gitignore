@@ -13,6 +13,13 @@ out/
 
 ### VS Code ###
 .vscode/
+!prototypes/vscode/.vscode/
+!prototypes/vscode/.vscode/launch.json
+
+### VS Code prototype ###
+prototypes/vscode/node_modules/
+prototypes/vscode/.vscode-test/
+prototypes/vscode/*.vsix
 
 ### OS ###
 .DS_Store

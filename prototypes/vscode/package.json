@@ -1,0 +1,48 @@
+{
+  "name": "throwable-highlighter-vscode-prototype",
+  "displayName": "Throwable Highlighter VS Code Prototype",
+  "description": "Technical prototype of Throwable Highlighter for VS Code.",
+  "version": "0.0.0",
+  "private": true,
+  "publisher": "hedgerock",
+  "license": "Apache-2.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:java"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "semanticTokenTypes": [
+      {
+        "id": "throwableClass",
+        "description": "Throwable type in a class context.",
+        "superType": "class"
+      },
+      {
+        "id": "throwableImport",
+        "description": "Throwable type in an import context.",
+        "superType": "class"
+      },
+      {
+        "id": "throwableCatch",
+        "description": "Throwable type in a catch parameter context.",
+        "superType": "class"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "check": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "1.85.0",
+    "typescript": "^5.7.3"
+  }
+}
