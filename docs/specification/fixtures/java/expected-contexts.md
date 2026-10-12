@@ -8,6 +8,24 @@
 
 ---
 
+## Межфайловый сценарий
+
+`cross-file` содержит пользовательский тип в отдельном Java-файле.
+
+| Идентификатор       | Контекст | Количество |
+|---------------------|----------|------------|
+| `ExternalException` | `CLASS`  | 3          |
+| `ExternalException` | `IMPORT` | 1          |
+| `ExternalException` | `CATCH`  | 1          |
+| `RuntimeException`  | `CLASS`  | 1          |
+
+`ExternalException` объявлен в отдельном файле и напрямую наследует `RuntimeException`.
+
+Для ссылок на `ExternalException` в файле `CrossFileContextFixture.java` prototype должен получить определение типа через
+Definition Provider.
+
+---
+
 ## `class-context.java`
 
 | Идентификатор      | Контекст | Количество |

@@ -6,6 +6,27 @@ import {JavaCodeMask} from "./java/JavaCodeMask";
 import {DefinitionProbe, INSPECT_DEFINITION_COMMAND} from "./resolution/DefinitionProbe";
 import {JavaTypeDefinitionResolver} from "./resolution/JavaTypeDefinitionResolver";
 
+const INITIAL_REFRESH_DELAYS = [1_000, 3_000, 8_000] as const;
+
+function scheduleInitialRefreshes(
+    controller: ThrowableDecorationController
+): vscode.Disposable {
+    const timers = INITIAL_REFRESH_DELAYS.map(
+        delay => setTimeout(
+            () => controller.refresh(),
+            delay
+        )
+    );
+
+    return {
+        dispose(): void {
+            for (const timer of timers) {
+                clearTimeout(timer);
+            }
+        }
+    }
+}
+
 export function activate(context: vscode.ExtensionContext): void {
     const throwableHighlightingContext = new ThrowableHighlightingContext();
 
@@ -33,6 +54,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(
         controller,
+        scheduleInitialRefreshes(controller),
         outputChannel,
         vscode.window.onDidChangeActiveTextEditor(
             () => controller.refresh()
