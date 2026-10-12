@@ -1,6 +1,7 @@
 import vscode from "vscode";
 import {HighlightingContext, ThrowableHighlightingContext} from "./ThrowableHighlightingContext";
-import {JavaCodeMask} from "./JavaCodeMask";
+import {JavaCodeMask} from "../../java/JavaCodeMask";
+import {ThrowableTypeCatalog} from "../../resolution/ThrowableTypeCatalog";
 
 export interface OffsetRange {
     start: number;
@@ -29,7 +30,7 @@ export class ThrowableHighlightingFinder {
         const code = this.codeMask.maskNonCode(source);
         const catchParameterRanges = this.findCatchParameterRanges(code);
 
-        for (const match of code.matchAll(ThrowableHighlightingContext.TYPE_REFERENCE_PATTERN)) {
+        for (const match of code.matchAll(ThrowableTypeCatalog.KNOWN_TYPE_REFERENCE_PATTERN)) {
             const start = match.index;
 
             if (start === undefined) {

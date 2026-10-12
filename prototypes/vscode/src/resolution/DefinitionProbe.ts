@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import {JavaTypeDefinitionResolver} from "./JavaTypeDefinitionResolver";
 
 export const INSPECT_DEFINITION_COMMAND =
     "throwableHighlighter.prototype.inspectDefinition";
@@ -8,7 +9,10 @@ export class DefinitionProbe {
     private readonly outputChannel: vscode.OutputChannel;
 
 
-    constructor(outputChannel: vscode.OutputChannel) {
+    constructor(
+        outputChannel: vscode.OutputChannel,
+        private readonly definitionResolver: JavaTypeDefinitionResolver
+    ) {
         this.outputChannel = outputChannel;
     }
 
@@ -39,6 +43,15 @@ export class DefinitionProbe {
                 new vscode.Range(position, position)
             )}.`
         );
+
+        const isThrowableType = await this.definitionResolver.isThrowableType(
+            editor.document,
+            position
+        );
+
+        this.writeLine(
+            `Resolved as Throwable type: ${isThrowableType}.`
+        )
 
         try {
             const definitions = await vscode.commands.executeCommand<readonly (vscode.Location | vscode.LocationLink)[]>(

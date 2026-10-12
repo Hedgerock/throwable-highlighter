@@ -1,4 +1,10 @@
-import {LexicalState} from "./ThrowableHighlightingContext";
+type LexicalState =
+    | "code"
+    | "lineComment"
+    | "blockComment"
+    | "string"
+    | "character"
+    | "textBlock";
 
 export class JavaCodeMask {
 
