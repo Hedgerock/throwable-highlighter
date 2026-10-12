@@ -113,6 +113,7 @@ NNNN-краткое-название.md
 - [ADR-0003: Наследование цвета Throwable catch от Throwable class](0003-catch-throwable-highlighting.md)
 - [ADR-0004: Платформенное развитие Throwable Highlighter](0004-platform-expansion.md)
 - [ADR-0005: Определение прямых наследников Throwable в прототипе VS Code](0005-vscode-direct-throwable-inheritance.md)
+- [ADR-0006: Кэширование результатов определения типов в прототипе VS Code](0006-cache-vscode-type-resolution.md)
 
 ---
 
