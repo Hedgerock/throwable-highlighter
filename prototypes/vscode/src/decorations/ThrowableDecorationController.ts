@@ -1,53 +1,93 @@
 import vscode from "vscode";
-import {DecorationTypes, ThrowableHighlightingContext} from "./highlighting/ThrowableHighlightingContext";
-import {ThrowableHighlightingFinder} from "./highlighting/ThrowableHighlightingFinder";
+import {
+    DecorationTypes,
+    HighlightingContext,
+    ThrowableHighlightingContext
+} from "./highlighting/ThrowableHighlightingContext";
+import {ThrowableHighlightingCandidate, ThrowableHighlightingFinder} from "./highlighting/ThrowableHighlightingFinder";
+import {JavaTypeDefinitionResolver} from "../resolution/JavaTypeDefinitionResolver";
 
 export class ThrowableDecorationController implements vscode.Disposable {
-    private throwableHighlightingFinder: ThrowableHighlightingFinder;
-    private throwableHighlightingContext: ThrowableHighlightingContext;
     private decorationTypes: DecorationTypes;
+    private isDisposed = false;
 
     constructor(
-        throwableHighlightingFinder: ThrowableHighlightingFinder,
-        throwableHighlightingContext: ThrowableHighlightingContext,
+        private readonly throwableHighlightingFinder: ThrowableHighlightingFinder,
+        private readonly definitionResolver: JavaTypeDefinitionResolver,
+        private readonly throwableHighlightingContext: ThrowableHighlightingContext
     ) {
-        this.throwableHighlightingFinder = throwableHighlightingFinder;
-        this.throwableHighlightingContext = throwableHighlightingContext;
         this.decorationTypes = this.createDecorationTypes();
     }
 
-    refresh(): void {
+    public refresh(): void {
         for (const editor of vscode.window.visibleTextEditors) {
-            this.apply(editor);
+            void this.apply(editor);
         }
     }
 
-    refreshDocument(document: vscode.TextDocument): void {
+    public refreshDocument(document: vscode.TextDocument): void {
         for (const editor of vscode.window.visibleTextEditors) {
             if (editor.document === document) {
-                this.apply(editor);
+                void this.apply(editor);
             }
         }
     }
 
-    refreshConfiguration(): void {
+    public refreshConfiguration(): void {
         this.disposeDecorationTypes();
         this.decorationTypes = this.createDecorationTypes();
 
         this.refresh();
     }
 
-    dispose(): void {
+    public dispose(): void {
+        if (this.isDisposed) {
+            return;
+        }
+
+        this.isDisposed = true;
         this.disposeDecorationTypes();
     }
 
-    private apply(editor: vscode.TextEditor): void {
-        if (!this.throwableHighlightingContext.isSupportedDocument(editor.document)) {
+    private async apply(editor: vscode.TextEditor): Promise<void> {
+        if (this.isDisposed) {
+            return;
+        }
+
+        const document = editor.document;
+
+        if (!this.throwableHighlightingContext.isSupportedDocument(document)) {
             this.clear(editor);
             return;
         }
 
-        const highlights = this.throwableHighlightingFinder.findHighlights(editor.document);
+        const documentVersion = document.version;
+        const candidates = this.throwableHighlightingFinder.findCandidates(document);
+
+        const resolvedCandidates = await Promise.all(
+            candidates.map(async candidate => ({
+                candidate,
+                isThrowableType: await this.isThrowableCandidate(document, candidate)
+            }))
+        );
+
+        if (this.isDisposed
+            || editor.document !== document
+            || document.version !== documentVersion
+            || !this.throwableHighlightingContext.isSupportedDocument(document)
+        ) {
+            return;
+        }
+
+        const highlights = this.createHighlights();
+
+        for (const result of resolvedCandidates) {
+            if (result.isThrowableType) {
+                highlights[result.candidate.context].push(
+                    result.candidate.range
+                );
+            }
+        }
 
         for (const context of ThrowableHighlightingContext.HIGHLIGHT_CONTEXTS) {
             editor.setDecorations(
@@ -55,6 +95,28 @@ export class ThrowableDecorationController implements vscode.Disposable {
                 highlights[context]
             );
         }
+    }
+
+    private async isThrowableCandidate(
+        document: vscode.TextDocument,
+        candidate: ThrowableHighlightingCandidate
+    ): Promise<boolean> {
+        try {
+            return await this.definitionResolver.isThrowableType(
+                document,
+                candidate.range.start
+            );
+        } catch {
+            return false;
+        }
+    }
+
+    private createHighlights(): Record<HighlightingContext, vscode.Range[]> {
+        return {
+            class: [],
+            import: [],
+            catch: []
+        };
     }
 
     private clear(editor: vscode.TextEditor): void {
@@ -74,7 +136,7 @@ export class ThrowableDecorationController implements vscode.Disposable {
         return {
             class: this.throwableHighlightingContext.createDecorationType(classColor),
             import: this.throwableHighlightingContext.createDecorationType(importColor),
-            catch: this.throwableHighlightingContext.createDecorationType(catchColor)
+            catch: this.throwableHighlightingContext.createDecorationType(catchColor),
         }
     }
 
@@ -87,12 +149,14 @@ export class ThrowableDecorationController implements vscode.Disposable {
 
         const color = value.trim();
 
-        return color === "" ? undefined : color;
+        return color === ""
+            ? undefined
+            : color;
     }
 
     private disposeDecorationTypes(): void {
         for (const context of ThrowableHighlightingContext.HIGHLIGHT_CONTEXTS) {
-            this.decorationTypes[context].dispose();
+            this.decorationTypes[context].dispose()
         }
     }
 }

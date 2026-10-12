@@ -16,8 +16,10 @@ export function activate(context: vscode.ExtensionContext): void {
 
     const controller = new ThrowableDecorationController(
         new ThrowableHighlightingFinder(javaCodeMask),
+        definitionResolver,
         throwableHighlightingContext
     );
+
     const outputChannel = vscode.window.createOutputChannel(
         "Throwable Highlighter Prototype"
     );

@@ -1,15 +1,23 @@
 import vscode from "vscode";
 import {HighlightingContext, ThrowableHighlightingContext} from "./ThrowableHighlightingContext";
 import {JavaCodeMask} from "../../java/JavaCodeMask";
-import {ThrowableTypeCatalog} from "../../resolution/ThrowableTypeCatalog";
 
 export interface OffsetRange {
     start: number;
     end: number;
 }
 
+export interface ThrowableHighlightingCandidate {
+    typeName: string;
+    range: vscode.Range;
+    context: HighlightingContext;
+}
+
 export class ThrowableHighlightingFinder {
-    private codeMask: JavaCodeMask;
+    private static readonly TYPE_CANDIDATE_PATTERN =
+        /\b[A-Z][A-Za-z0-9_]*\b/g;
+
+    private readonly codeMask: JavaCodeMask;
 
     constructor(
         codeMask: JavaCodeMask
@@ -17,20 +25,15 @@ export class ThrowableHighlightingFinder {
         this.codeMask = codeMask;
     }
 
-    public findHighlights(
+    public findCandidates(
         document: vscode.TextDocument
-    ): Record<HighlightingContext, vscode.Range[]> {
-        const highlights: Record<HighlightingContext, vscode.Range[]> = {
-            class: [],
-            import: [],
-            catch: []
-        }
-
+    ): ThrowableHighlightingCandidate[] {
+        const candidates: ThrowableHighlightingCandidate[] = [];
         const source = document.getText();
         const code = this.codeMask.maskNonCode(source);
         const catchParameterRanges = this.findCatchParameterRanges(code);
 
-        for (const match of code.matchAll(ThrowableTypeCatalog.KNOWN_TYPE_REFERENCE_PATTERN)) {
+        for (const match of code.matchAll(ThrowableHighlightingFinder.TYPE_CANDIDATE_PATTERN)) {
             const start = match.index;
 
             if (start === undefined) {
@@ -49,15 +52,17 @@ export class ThrowableHighlightingFinder {
 
             const end = start + match[0].length;
 
-            highlights[context].push(
-                new vscode.Range(
+            candidates.push({
+                typeName: match[0],
+                range: new vscode.Range(
                     document.positionAt(start),
                     document.positionAt(end)
-                )
-            );
+                ),
+                context
+            })
         }
 
-        return highlights;
+        return candidates;
     }
 
     private getHighlightingContext(
@@ -75,15 +80,13 @@ export class ThrowableHighlightingFinder {
                 : undefined;
         }
 
-        if (
-            catchParameterRanges.some(
-                range => range.start <= offset && offset < range.end
-            )
+        if (catchParameterRanges.some(
+            range => range.start <= offset && offset < range.end)
         ) {
-            return "catch";
+            return "catch"
         }
 
-        return "class";
+        return "class"
     }
 
     private findCatchParameterRanges(
@@ -91,7 +94,9 @@ export class ThrowableHighlightingFinder {
     ): OffsetRange[] {
         const ranges: OffsetRange[] = [];
 
-        for (const match of source.matchAll(ThrowableHighlightingContext.CATCH_PARAMETER_PATTERN)) {
+        for (const match of source.matchAll(
+            ThrowableHighlightingContext.CATCH_PARAMETER_PATTERN
+        )) {
             const start = match.index;
 
             if (start === undefined) {
