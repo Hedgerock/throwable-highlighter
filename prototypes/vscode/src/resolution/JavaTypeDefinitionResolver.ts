@@ -2,32 +2,140 @@ import {JavaCodeMask} from "../java/JavaCodeMask";
 import * as vscode from "vscode";
 import {ThrowableTypeCatalog} from "./ThrowableTypeCatalog";
 
+type ThrowableTypeResolution =
+    | {
+        kind: "confirmed";
+        isThrowable: boolean;
+    }
+    | {
+        kind: "unavailable";
+    }
+
 export class JavaTypeDefinitionResolver {
     private readonly codeMask: JavaCodeMask;
+    private readonly cacheResolutions = new Map<string, boolean>();
+    private readonly pendingResolutions = new Map<string, Promise<ThrowableTypeResolution>>();
+    private cacheGeneration = 0;
 
     constructor(codeMask: JavaCodeMask) {
         this.codeMask = codeMask;
+    }
+
+    public clearCache(): void {
+        this.cacheGeneration++;
+        this.cacheResolutions.clear();
+        this.pendingResolutions.clear();
     }
 
     public async isThrowableType(
         document: vscode.TextDocument,
         position: vscode.Position
     ): Promise<boolean> {
+        const resolution = await this.resolveType(document, position);
+
+        return resolution.kind === "confirmed"
+            && resolution.isThrowable;
+    }
+
+    private async resolveType(
+        document: vscode.TextDocument,
+        position: vscode.Position
+    ): Promise<ThrowableTypeResolution> {
         const range = document.getWordRangeAtPosition(position);
 
         if (range === undefined) {
-            return false;
+            return {
+                kind: "unavailable"
+            };
         }
 
         const typeName = document.getText(range);
 
         if (ThrowableTypeCatalog.isKnownThrowableType(typeName)) {
-            return true;
+
+            return {
+                kind: "confirmed",
+                isThrowable: true
+            };
         }
 
-        if (this.hasDirectThrowableSuperclass(document, range.start, typeName)) {
-            return true;
+        const locationResolution = this.resolveDirectSuperclass(
+            document,
+            range.start,
+            typeName
+        );
+
+        if (locationResolution.kind === "confirmed") {
+            return locationResolution;
         }
+
+        const cacheKey = this.createCacheKey(document, range);
+        const cachedResolution = this.cacheResolutions.get(cacheKey);
+
+        if (cachedResolution !== undefined) {
+            return {
+                kind: "confirmed",
+                isThrowable: cachedResolution
+            };
+        }
+
+        return this.resolveDefinitionWithCache(
+            cacheKey,
+            document,
+            position,
+            typeName
+        );
+    }
+
+    private async resolveDefinitionWithCache(
+        cacheKey: string,
+        document: vscode.TextDocument,
+        position: vscode.Position,
+        typeName: string
+    ): Promise<ThrowableTypeResolution> {
+        const pendingResolution =
+            this.pendingResolutions.get(cacheKey);
+
+        if (pendingResolution !== undefined) {
+            return pendingResolution;
+        }
+
+        const cacheGeneration = this.cacheGeneration;
+        const resolutionPromise = this.resolveFromDefinitionProvider(
+            document,
+            position,
+            typeName
+        );
+
+        this.pendingResolutions.set(cacheKey, resolutionPromise);
+
+        try {
+            const resolution = await resolutionPromise;
+
+            if (
+                resolution.kind === "confirmed"
+                && cacheGeneration === this.cacheGeneration
+            ) {
+                this.cacheResolutions.set(
+                    cacheKey,
+                    resolution.isThrowable
+                );
+            }
+
+            return resolution;
+        } finally {
+            if (this.pendingResolutions.get(cacheKey) === resolutionPromise) {
+                this.pendingResolutions.delete(cacheKey);
+            }
+        }
+    }
+
+    private async resolveFromDefinitionProvider(
+        document:  vscode.TextDocument,
+        position: vscode.Position,
+        typeName: string
+    ): Promise<ThrowableTypeResolution> {
+        let hasUnavailableDefinition = false;
 
         try {
             const definitions = await vscode.commands.executeCommand<readonly (vscode.Location | vscode.LocationLink)[]>(
@@ -36,67 +144,95 @@ export class JavaTypeDefinitionResolver {
                 position
             );
 
-            if (definitions === undefined) {
-                return false;
+            if (definitions === undefined || definitions.length === 0) {
+                return {
+                    kind: "unavailable"
+                };
             }
 
             for (const definition of definitions) {
-                const location = this.toLocation(definition);
-
                 try {
+                    const location = this.toLocation(definition);
                     const definitionDocument = await vscode.workspace.openTextDocument(location.uri);
-
-                    if (this.hasDirectThrowableSuperclass(
+                    const resolution = this.resolveDirectSuperclass(
                         definitionDocument,
                         location.range.start,
                         typeName
-                    )) {
-                        return true;
+                    );
+
+                    if (resolution.kind === "unavailable") {
+                        hasUnavailableDefinition = true;
+                        continue;
+                    }
+
+                    if (resolution.isThrowable) {
+                        return resolution;
                     }
                 } catch {
-                    continue;
+                    hasUnavailableDefinition = true;
                 }
-            }
+             }
         } catch {
-            return false;
+            return {
+                kind: "unavailable"
+            };
         }
 
-        return false;
+        return hasUnavailableDefinition
+            ? {
+                kind: "unavailable"
+            }
+            : {
+                kind: "confirmed",
+                isThrowable: false
+            };
     }
 
-    private hasDirectThrowableSuperclass(
+    private resolveDirectSuperclass(
         document: vscode.TextDocument,
         position: vscode.Position,
         typeName: string
-    ): boolean {
+    ): ThrowableTypeResolution {
         const range = document.getWordRangeAtPosition(position);
 
         if (range === undefined || document.getText(range) !== typeName) {
-            return false;
+            return {
+                kind: "unavailable"
+            };
         }
 
         const source = this.codeMask.maskNonCode(document.getText());
         const typeNameOffset = document.offsetAt(range.start);
         const classOffset = source.lastIndexOf("class", typeNameOffset);
 
-        if (classOffset === -1 || !this.isClassName(source, classOffset, typeNameOffset)) {
-            return false;
+        if (
+            classOffset === -1
+            || !this.isClassName(source, classOffset, typeNameOffset)
+        ) {
+            return {
+                kind: "unavailable"
+            };
         }
 
         const headerStart = typeNameOffset + typeName.length;
         const openingBrace = source.indexOf("{", headerStart);
 
         if (openingBrace === -1) {
-            return false;
+            return {
+                kind: "unavailable"
+            };
         }
 
         const header = source.slice(headerStart, openingBrace);
         const directSuperclass = this.findDirectSuperclass(header);
 
-        return directSuperclass !== undefined
-            && ThrowableTypeCatalog.isKnownThrowableType(
-                directSuperclass
-            )
+        return {
+            kind: "confirmed",
+            isThrowable: directSuperclass !== undefined
+                && ThrowableTypeCatalog.isKnownThrowableType(
+                    directSuperclass
+                )
+        };
     }
 
     private isClassName(
@@ -122,7 +258,7 @@ export class JavaTypeDefinitionResolver {
         for (let index = 0; index < header.length; index++) {
             const character = header[index];
 
-            if (character === "<") {
+            if (character === "<" ) {
                 genericDepth++;
                 continue;
             }
@@ -132,11 +268,10 @@ export class JavaTypeDefinitionResolver {
                 continue;
             }
 
-            if (genericDepth === 0 && this.hasKeywordAt(header, index, "extends")) {
-                return this.readSimpleTypeName(
-                    header,
-                    index + "extends".length
-                )
+            if (genericDepth === 0
+                && this.hasKeywordAt(header, index, "extends")
+            ) {
+                return this.readSimpleTypeName(header, index + "extends".length);
             }
         }
 
@@ -162,8 +297,8 @@ export class JavaTypeDefinitionResolver {
     ): string | undefined {
         const match =
             /^\s*(?:[A-Za-z_$][A-Za-z0-9_$]*\s*\.\s*)*([A-Za-z_$][A-Za-z0-9_$]*)/.exec(
-            source.slice(offset)
-        );
+                source.slice(offset)
+            );
 
         return match?.[1];
     }
@@ -189,6 +324,18 @@ export class JavaTypeDefinitionResolver {
         character: string | undefined
     ): boolean {
         return character !== undefined
-            && /[A-Za-z0-9_$]/.test(character)
+            && /[A-Za-z0-9_$]/.test(character);
+    }
+
+    private createCacheKey(
+        document: vscode.TextDocument,
+        range: vscode.Range
+    ): string {
+        return JSON.stringify({
+            uri: document.uri.toString(),
+            version: document.version,
+            line: range.start.line,
+            character: range.start.character
+        });
     }
 }

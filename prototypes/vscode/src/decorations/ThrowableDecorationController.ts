@@ -10,6 +10,7 @@ import {JavaTypeDefinitionResolver} from "../resolution/JavaTypeDefinitionResolv
 export class ThrowableDecorationController implements vscode.Disposable {
     private decorationTypes: DecorationTypes;
     private isDisposed = false;
+    private refreshGeneration = 0;
 
     constructor(
         private readonly throwableHighlightingFinder: ThrowableHighlightingFinder,
@@ -20,16 +21,10 @@ export class ThrowableDecorationController implements vscode.Disposable {
     }
 
     public refresh(): void {
-        for (const editor of vscode.window.visibleTextEditors) {
-            void this.apply(editor);
-        }
-    }
+        const refreshGeneration = ++this.refreshGeneration;
 
-    public refreshDocument(document: vscode.TextDocument): void {
         for (const editor of vscode.window.visibleTextEditors) {
-            if (editor.document === document) {
-                void this.apply(editor);
-            }
+            void this.apply(editor, refreshGeneration);
         }
     }
 
@@ -49,7 +44,10 @@ export class ThrowableDecorationController implements vscode.Disposable {
         this.disposeDecorationTypes();
     }
 
-    private async apply(editor: vscode.TextEditor): Promise<void> {
+    private async apply(
+        editor: vscode.TextEditor,
+        refreshGeneration: number
+    ): Promise<void> {
         if (this.isDisposed) {
             return;
         }
@@ -72,6 +70,7 @@ export class ThrowableDecorationController implements vscode.Disposable {
         );
 
         if (this.isDisposed
+            || refreshGeneration !== this.refreshGeneration
             || editor.document !== document
             || document.version !== documentVersion
             || !this.throwableHighlightingContext.isSupportedDocument(document)

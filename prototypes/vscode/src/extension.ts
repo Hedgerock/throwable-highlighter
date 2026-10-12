@@ -52,6 +52,11 @@ export function activate(context: vscode.ExtensionContext): void {
         definitionResolver
     );
 
+    const invalidateTypeResolutionCache = (): void => {
+        definitionResolver.clearCache();
+        controller.refresh();
+    }
+
     context.subscriptions.push(
         controller,
         scheduleInitialRefreshes(controller),
@@ -63,7 +68,19 @@ export function activate(context: vscode.ExtensionContext): void {
             () => controller.refresh()
         ),
         vscode.workspace.onDidChangeTextDocument(
-            event => controller.refreshDocument(event.document)
+            invalidateTypeResolutionCache
+        ),
+        vscode.workspace.onDidCreateFiles(
+            invalidateTypeResolutionCache
+        ),
+        vscode.workspace.onDidDeleteFiles(
+            invalidateTypeResolutionCache
+        ),
+        vscode.workspace.onDidRenameFiles(
+            invalidateTypeResolutionCache
+        ),
+        vscode.workspace.onDidChangeWorkspaceFolders(
+            invalidateTypeResolutionCache
         ),
         vscode.workspace.onDidChangeConfiguration(
             event => {
