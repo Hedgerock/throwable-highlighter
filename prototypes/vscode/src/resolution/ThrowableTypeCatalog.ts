@@ -1,5 +1,5 @@
 export class ThrowableTypeCatalog {
-    public static readonly KNOWN_TYPES = [
+    public static readonly FALLBACK_TYPES = [
         "Throwable",
         "Exception",
         "RuntimeException",
@@ -8,15 +8,10 @@ export class ThrowableTypeCatalog {
         "IllegalStateException"
     ] as const;
 
-    public static readonly KNOWN_TYPE_REFERENCE_PATTERN = new RegExp(
-        `\\b(?:${this.KNOWN_TYPES.join("|")})\\b`,
-        "g"
-    );
-
-    public static isKnownThrowableType(
+    public static isFallbackThrowableType(
         typeName: string
     ): boolean {
-        return this.KNOWN_TYPES.some(
+        return this.FALLBACK_TYPES.some(
             knownType => knownType === typeName
         );
     }

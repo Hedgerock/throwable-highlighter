@@ -2,6 +2,8 @@ import {JavaCodeMask} from "../java/JavaCodeMask";
 import * as vscode from "vscode";
 import {ThrowableTypeCatalog} from "./ThrowableTypeCatalog";
 
+const MAXIMUM_INHERITANCE_DEPTH = 16;
+
 type ThrowableTypeResolution =
     | {
         kind: "confirmed";
@@ -9,7 +11,29 @@ type ThrowableTypeResolution =
     }
     | {
         kind: "unavailable";
+    };
+
+type TypeReference = {
+    name: string;
+    range: vscode.Range;
+};
+
+type DirectSuperclassResolution =
+    | {
+        kind: "found";
+        reference: TypeReference;
     }
+    | {
+        kind: "none";
+    }
+    | {
+        kind: "unavailable";
+    };
+
+type ClassDeclaration = {
+    identity: string;
+    directSuperclass: DirectSuperclassResolution;
+};
 
 export class JavaTypeDefinitionResolver {
     private readonly codeMask: JavaCodeMask;
@@ -41,57 +65,71 @@ export class JavaTypeDefinitionResolver {
         document: vscode.TextDocument,
         position: vscode.Position
     ): Promise<ThrowableTypeResolution> {
-        const range = document.getWordRangeAtPosition(position);
+        const reference = this.readTypeReference(document, position);
 
-        if (range === undefined) {
+        if (reference === undefined) {
             return {
                 kind: "unavailable"
             };
         }
 
-        const typeName = document.getText(range);
+        return this.resolveReference(
+            document,
+            reference,
+            new Set(),
+            MAXIMUM_INHERITANCE_DEPTH
+        );
+    }
 
-        if (ThrowableTypeCatalog.isKnownThrowableType(typeName)) {
-
+    private async resolveReference(
+        document: vscode.TextDocument,
+        reference: TypeReference,
+        visitedDeclarations: ReadonlySet<string>,
+        remainingDepth: number
+    ): Promise<ThrowableTypeResolution> {
+        if (ThrowableTypeCatalog.isFallbackThrowableType(reference.name)) {
             return {
                 kind: "confirmed",
                 isThrowable: true
             };
         }
 
-        const locationResolution = this.resolveDirectSuperclass(
-            document,
-            range.start,
-            typeName
-        );
+        const declaration = this.findClassDeclaration(document, reference);
 
-        if (locationResolution.kind === "confirmed") {
-            return locationResolution;
+        if (declaration !== undefined) {
+            return this.resolveClassDeclaration(
+                document,
+                declaration,
+                visitedDeclarations,
+                remainingDepth
+            );
         }
 
-        const cacheKey = this.createCacheKey(document, range);
-        const cachedResolution = this.cacheResolutions.get(cacheKey);
+        const cacheKey = this.createCacheKey(document, reference.range);
+        const cacheResolution = this.cacheResolutions.get(cacheKey);
 
-        if (cachedResolution !== undefined) {
+        if (cacheResolution !== undefined) {
             return {
                 kind: "confirmed",
-                isThrowable: cachedResolution
+                isThrowable: cacheResolution
             };
         }
 
         return this.resolveDefinitionWithCache(
             cacheKey,
             document,
-            position,
-            typeName
+            reference,
+            visitedDeclarations,
+            remainingDepth
         );
     }
 
     private async resolveDefinitionWithCache(
         cacheKey: string,
         document: vscode.TextDocument,
-        position: vscode.Position,
-        typeName: string
+        reference: TypeReference,
+        visitedDeclarations: ReadonlySet<string>,
+        remainingDepth: number
     ): Promise<ThrowableTypeResolution> {
         const pendingResolution =
             this.pendingResolutions.get(cacheKey);
@@ -103,8 +141,9 @@ export class JavaTypeDefinitionResolver {
         const cacheGeneration = this.cacheGeneration;
         const resolutionPromise = this.resolveFromDefinitionProvider(
             document,
-            position,
-            typeName
+            reference,
+            new Set(visitedDeclarations),
+            remainingDepth
         );
 
         this.pendingResolutions.set(cacheKey, resolutionPromise);
@@ -130,10 +169,62 @@ export class JavaTypeDefinitionResolver {
         }
     }
 
+    private async resolveClassDeclaration(
+        document: vscode.TextDocument,
+        declaration: ClassDeclaration,
+        visitedDeclarations: ReadonlySet<string>,
+        remainingDepth: number
+    ): Promise<ThrowableTypeResolution> {
+        if (visitedDeclarations.has(declaration.identity)) {
+            return {
+                kind: "unavailable"
+            };
+        }
+
+        if (declaration.directSuperclass.kind === "unavailable") {
+            return {
+                kind: "unavailable"
+            };
+        }
+
+        if (declaration.directSuperclass.kind === "none") {
+            return {
+                kind: "confirmed",
+                isThrowable: false
+            };
+        }
+
+        const directSuperclass = declaration.directSuperclass.reference;
+
+        if (ThrowableTypeCatalog.isFallbackThrowableType(directSuperclass.name)) {
+            return {
+                kind: "confirmed",
+                isThrowable: true
+            };
+        }
+
+        if (remainingDepth === 0) {
+            return {
+                kind: "unavailable"
+            };
+        }
+
+        const nextVisitedDeclarations = new Set(visitedDeclarations);
+        nextVisitedDeclarations.add(declaration.identity);
+
+        return this.resolveReference(
+            document,
+            directSuperclass,
+            nextVisitedDeclarations,
+            remainingDepth - 1
+        );
+    }
+
     private async resolveFromDefinitionProvider(
-        document:  vscode.TextDocument,
-        position: vscode.Position,
-        typeName: string
+        document: vscode.TextDocument,
+        reference: TypeReference,
+        visitedDeclarations: ReadonlySet<string>,
+        remainingDepth: number
     ): Promise<ThrowableTypeResolution> {
         let hasUnavailableDefinition = false;
 
@@ -141,7 +232,7 @@ export class JavaTypeDefinitionResolver {
             const definitions = await vscode.commands.executeCommand<readonly (vscode.Location | vscode.LocationLink)[]>(
                 "vscode.executeDefinitionProvider",
                 document.uri,
-                position
+                reference.range.start
             );
 
             if (definitions === undefined || definitions.length === 0) {
@@ -154,10 +245,34 @@ export class JavaTypeDefinitionResolver {
                 try {
                     const location = this.toLocation(definition);
                     const definitionDocument = await vscode.workspace.openTextDocument(location.uri);
-                    const resolution = this.resolveDirectSuperclass(
+                    const definitionReference = this.readTypeReference(
                         definitionDocument,
-                        location.range.start,
-                        typeName
+                        location.range.start
+                    );
+
+                    if (
+                        definitionReference === undefined
+                        || definitionReference.name !== reference.name
+                    ) {
+                        hasUnavailableDefinition = true;
+                        continue;
+                    }
+
+                    const declaration = this.findClassDeclaration(
+                        definitionDocument,
+                        definitionReference
+                    );
+
+                    if (declaration === undefined) {
+                        hasUnavailableDefinition = true;
+                        continue;
+                    }
+
+                    const resolution = await this.resolveClassDeclaration(
+                        definitionDocument,
+                        declaration,
+                        new Set(visitedDeclarations),
+                        remainingDepth
                     );
 
                     if (resolution.kind === "unavailable") {
@@ -188,51 +303,123 @@ export class JavaTypeDefinitionResolver {
             };
     }
 
-    private resolveDirectSuperclass(
+    private findClassDeclaration(
         document: vscode.TextDocument,
-        position: vscode.Position,
-        typeName: string
-    ): ThrowableTypeResolution {
-        const range = document.getWordRangeAtPosition(position);
-
-        if (range === undefined || document.getText(range) !== typeName) {
-            return {
-                kind: "unavailable"
-            };
-        }
-
+        reference: TypeReference
+    ): ClassDeclaration | undefined {
         const source = this.codeMask.maskNonCode(document.getText());
-        const typeNameOffset = document.offsetAt(range.start);
+        const typeNameOffset = document.offsetAt(reference.range.start);
         const classOffset = source.lastIndexOf("class", typeNameOffset);
 
         if (
             classOffset === -1
             || !this.isClassName(source, classOffset, typeNameOffset)
         ) {
-            return {
-                kind: "unavailable"
-            };
+            return undefined;
         }
 
-        const headerStart = typeNameOffset + typeName.length;
+        const headerStart = typeNameOffset + reference.name.length;
         const openingBrace = source.indexOf("{", headerStart);
 
         if (openingBrace === -1) {
-            return {
-                kind: "unavailable"
-            };
+            return undefined;
         }
 
-        const header = source.slice(headerStart, openingBrace);
-        const directSuperclass = this.findDirectSuperclass(header);
+        return {
+            identity: this.createDeclarationIdentity(document, reference.range),
+            directSuperclass: this.findDirectSuperclass(
+                document,
+                source,
+                headerStart,
+                openingBrace
+            )
+        };
+    }
+
+    private findDirectSuperclass(
+        document: vscode.TextDocument,
+        source: string,
+        headerStart: number,
+        openingBrace: number
+    ): DirectSuperclassResolution {
+        let genericDepth = 0;
+
+        for (let index = headerStart; index < openingBrace; index++) {
+            const character = source[index];
+
+            if (character === "<") {
+                genericDepth++;
+                continue;
+            }
+
+            if (character === ">") {
+                genericDepth = Math.max(0, genericDepth - 1);
+                continue;
+            }
+
+            if (genericDepth === 0
+                && this.hasKeywordAt(source, index, "extends")
+            ) {
+                const reference =
+                    this.readSimpleTypeReference(
+                        document,
+                        source,
+                        index + "extends".length
+                    );
+
+                return reference === undefined
+                    ? {
+                        kind: "unavailable"
+                    }
+                    : {
+                        kind: "found",
+                        reference
+                    };
+            }
+        }
 
         return {
-            kind: "confirmed",
-            isThrowable: directSuperclass !== undefined
-                && ThrowableTypeCatalog.isKnownThrowableType(
-                    directSuperclass
-                )
+            kind: "none"
         };
+    }
+
+    private readTypeReference(
+        document: vscode.TextDocument,
+        position: vscode.Position
+    ): TypeReference | undefined {
+        const range = document.getWordRangeAtPosition(position);
+
+        if (range === undefined) {
+            return undefined;
+        }
+
+        return {
+            name: document.getText(range),
+            range
+        }
+    }
+
+    private readSimpleTypeReference(
+        document: vscode.TextDocument,
+        source: string,
+        offset: number
+    ): TypeReference | undefined {
+        const match =
+            /^\s*(?:[A-Za-z_$][A-Za-z0-9_$]*\s*\.\s*)*([A-Za-z_$][A-Za-z0-9_$]*)/.exec(
+                source.slice(offset)
+            );
+
+        if (match === null) {
+            return undefined;
+        }
+
+        const typeName = match[1];
+        const typeNameOffset = offset + match[0].lastIndexOf(typeName);
+
+        return this.readTypeReference(
+            document,
+            document.positionAt(typeNameOffset)
+        );
     }
 
     private isClassName(
@@ -250,34 +437,6 @@ export class JavaTypeDefinitionResolver {
             && /^\s+$/.test(between);
     }
 
-    private findDirectSuperclass(
-        header: string
-    ): string | undefined {
-        let genericDepth = 0;
-
-        for (let index = 0; index < header.length; index++) {
-            const character = header[index];
-
-            if (character === "<" ) {
-                genericDepth++;
-                continue;
-            }
-
-            if (character === ">") {
-                genericDepth = Math.max(0, genericDepth - 1);
-                continue;
-            }
-
-            if (genericDepth === 0
-                && this.hasKeywordAt(header, index, "extends")
-            ) {
-                return this.readSimpleTypeName(header, index + "extends".length);
-            }
-        }
-
-        return undefined;
-    }
-
     private hasKeywordAt(
         source: string,
         index: number,
@@ -289,18 +448,6 @@ export class JavaTypeDefinitionResolver {
         return source.slice(index, index + keyword.length) === keyword
             && !this.isIdentifierPart(before)
             && !this.isIdentifierPart(after);
-    }
-
-    private readSimpleTypeName(
-        source: string,
-        offset: number
-    ): string | undefined {
-        const match =
-            /^\s*(?:[A-Za-z_$][A-Za-z0-9_$]*\s*\.\s*)*([A-Za-z_$][A-Za-z0-9_$]*)/.exec(
-                source.slice(offset)
-            );
-
-        return match?.[1];
     }
 
     private toLocation(
@@ -325,6 +472,23 @@ export class JavaTypeDefinitionResolver {
     ): boolean {
         return character !== undefined
             && /[A-Za-z0-9_$]/.test(character);
+    }
+
+    private createDeclarationIdentity(
+        document: vscode.TextDocument,
+        range: vscode.Range
+    ): string {
+        return JSON.stringify({
+            uri: document.uri.toString(),
+            start: {
+                line: range.start.line,
+                character: range.start.character
+            },
+            end: {
+                line: range.end.line,
+                character: range.end.character
+            }
+        });
     }
 
     private createCacheKey(
