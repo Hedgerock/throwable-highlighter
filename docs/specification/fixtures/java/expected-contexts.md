@@ -26,6 +26,27 @@ Definition Provider.
 
 ---
 
+## Транзитивный межфайловый сценарий
+
+`transitive` содержит пользовательскую цепочку наследования в отдельных Java-файлах.
+
+| Идентификатор      | Контекст | Количество |
+|--------------------|----------|------------|
+| `BaseException`    | `CLASS`  | 2          |
+| `NestedException`  | `CLASS`  | 3          |
+| `NestedException`  | `IMPORT` | 1          |
+| `NestedException`  | `CATCH`  | 1          |
+| `RuntimeException` | `CLASS`  | 1          |
+
+`BaseException` напрямую наследует `RuntimeException`.
+
+`NestedException` напрямую наследует `BaseException` и транзитивно наследует `RuntimeException`.
+
+Для ссылок на `NestedException` prototype должен последовательно получить определение `NestedException` и `BaseException`
+через Definition Provider.
+
+---
+
 ## `class-context.java`
 
 | Идентификатор      | Контекст | Количество |
