@@ -197,6 +197,5 @@ Fixture `transitive` подтверждает определение `NestedExce
 
 ## Следующий шаг
 
-Следующий этап может отделить алгоритм обхода иерархии от VS Code-адаптера Definition Provider и разбора Java-заголовка.
-
-Перед такой архитектурной переработкой требуется отдельный ADR.
+Следующий этап реализует разделение алгоритма обхода иерархии, VS Code-адаптера Definition Provider и разбора Java-загаловка
+согласно [ADR-0008](../../docs/decisions/0008-separate-vscode-hierarchy-resolution.md)
