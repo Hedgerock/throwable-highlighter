@@ -116,6 +116,7 @@ NNNN-краткое-название.md
 - [ADR-0006: Кэширование результатов определения типов в прототипе VS Code](0006-cache-vscode-type-resolution.md)
 - [ADR-0007: Определение транзитивных наследников Throwable в прототипе VS Code](0007-vscode-transitive-throwable-inheritance.md)
 - [ADR-0008: Разделение обхода иерархии и VS Code-интеграции в прототипе](0008-separate-vscode-hierarchy-resolution.md)
+- [ADR-0009: Отдельная подсветка типов Throwable в throws](0009-throwable-throws-highlighting.md)
 
 ---
 
