@@ -141,6 +141,10 @@ Throwable, а также пользовательские классы с пря
 Пользовательские классы с транзитивным наследованием определяются рекурсивным обходом прямых родителей. Обход ограничен
 шестнадцатью переходами, защищён от циклов и сохраняет стандартную подсветку при недоступном определении.
 
+Алгоритм обхода выделен в `ThrowableHierarchyResolver` и не зависит от VS Code API. `JavaClassDeclarationReader` разбирает
+Java-заголовок и определяет прямого родителя класса. `JavaTypeDefinitionResolver` остаётся фасадом VS Code-интеграции,
+владельцем кэша и точкой вызова Definition Provider.
+
 Controller применяет результат resolver асинхронно и игнорирует его, если документ изменился или controller был
 удалён во время проверки.
 
@@ -175,3 +179,5 @@ Controller игнорирует результат асинхронного оп
 - [VS Code API](https://code.visualstudio.com/api/references/vscode-api)
 - [ADR-0005: Определение прямых наследников Throwable в прототипе VS Code](../decisions/0005-vscode-direct-throwable-inheritance.md)
 - [ADR-0006: Кэширование результатов определения типов в прототипе VS Code](../decisions/0006-cache-vscode-type-resolution.md)
+- [ADR-0007: Определение транзитивных наследников Throwable в прототипе VS Code](../decisions/0007-vscode-transitive-throwable-inheritance.md)
+- [ADR-0008: Разделение обхода иерархии и VS Code-интеграции в прототипе](../decisions/0008-separate-vscode-hierarchy-resolution.md)

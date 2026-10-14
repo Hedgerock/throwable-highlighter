@@ -195,7 +195,15 @@ Fixture `transitive` подтверждает определение `NestedExce
 
 ---
 
-## Следующий шаг
+## Архитектура определения типов
 
-Следующий этап реализует разделение алгоритма обхода иерархии, VS Code-адаптера Definition Provider и разбора Java-загаловка
-согласно [ADR-0008](../../docs/decisions/0008-separate-vscode-hierarchy-resolution.md)
+`JavaTypeDefinitionResolver` является фасадом VS Code-интеграции. Он сохраняет публичный API для decoration controller и
+Definition Probe, обращается к Definition Provider и владеет кэшем результатов.
+
+`JavaClassDeclarationReader` выделяет ссылку на тип, разбирает заголовок Java-класса и определяет его прямого родителя.
+Для исключения комментариев, строковых литералов, символьных литералов и text blocks он использует `JavaCodeMask`.
+
+`ThrowableHierarchyResolver` не зависит от VS Code API. Он обходит цепочку прямых родителей, ограничивает глубину, предотвращает
+циклы и возвращает состояние `confirmed` либо `unavailable`.
+
+Разделение реализовано согласно [ADR-0008](../../docs/decisions/0008-separate-vscode-hierarchy-resolution.md)
