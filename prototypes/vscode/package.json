@@ -56,7 +56,9 @@
   "scripts": {
     "compile": "tsc -p .",
     "watch": "tsc -w -p .",
-    "check": "npm run compile"
+    "test": "npm run test:hierarchy",
+    "test:hierarchy": "tsc -p tsconfig.test.json && node --test out-test/test/hierarchy/ThrowableHierarchyResolver.test.js",
+    "check": "npm run compile && npm test"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

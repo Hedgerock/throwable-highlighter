@@ -55,13 +55,25 @@
     
 ```powershell
 npm install
-npm run compile
+npm run check
 ```
 
 3. Запустить конфигурацию `Run Throwable Highlighter Prototype` клавишей F5.
 4. В открытом Extension Development Host открыть Java-файл.
 
-После изменения TypeScript-кода необходимо повторно выполнить `npm run compile` и перезапустить Extension Development Host.
+После изменения TypeScript-кода необходимо повторно выполнить `npm run check` и перезапустить Extension Development Host.
+
+---
+
+## Автоматическая проверка
+
+`npm run check` собирает прототип и выполняет автоматические проверки.
+
+`npm run test:hierarchy` отдельно проверяет `ThrowableHierarchyResolver` без запуска Extension Development Host и
+Definition Provider.
+
+Тесты покрывают fallback-типы, прямое и транзитивное наследование, отсутствие родителя, ограничение глубины, циклы и
+состояние `unavailable`.
 
 ---
 
@@ -206,4 +218,4 @@ Definition Probe, обращается к Definition Provider и владеет 
 `ThrowableHierarchyResolver` не зависит от VS Code API. Он обходит цепочку прямых родителей, ограничивает глубину, предотвращает
 циклы и возвращает состояние `confirmed` либо `unavailable`.
 
-Разделение реализовано согласно [ADR-0008](../../docs/decisions/0008-separate-vscode-hierarchy-resolution.md)
+Разделение реализовано согласно [ADR-0008](../../docs/decisions/0008-separate-vscode-hierarchy-resolution.md).
