@@ -8,6 +8,7 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiIdentifier;
 import com.intellij.psi.PsiImportStatement;
 import com.intellij.psi.PsiJavaCodeReferenceElement;
+import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiParameter;
 import com.intellij.psi.PsiTypeElement;
 import com.intellij.psi.util.InheritanceUtil;
@@ -26,7 +27,7 @@ public final class ThrowableAnnotator implements Annotator {
             return;
         }
 
-        if (psiElement instanceof  PsiJavaCodeReferenceElement referenceElement) {
+        if (psiElement instanceof PsiJavaCodeReferenceElement referenceElement) {
             if (PsiTreeUtil.getParentOfType(
                     referenceElement,
                     PsiImportStatement.class,
@@ -121,9 +122,29 @@ public final class ThrowableAnnotator implements Annotator {
     private ThrowableHighlightingContext getReferenceHighlightingContext(
             PsiJavaCodeReferenceElement referenceElement
     ) {
-        return isCatchParameterType(referenceElement)
-                ? ThrowableHighlightingContext.CATCH
+        if (isCatchParameterType(referenceElement)) {
+            return ThrowableHighlightingContext.CATCH;
+        }
+
+        return isThrowsType(referenceElement)
+                ? ThrowableHighlightingContext.THROWS
                 : ThrowableHighlightingContext.CLASS;
+    }
+
+    private boolean isThrowsType(
+            PsiJavaCodeReferenceElement referenceElement
+    ) {
+        PsiMethod method = PsiTreeUtil.getParentOfType(
+                referenceElement,
+                PsiMethod.class
+        );
+
+        return method != null
+                && PsiTreeUtil.isAncestor(
+                method.getThrowsList(),
+                referenceElement,
+                false
+        );
     }
 
     private boolean isCatchParameterType(

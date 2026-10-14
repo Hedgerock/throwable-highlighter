@@ -13,6 +13,104 @@ public final class ThrowableAnnotatorTest
         return JAVA_21;
     }
 
+    public void testShouldNotHighlightNonThrowableThrowsType() {
+        myFixture.configureByText(
+                "Example.java",
+                """
+                        class Example {
+    
+                            void execute() throws String {
+                            }
+                        }
+                        """
+        );
+
+        assertEquals(
+                0,
+                countThrowsHighlights("String")
+        );
+
+        assertEquals(
+                0,
+                countThrowableHighlights("String")
+        );
+    }
+
+    public void testShouldUseThrowsContextForEveryThrowableTypeInThrowsList() {
+        configureJava("""
+        import java.io.IOException;
+
+        class Example {
+
+            void execute() throws IOException, IllegalArgumentException {
+            }
+        }
+        """);
+
+        assertEquals(
+                1,
+                countThrowsHighlights("IOException")
+        );
+
+        assertEquals(
+                1,
+                countThrowsHighlights("IllegalArgumentException")
+        );
+
+        assertEquals(
+                0,
+                countThrowableHighlights("IOException")
+        );
+
+        assertEquals(
+                0,
+                countThrowableHighlights("IllegalArgumentException")
+        );
+    }
+
+    public void testShouldUseThrowsContextForThrowableConstructorType() {
+        configureJava("""
+        import java.io.IOException;
+        
+         class Example {
+
+             Example() throws IOException {
+             }
+         }
+        """);
+
+        assertEquals(
+                1,
+                countThrowsHighlights("IOException")
+        );
+
+        assertEquals(
+                0,
+                countThrowableHighlights("IOException")
+        );
+    }
+
+    public void testShouldUseThrowsContextForThrowableMethodType() {
+        configureJava("""
+        class Example {
+
+            void execute() throws RuntimeException {
+                RuntimeException copy = null;
+            }
+        }
+        """);
+
+        assertEquals(
+                1,
+                countThrowsHighlights("RuntimeException")
+        );
+
+        assertEquals(
+                1,
+                countThrowableHighlights("RuntimeException")
+        );
+    }
+
     public void testShouldUseCatchContextForEveryThrowableTypeInMultiCatch() {
         configureJava("""
         class Example {
@@ -232,8 +330,13 @@ public final class ThrowableAnnotatorTest
             """);
 
         assertEquals(
-                6,
+                5,
                 countThrowableHighlights("CustomException")
+        );
+
+        assertEquals(
+                1,
+                countThrowsHighlights("CustomException")
         );
 
         assertEquals(
@@ -317,6 +420,17 @@ public final class ThrowableAnnotatorTest
                         text.equals(highlightInfo.getText())
                         && severity.equals(highlightInfo.getSeverity())
                         && ThrowableHighlighting.THROWABLE_IMPORT.equals(
+                                highlightInfo.forcedTextAttributesKey
+                        )
+                )
+                .count();
+    }
+
+    private long countThrowsHighlights(String text) {
+        return myFixture.doHighlighting().stream()
+                .filter(highlightInfo ->
+                        text.equals(highlightInfo.getText())
+                        && ThrowableHighlighting.THROWABLE_THROWS.equals(
                                 highlightInfo.forcedTextAttributesKey
                         )
                 )

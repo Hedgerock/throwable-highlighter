@@ -28,6 +28,10 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
             new AttributesDescriptor(
                     "Throwable catch",
                     ThrowableHighlighting.THROWABLE_CATCH
+            ),
+            new AttributesDescriptor(
+                    "Throwable throws",
+                    ThrowableHighlighting.THROWABLE_THROWS
             )
     };
 
@@ -54,7 +58,7 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
 
                 private <throwable>ApplicationException</throwable> exception;
 
-                public void execute() throws <throwable>ApplicationException</throwable> {
+                public void execute() throws <throwableThrows>ApplicationException</throwableThrows> {
                     try {
                         throw new <throwable>ApplicationException</throwable>();
                     } catch (<throwableCatch>ApplicationException</throwableCatch> exception) {
@@ -70,7 +74,8 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
         return Map.of(
                 "throwable", ThrowableHighlighting.THROWABLE_CLASS,
                 "throwableImport", ThrowableHighlighting.THROWABLE_IMPORT,
-                "throwableCatch", ThrowableHighlighting.THROWABLE_CATCH
+                "throwableCatch", ThrowableHighlighting.THROWABLE_CATCH,
+                "throwableThrows", ThrowableHighlighting.THROWABLE_THROWS
         );
     }
 

@@ -17,6 +17,10 @@ enum ThrowableHighlightingContext {
     CATCH(
             HighlightSeverity.INFORMATION,
             ThrowableHighlighting.THROWABLE_CATCH
+    ),
+    THROWS(
+            HighlightSeverity.INFORMATION,
+            ThrowableHighlighting.THROWABLE_THROWS
     );
 
     private final HighlightSeverity severity;

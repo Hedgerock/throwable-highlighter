@@ -26,6 +26,23 @@ public final class ThrowableColorSettingsPageTest extends TestCase {
         );
     }
 
+    public void testShouldMapDemoTagToThrowableThrowsHighlighting() {
+        Map<String, TextAttributesKey> highlighting =
+                page.getAdditionalHighlightingTagToDescriptorMap();
+
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_THROWS,
+                highlighting.get("throwableThrows")
+        );
+    }
+
+    public void testShouldContainThrowableThrowsTagInDemoText() {
+        String demoText = page.getDemoText();
+
+        assertTrue(demoText.contains("<throwableThrows>"));
+        assertTrue(demoText.contains("</throwableThrows>"));
+    }
+
     public void testShouldContainThrowableImportTagInDemoText() {
         String demoText = page.getDemoText();
 
@@ -48,7 +65,7 @@ public final class ThrowableColorSettingsPageTest extends TestCase {
         AttributesDescriptor[] descriptors =
                 page.getAttributeDescriptors();
 
-        assertEquals(3, descriptors.length);
+        assertEquals(4, descriptors.length);
         assertEquals(
                 ThrowableHighlighting.THROWABLE_CLASS,
                 descriptors[0].getKey()
@@ -60,6 +77,10 @@ public final class ThrowableColorSettingsPageTest extends TestCase {
         assertEquals(
                 ThrowableHighlighting.THROWABLE_CATCH,
                 descriptors[2].getKey()
+        );
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_THROWS,
+                descriptors[3].getKey()
         );
     }
 
