@@ -7,7 +7,7 @@ class ClassContextFixture {
     private CustomException field;
     private Throwable throwable;
 
-    void execute(CustomException parameter) throws CustomException {
+    void execute(CustomException parameter) {
         CustomException local = new CustomException();
     }
 }

@@ -10,4 +10,7 @@ class ExcludedContextsFixture {
         } catch (String value) {
         }
     }
+
+    void declare() throws String {
+    }
 }

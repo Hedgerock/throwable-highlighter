@@ -6,6 +6,15 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Added
+
+- Configurable highlighting for Throwable types in `throws` clauses.
+- The `Throwable throws` color key, which inherits the `Throwable class` color by default.
+
+### Documentation
+
+- Documented the `throws` highlighting context and its configuration.
+
 ## [1.2.0] - 2026-10-09
 
 ### Added

@@ -8,15 +8,15 @@
     Highlights <code>Throwable</code> and Java classes that inherit from it.
 
     <p>
-        Highlights Throwable types in <code>catch</code> clauses with a separate
-        configurable color. The <code>Throwable catch</code> color inherits
+        Highlights Throwable types in <code>catch</code> and <code>throws</code>
+        clauses with separate configurable colors. The <code>Throwable catch</code>
+        and <code>Throwable throws</code> colors inherit
         <code>Throwable class</code> by default.
     </p>
 
     <p>
         Highlights class declarations and references, including uses in fields,
-        local variables, constructor calls, catch clauses, throws clauses, and
-        inheritance declarations.
+        local variables, constructor calls, and inheritance declarations.
     </p>
 
     <p>

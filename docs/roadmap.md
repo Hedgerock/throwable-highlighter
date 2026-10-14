@@ -10,11 +10,12 @@ Throwable Highlighter поддерживает Java-код и выделяет `
 - объявления классов;
 - ссылки на классы;
 - явные импорты классов;
-- типы `Throwable` и его наследников в параметрах `catch`.
+- типы `Throwable` и его наследников в параметрах `catch`;
+- типы `Throwable` и его наследников в списках `throws` методов и конструкторов;
 
-Для настройки подсветки используются ключи `THROWABLE_CLASS`, `THROWABLE_IMPORT` и `THROWABLE_CATCH`.
+Для настройки подсветки используются ключи `THROWABLE_CLASS`, `THROWABLE_IMPORT`, `THROWABLE_CATCH` и `THROWABLE_THROWS`.
 
-`THROWABLE_IMPORT` и `THROWABLE_CATCH` наследуют цвет от `THROWABLE_CLASS`, пока для соответствующего контекста
+`THROWABLE_IMPORT`, `THROWABLE_CATCH` и `THROWABLE_THROWS` наследуют цвет от `THROWABLE_CLASS`, пока для соответствующего контекста
 не задан отдельный цвет.
 
 ---
@@ -34,24 +35,28 @@ Throwable Highlighter поддерживает Java-код и выделяет `
 
 ---
 
-## Реализованная функция
+## Реализованные контексты подсветки
 
 Плагин поддерживает отдельную подсветку типов `Throwable` и его наследников в
-параметре `catch`.
+параметре `catch` и списках `throws`.
 
 Контекст `CATCH` использует ключ `THROWABLE_CATCH` и наследует цвет от
 `THROWABLE_CLASS`.
 
-Реализация соответствует
+Контекст `THROWS` использует ключ `THROWABLE_THROWS` и наследует цвет от `THROWABLE_CLASS`.
+
+Реализация контекста `CATCH` соответствует
 [ADR-0003: Наследование цвета Throwable catch от Throwable class](decisions/0003-catch-throwable-highlighting.md).
+
+Реализация контекста `THROWS` соответствует
+[ADR-0009: Отдельная подсветка типов Throwable в throws](decisions/0009-throwable-throws-highlighting.md).
 
 ---
 
 ## Последующее развитие Java-подсветки
 
-После реализации контекста `CATCH` могут быть рассмотрены:
+После реализации контекстов `CATCH` и `THROWS` могут быть рассмотрены:
 
-- отдельная подсветка типов в `throws`;
 - подсветка ссылок в Javadoc `@throws`;
 - переключаемый источник цвета для `THROWABLE_CATCH`.
 

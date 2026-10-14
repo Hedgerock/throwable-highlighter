@@ -52,8 +52,25 @@ Definition Provider.
 | Идентификатор      | Контекст | Количество |
 |--------------------|----------|------------|
 | `RuntimeException` | `CLASS`  | 1          |
-| `CustomException`  | `CLASS`  | 6          |
+| `CustomException`  | `CLASS`  | 5          |
 | `Throwable`        | `CLASS`  | 1          |
+
+---
+
+## `throws-context.java`
+
+| Идентификатор              | Контекст | Количество |
+|----------------------------|----------|------------|
+| `IOException`              | `IMPORT` | 1          |
+| `IOException`              | `THROWS` | 2          |
+| `IOException`              | `CLASS`  | 1          |
+| `IllegalArgumentException` | `THROWS` | 1          |
+
+Контекст `THROWS` применяется к типам в списках `throws` методов и конструкторов.
+
+Каждый тип в списке `throws` подсвечивается отдельно.
+
+Ссылка на `IOException` внутри тела метода использует контекст `CLASS`.
 
 ---
 
@@ -102,6 +119,8 @@ Wildcard import не подсвечивается.
 
 Не-`Throwable` тип в параметре `catch` не использует контекст `CATCH`.
 
+Не-`Throwable` тип в списке `throws` не использует контекст `THROWS`.
+
 ---
 
 ## `syntax-preservation.java`
@@ -111,7 +130,8 @@ Wildcard import не подсвечивается.
 | Идентификатор | Контекст | Количество |
 |---------------|----------|------------|
 | `IOException` | `IMPORT` | 1          |
-| `IOException` | `CLASS`  | 3          |
+| `IOException` | `CLASS`  | 2          |
+| `IOException` | `THROWS` | 1          |
 
 Модификаторы, ключевые слова, комментарии, имена переменных и параметры сохраняют стандартный стиль Java активной темы
 или цветовой схемы.
