@@ -49,6 +49,11 @@
           "type": "string",
           "default": "",
           "description": "Foreground color for Throwable types in catch parameters. Leave empty to inherit the class color."
+        },
+        "throwableHighlighter.prototype.throwsColor": {
+          "type": "string",
+          "default": "",
+          "description": "Foreground color for Throwable types in throws clauses. Leave empty to inherit the class color."
         }
       }
     }
@@ -56,7 +61,7 @@
   "scripts": {
     "compile": "tsc -p .",
     "watch": "tsc -w -p .",
-    "test": "npm run test:hierarchy",
+    "test": "tsc -p tsconfig.test.json && node --test \"out-test/test/**/*.test.js\"",
     "test:hierarchy": "tsc -p tsconfig.test.json && node --test out-test/test/hierarchy/ThrowableHierarchyResolver.test.js",
     "check": "npm run compile && npm test"
   },

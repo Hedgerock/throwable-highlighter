@@ -10,7 +10,8 @@ export class ThrowableHighlightingContext {
     public static HIGHLIGHT_CONTEXTS = [
         "class",
         "import",
-        "catch"
+        "catch",
+        "throws"
     ] as const;
 
     public static CATCH_PARAMETER_PATTERN = /\bcatch\s*\(([\s\S]*?)\)/g;

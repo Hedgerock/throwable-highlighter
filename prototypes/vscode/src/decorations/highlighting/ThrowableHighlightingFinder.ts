@@ -1,5 +1,6 @@
 import vscode from "vscode";
 import {HighlightingContext, ThrowableHighlightingContext} from "./ThrowableHighlightingContext";
+import {JavaThrowsClauseFinder} from "./JavaThrowsClauseFinder";
 import {JavaCodeMask} from "../../java/JavaCodeMask";
 
 export interface OffsetRange {
@@ -20,7 +21,8 @@ export class ThrowableHighlightingFinder {
     private readonly codeMask: JavaCodeMask;
 
     constructor(
-        codeMask: JavaCodeMask
+        codeMask: JavaCodeMask,
+        private readonly throwsClauseFinder: JavaThrowsClauseFinder
     ) {
         this.codeMask = codeMask;
     }
@@ -32,6 +34,7 @@ export class ThrowableHighlightingFinder {
         const source = document.getText();
         const code = this.codeMask.maskNonCode(source);
         const catchParameterRanges = this.findCatchParameterRanges(code);
+        const throwsTypeRanges = this.throwsClauseFinder.findTypeReferenceRanges(code);
 
         for (const match of code.matchAll(ThrowableHighlightingFinder.TYPE_CANDIDATE_PATTERN)) {
             const start = match.index;
@@ -43,7 +46,8 @@ export class ThrowableHighlightingFinder {
             const context = this.getHighlightingContext(
                 code,
                 start,
-                catchParameterRanges
+                catchParameterRanges,
+                throwsTypeRanges
             );
 
             if (context === undefined) {
@@ -68,7 +72,8 @@ export class ThrowableHighlightingFinder {
     private getHighlightingContext(
         source: string,
         offset: number,
-        catchParameterRanges: readonly OffsetRange[]
+        catchParameterRanges: readonly OffsetRange[],
+        throwsTypeRanges: readonly OffsetRange[]
     ): HighlightingContext | undefined {
         const lineStart = source.lastIndexOf("\n", offset - 1) + 1;
         const linePrefix = source.slice(lineStart, offset);
@@ -84,6 +89,12 @@ export class ThrowableHighlightingFinder {
             range => range.start <= offset && offset < range.end)
         ) {
             return "catch"
+        }
+
+        if (throwsTypeRanges.some(
+            range => range.start <= offset && offset < range.end
+        )) {
+            return "throws";
         }
 
         return "class"

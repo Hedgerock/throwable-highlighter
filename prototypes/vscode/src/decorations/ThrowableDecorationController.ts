@@ -114,7 +114,8 @@ export class ThrowableDecorationController implements vscode.Disposable {
         return {
             class: [],
             import: [],
-            catch: []
+            catch: [],
+            throws: []
         };
     }
 
@@ -131,16 +132,18 @@ export class ThrowableDecorationController implements vscode.Disposable {
         const classColor = this.getConfiguredColor("classColor");
         const importColor = this.getConfiguredColor("importColor") ?? classColor;
         const catchColor = this.getConfiguredColor("catchColor") ?? classColor;
+        const throwsColor = this.getConfiguredColor("throwsColor") ?? classColor;
 
         return {
             class: this.throwableHighlightingContext.createDecorationType(classColor),
             import: this.throwableHighlightingContext.createDecorationType(importColor),
             catch: this.throwableHighlightingContext.createDecorationType(catchColor),
+            throws: this.throwableHighlightingContext.createDecorationType(throwsColor)
         }
     }
 
     private getConfiguredColor(
-        setting: "classColor" | "importColor" | "catchColor"
+        setting: "classColor" | "importColor" | "catchColor" | "throwsColor"
     ): string | undefined {
         const value = vscode.workspace
             .getConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION)

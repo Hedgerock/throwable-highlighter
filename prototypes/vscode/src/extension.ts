@@ -5,6 +5,7 @@ import {ThrowableHighlightingFinder} from "./decorations/highlighting/ThrowableH
 import {JavaCodeMask} from "./java/JavaCodeMask";
 import {DefinitionProbe, INSPECT_DEFINITION_COMMAND} from "./resolution/DefinitionProbe";
 import {JavaTypeDefinitionResolver} from "./resolution/JavaTypeDefinitionResolver";
+import {JavaThrowsClauseFinder} from "./decorations/highlighting/JavaThrowsClauseFinder";
 
 const INITIAL_REFRESH_DELAYS = [1_000, 3_000, 8_000] as const;
 
@@ -36,7 +37,10 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     const controller = new ThrowableDecorationController(
-        new ThrowableHighlightingFinder(javaCodeMask),
+        new ThrowableHighlightingFinder(
+            javaCodeMask,
+            new JavaThrowsClauseFinder()
+        ),
         definitionResolver,
         throwableHighlightingContext
     );
