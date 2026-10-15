@@ -117,6 +117,7 @@ NNNN-краткое-название.md
 - [ADR-0007: Определение транзитивных наследников Throwable в прототипе VS Code](0007-vscode-transitive-throwable-inheritance.md)
 - [ADR-0008: Разделение обхода иерархии и VS Code-интеграции в прототипе](0008-separate-vscode-hierarchy-resolution.md)
 - [ADR-0009: Отдельная подсветка типов Throwable в throws](0009-throwable-throws-highlighting.md)
+- [ADR-0010: Подсветка типов Throwable в throws в прототипе VS Code](0010-vscode-throws-throwable-highlighting.md)
 
 ---
 
