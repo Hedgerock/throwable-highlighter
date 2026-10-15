@@ -31,20 +31,23 @@
 Пользовательский класс подсвечивается, если `JavaTypeDefinitionResolver` подтверждает его прямое или транзитивное наследование
 от известного типа Throwable.
 
-Подсветка пользовательского типа применяется в контекстах `CLASS`, `IMPORT` и `CATCH`.
+Подсветка пользовательского типа применяется в контекстах `CLASS`, `IMPORT`, `CATCH` и `THROWS`.
 
 Транзитивный обход ограничен шестнадцатью переходами по иерархии классов. Недоступное определение, цикл или
 превышение глубины сохраняют стандартную Java-подсветку.
 
 Прототип не выполняет полное семантическое разрешение Java-кода и не является полным соответствием контракту Java-подсветки.
 
+Известные ограничения описаны в [исследовании прототипа](../../docs/research/vscode-prototype.md#известные-ограничения).
+
 Подсветка различает контексты:
 
 - `CLASS` — объявление и обычная ссылка на тип;
 - `IMPORT` — тип в явном импорте;
-- `CATCH` — тип в параметре `catch`.
+- `CATCH` — тип в параметре `catch`;
+- `THROWS` — тип в списке `throws` метода или конструктора.
 
-Комментарии, строковые литералы, символьные литералы и text blocks не участвуют в поиске типов.
+Для исключения комментариев, строковых литералов, символьных литералов и text blocks используется `JavaCodeMask`.
 
 ---
 
@@ -69,11 +72,19 @@ npm run check
 
 `npm run check` собирает прототип и выполняет автоматические проверки.
 
-`npm run test:hierarchy` отдельно проверяет `ThrowableHierarchyResolver` без запуска Extension Development Host и
-Definition Provider.
+`npm test` собирает и запускает все автоматические тесты прототипа.
 
-Тесты покрывают fallback-типы, прямое и транзитивное наследование, отсутствие родителя, ограничение глубины, циклы и
-состояние `unavailable`.
+`npm run test:hierarchy` отдельно проверяет `ThrowableHierarchyResolver` без запуска Extension Development Host и Definition
+Provider.
+
+Тесты иерархии покрывают fallback-типы, прямое и транзитивное наследование, отсутствие родителя, ограничение глубины, циклы
+и состояние `unavailable`.
+
+Тесты `JavaThrowsClauseFinder` проверяют границы списков `throws`, методы и конструкторы, несколько типов, вложенные аргументы
+аннотаций, квалифицированные имена и сохранение позиций ссылок на типы.
+
+Определение диапазонов проверяется независимо от VS Code API. Применение editor decorations проверяется отдельно в Extension
+Development Host.
 
 ---
 
@@ -81,13 +92,17 @@ Definition Provider.
 
 Прототип предоставляет следующие настройки:
 
-| Настройка                                    | Назначение                      | Значение по умолчанию        |
-|----------------------------------------------|---------------------------------|------------------------------|
-| `throwableHighlighter.prototype.classColor`  | Цвет типов в контексте `CLASS`  | Стандартный цвет Java-класса |
-| `throwableHighlighter.prototype.importColor` | Цвет типов в контексте `IMPORT` | Наследует `classColor`       |
-| `throwableHighlighter.prototype.catchColor`  | Цвет типов в контексте `CATCH`  | Наследует `classColor`       |
+| Настройка                                     | Назначение                      | Значение по умолчанию        |
+|-----------------------------------------------|---------------------------------|------------------------------|
+| `throwableHighlighter.prototype.classColor`   | Цвет типов в контексте `CLASS`  | Стандартный цвет Java-класса |
+| `throwableHighlighter.prototype.importColor`  | Цвет типов в контексте `IMPORT` | Наследует `classColor`       |
+| `throwableHighlighter.prototype.catchColor`   | Цвет типов в контексте `CATCH`  | Наследует `classColor`       |
+| `throwableHighlighter.prototype.throwsColor`  | Цвет типов в контексте `THROWS` | Наследует `classColor`       |
 
-Пустое значение цвета не создаёт foreground-decoration и сохраняет стандартный цвет Java-класса.
+Пустое значение `classColor` сохраняет стандартную Java-подсветку.
+
+Пустые значения `importColor`, `catchColor` и `throwsColor` наследуют значение `classColor`. Если собственный и наследуемый
+цвета отсутствуют, foreground-decoration не задаётся.
 
 Настройки можно изменить через Settings или в Workspace Settings JSON:
 
@@ -95,7 +110,8 @@ Definition Provider.
 {
   "throwableHighlighter.prototype.classColor": "#4EC9B0",
   "throwableHighlighter.prototype.importColor": "#CE9178",
-  "throwableHighlighter.prototype.catchColor": "#C586C0"
+  "throwableHighlighter.prototype.catchColor": "#C586C0",
+  "throwableHighlighter.prototype.throwsColor": "#DCDCAA"
 }
 ```
 
@@ -107,11 +123,13 @@ Definition Provider.
 - `catch-context.java` — тип параметра `catch` использует `CATCH`, ссылка внутри тела блока использует `CLASS`;
 - `multi-catch-context.java` — каждый тип использует `CATCH`;
 - `syntax-preservation.java` — комментарии, модификаторы, ключевые слова и нецелевые элементы сохраняют стандартную
-  Java-подсветку.
+  Java-подсветку;
 - `cross-file` — пользовательский прямой наследник в отдельном Java-файле использует контексты `CLASS`, `IMPORT` и `CATCH`;
-- `transitive` — пользовательский транзитивный наследник требует последовательного определения `NestedException` и `BaseException`.
+- `transitive` — пользовательский транзитивный наследник требует последовательного определения `NestedException` и `BaseException`;
+- `throws-context.java` — типы в списках `throws` методов и конструкторов используют `THROWS`, ссылка внутри тела метода
+  использует `CLASS`.
 
-После очистки всех трёх настроек целевые типы должны вернуться к стандартному цвету Java-класса.
+После очистки всех четырёх настроек целевые типы должны вернуться к стандартной Java-подсветке.
 
 ---
 
@@ -130,10 +148,28 @@ Semantic Tokens provider успешно активируется в Extension De
 
 Editor decorations применяются поверх стандартной Java-подсветки и не заменяют её.
 
-Прототип различает контексты `CLASS`, `IMPORT` и `CATCH`, поддерживает отдельные настройки цветов и наследование цветов от
-`CLASS`.
+Прототип различает контексты `CLASS`, `IMPORT`, `CATCH` и `THROWS`, поддерживает отдельные настройки цветов и наследование
+цветов от `CLASS`.
 
 Проверка editor decorations завершена успешно.
+
+---
+
+## Определение контекста THROWS
+
+`JavaThrowsClauseFinder` определяет диапазоны списков `throws` и ссылки на типы внутри них.
+
+Компонент получает Java-код после обработки `JavaCodeMask` и не зависит от VS Code API.
+
+Определение границ учитывает вложенные круглые скобки в аргументах аннотаций. Имена аннотаций, их аргументы и квалификаторы
+не включаются в диапазоны типов для контекста `THROWS`.
+
+`ThrowableHighlightingFinder` назначает контекст `THROWS` найденным ссылкам. Принадлежность типа к иерархии Throwable
+проверяет существующий `JavaTypeDefinitionResolver`.
+
+Ссылки на типы внутри аргументов аннотаций и тела метода сохраняют контекст `CLASS`.
+
+Реализация соответствует [ADR-0010](../../docs/decisions/0010-vscode-throws-throwable-highlighting.md).
 
 ---
 
