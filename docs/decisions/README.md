@@ -118,6 +118,7 @@ NNNN-краткое-название.md
 - [ADR-0008: Разделение обхода иерархии и VS Code-интеграции в прототипе](0008-separate-vscode-hierarchy-resolution.md)
 - [ADR-0009: Отдельная подсветка типов Throwable в throws](0009-throwable-throws-highlighting.md)
 - [ADR-0010: Подсветка типов Throwable в throws в прототипе VS Code](0010-vscode-throws-throwable-highlighting.md)
+- [ADR-0011: Выделение синтаксического разбора контекстов VS Code](0011-separate-vscode-context-parsing.md)
 
 ---
 
