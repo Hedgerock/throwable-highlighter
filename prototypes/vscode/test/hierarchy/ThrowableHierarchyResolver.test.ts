@@ -20,14 +20,15 @@ test("returns unavailable when the direct superclass cannot be read", async () =
     const result = await resolver.resolve(
         reference("UnreadableException"),
         context(),
-        async () => declarationsOf([
-            {
-                identity: "UnreadableException",
-                directSuperclass: {
-                    kind: "unavailable"
+        async () =>
+            declarationsOf([
+                {
+                    identity: "UnreadableException",
+                    directSuperclass: {
+                        kind: "unavailable"
+                    }
                 }
-            }
-        ]),
+            ]),
         async () => {
             parentWasResolved = true;
             return confirmed(true);
@@ -62,10 +63,7 @@ test("preserves an unavailable result when no declaration confirms Throwable", a
     const result = await resolver.resolve(
         reference("AmbiguousType"),
         context(),
-        async () => declarationsOf(
-            [declarationWithoutSuperclass("AmbiguousType")],
-            true
-        ),
+        async () => declarationsOf([declarationWithoutSuperclass("AmbiguousType")], true),
         async () => unavailable()
     );
 
@@ -76,20 +74,8 @@ test("returns unavailable for a cycle in the inheritance graph", async () => {
     const resolver = createResolver();
 
     const declarations = new Map<string, ClassDeclaration<Reference>>([
-        [
-            "FirstException",
-            declarationWithSuperclass(
-                "FirstException",
-                "SecondException"
-            )
-        ],
-        [
-            "SecondException",
-            declarationWithSuperclass(
-                "SecondException",
-                "FirstException"
-            )
-        ]
+        ["FirstException", declarationWithSuperclass("FirstException", "SecondException")],
+        ["SecondException", declarationWithSuperclass("SecondException", "FirstException")]
     ]);
 
     const resolvedDeclarations = async (
@@ -97,25 +83,16 @@ test("returns unavailable for a cycle in the inheritance graph", async () => {
     ): Promise<ClassDeclarationResolution<Reference>> => {
         const declaration = declarations.get(currentReference.name);
 
-        return declaration === undefined
-            ? { kind: "unavailable" }
-            : declarationsOf([declaration]);
+        return declaration === undefined ? {kind: "unavailable"} : declarationsOf([declaration]);
     };
 
     const resolveReference = async (
         currentReference: Reference,
         currentContext: HierarchyResolutionContext
-    ): Promise<ThrowableTypeResolution> => resolver.resolve(
-        currentReference,
-        currentContext,
-        resolvedDeclarations,
-        resolveReference
-    );
+    ): Promise<ThrowableTypeResolution> =>
+        resolver.resolve(currentReference, currentContext, resolvedDeclarations, resolveReference);
 
-    const result = await resolveReference(
-        reference("FirstException"),
-        context()
-    );
+    const result = await resolveReference(reference("FirstException"), context());
 
     assert.deepEqual(result, unavailable());
 });
@@ -127,12 +104,7 @@ test("returns unavailable when the depth limit is reached", async () => {
     const result = await resolver.resolve(
         reference("NestedException"),
         context(0),
-        async () => declarationsOf([
-            declarationWithSuperclass(
-                "NestedException",
-                "BaseException"
-            )
-        ]),
+        async () => declarationsOf([declarationWithSuperclass("NestedException", "BaseException")]),
         async () => {
             parentWasResolved = true;
             return confirmed(true);
@@ -149,9 +121,7 @@ test("confirms a class without a superclass as non-Throwable", async () => {
     const result = await resolver.resolve(
         reference("PlainClass"),
         context(),
-        async () => declarationsOf([
-            declarationWithoutSuperclass("PlainClass")
-        ]),
+        async () => declarationsOf([declarationWithoutSuperclass("PlainClass")]),
         async () => unavailable()
     );
 
@@ -164,18 +134,10 @@ test("passes traversal context to a transitive parent", async () => {
     const result = await resolver.resolve(
         reference("NestedException"),
         context(),
-        async () => declarationsOf([
-            declarationWithSuperclass(
-                "NestedException",
-                "BaseException"
-            )
-        ]),
+        async () => declarationsOf([declarationWithSuperclass("NestedException", "BaseException")]),
         async (parentReference, parentContext) => {
             assert.equal(parentReference.name, "BaseException");
-            assert.deepEqual(
-                [...parentContext.visitedDeclarations],
-                ["NestedException"]
-            );
+            assert.deepEqual([...parentContext.visitedDeclarations], ["NestedException"]);
             assert.equal(parentContext.remainingDepth, 15);
 
             return confirmed(true);
@@ -192,12 +154,7 @@ test("confirms a direct subclass of a fallback type", async () => {
     const result = await resolver.resolve(
         reference("CustomException"),
         context(),
-        async () => declarationsOf([
-            declarationWithSuperclass(
-                "CustomException",
-                "RuntimeException"
-            )
-        ]),
+        async () => declarationsOf([declarationWithSuperclass("CustomException", "RuntimeException")]),
         async () => {
             parentWasResolved = true;
             return unavailable();
@@ -227,21 +184,17 @@ test("confirms a fallback type without resolving declarations", async () => {
 });
 
 function reference(name: string): Reference {
-    return { name };
+    return {name};
 }
 
-function context(
-    remainingDepth = 16
-): HierarchyResolutionContext {
+function context(remainingDepth = 16): HierarchyResolutionContext {
     return {
         visitedDeclarations: new Set(),
         remainingDepth
     };
 }
 
-function confirmed(
-    isThrowable: boolean
-): ThrowableTypeResolution {
+function confirmed(isThrowable: boolean): ThrowableTypeResolution {
     return {
         kind: "confirmed",
         isThrowable
@@ -260,9 +213,7 @@ function unavailableDeclarations(): ClassDeclarationResolution<Reference> {
     };
 }
 
-function declarationWithoutSuperclass(
-    identity: string
-): ClassDeclaration<Reference> {
+function declarationWithoutSuperclass(identity: string): ClassDeclaration<Reference> {
     return {
         identity,
         directSuperclass: {
@@ -271,10 +222,7 @@ function declarationWithoutSuperclass(
     };
 }
 
-function declarationWithSuperclass(
-    identity: string,
-    parentName: string
-): ClassDeclaration<Reference> {
+function declarationWithSuperclass(identity: string, parentName: string): ClassDeclaration<Reference> {
     return {
         identity,
         directSuperclass: {
@@ -296,7 +244,5 @@ function declarationsOf(
 }
 
 function createResolver(): ThrowableHierarchyResolver<Reference> {
-    return new ThrowableHierarchyResolver(
-        typeName => typeName === "Throwable" || typeName === "RuntimeException"
-    );
+    return new ThrowableHierarchyResolver(typeName => typeName === "Throwable" || typeName === "RuntimeException");
 }

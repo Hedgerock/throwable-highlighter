@@ -5,7 +5,7 @@ import type {
     ClassDeclaration,
     ClassDeclarationResolution,
     HierarchyResolutionContext,
-    ThrowableTypeResolution,
+    ThrowableTypeResolution
 } from "./hierarchy";
 import {MAXIMUM_INHERITANCE_DEPTH} from "./hierarchy";
 import {ThrowableHierarchyResolver} from "./hierarchy/ThrowableHierarchyResolver";
@@ -14,8 +14,8 @@ import {JavaClassDeclarationReader} from "./JavaClassDeclarationReader";
 
 export class JavaTypeDefinitionResolver {
     private readonly classDeclarationReader: JavaClassDeclarationReader;
-    private readonly hierarchyResolver = new ThrowableHierarchyResolver<VsCodeTypeReference>(
-        (typeName) => ThrowableTypeCatalog.isFallbackThrowableType(typeName)
+    private readonly hierarchyResolver = new ThrowableHierarchyResolver<VsCodeTypeReference>(typeName =>
+        ThrowableTypeCatalog.isFallbackThrowableType(typeName)
     );
     private readonly cacheResolutions = new Map<string, boolean>();
     private readonly pendingResolutions = new Map<string, Promise<ThrowableTypeResolution>>();
@@ -31,14 +31,10 @@ export class JavaTypeDefinitionResolver {
         this.pendingResolutions.clear();
     }
 
-    public async isThrowableType(
-        document: vscode.TextDocument,
-        position: vscode.Position
-    ): Promise<boolean> {
+    public async isThrowableType(document: vscode.TextDocument, position: vscode.Position): Promise<boolean> {
         const resolution = await this.resolveType(document, position);
 
-        return resolution.kind === "confirmed"
-            && resolution.isThrowable;
+        return resolution.kind === "confirmed" && resolution.isThrowable;
     }
 
     private async resolveType(
@@ -53,13 +49,10 @@ export class JavaTypeDefinitionResolver {
             };
         }
 
-        return this.resolveReference(
-            reference,
-            {
-                visitedDeclarations: new Set(),
-                remainingDepth: MAXIMUM_INHERITANCE_DEPTH
-            }
-        );
+        return this.resolveReference(reference, {
+            visitedDeclarations: new Set(),
+            remainingDepth: MAXIMUM_INHERITANCE_DEPTH
+        });
     }
 
     private async resolveReference(
@@ -77,10 +70,7 @@ export class JavaTypeDefinitionResolver {
             return this.resolveHierarchy(reference, context);
         }
 
-        const cacheKey = this.createCacheKey(
-            reference.document,
-            reference.range
-        );
+        const cacheKey = this.createCacheKey(reference.document, reference.range);
 
         const cacheResolution = this.cacheResolutions.get(cacheKey);
 
@@ -91,11 +81,7 @@ export class JavaTypeDefinitionResolver {
             };
         }
 
-        return this.resolveHierarchyWithCache(
-            cacheKey,
-            reference,
-            context
-        );
+        return this.resolveHierarchyWithCache(cacheKey, reference, context);
     }
 
     private async resolveHierarchyWithCache(
@@ -103,18 +89,14 @@ export class JavaTypeDefinitionResolver {
         reference: VsCodeTypeReference,
         context: HierarchyResolutionContext
     ): Promise<ThrowableTypeResolution> {
-        const pendingResolution =
-            this.pendingResolutions.get(cacheKey);
+        const pendingResolution = this.pendingResolutions.get(cacheKey);
 
         if (pendingResolution !== undefined) {
             return pendingResolution;
         }
 
         const cacheGeneration = this.cacheGeneration;
-        const resolutionPromise = this.resolveHierarchy(
-            reference,
-            context
-        );
+        const resolutionPromise = this.resolveHierarchy(reference, context);
 
         this.pendingResolutions.set(cacheKey, resolutionPromise);
 
@@ -122,10 +104,7 @@ export class JavaTypeDefinitionResolver {
             const resolution = await resolutionPromise;
 
             if (resolution.kind === "confirmed" && cacheGeneration === this.cacheGeneration) {
-                this.cacheResolutions.set(
-                    cacheKey,
-                    resolution.isThrowable
-                );
+                this.cacheResolutions.set(cacheKey, resolution.isThrowable);
             }
 
             return resolution;
@@ -143,9 +122,8 @@ export class JavaTypeDefinitionResolver {
         return this.hierarchyResolver.resolve(
             reference,
             context,
-            (candidate) => this.resolveDeclarations(candidate),
-            (parentReference, parentContext) =>
-                this.resolveReference(parentReference, parentContext)
+            candidate => this.resolveDeclarations(candidate),
+            (parentReference, parentContext) => this.resolveReference(parentReference, parentContext)
         );
     }
 
@@ -166,11 +144,9 @@ export class JavaTypeDefinitionResolver {
         const declarations: ClassDeclaration<VsCodeTypeReference>[] = [];
 
         try {
-            const definitions = await vscode.commands.executeCommand<readonly (vscode.Location | vscode.LocationLink)[]>(
-                "vscode.executeDefinitionProvider",
-                reference.document.uri,
-                reference.range.start
-            );
+            const definitions = await vscode.commands.executeCommand<
+                readonly (vscode.Location | vscode.LocationLink)[]
+            >("vscode.executeDefinitionProvider", reference.document.uri, reference.range.start);
 
             if (definitions === undefined || definitions.length === 0) {
                 return {
@@ -223,27 +199,19 @@ export class JavaTypeDefinitionResolver {
         };
     }
 
-    private toLocation(
-        definition: vscode.Location | vscode.LocationLink
-    ): vscode.Location {
+    private toLocation(definition: vscode.Location | vscode.LocationLink): vscode.Location {
         if ("targetUri" in definition) {
             if (!definition.targetUri || !definition.targetSelectionRange) {
                 throw new Error("Invalid location link");
             }
 
-            return new vscode.Location(
-                definition.targetUri,
-                definition.targetSelectionRange
-            );
+            return new vscode.Location(definition.targetUri, definition.targetSelectionRange);
         }
 
         return definition;
     }
 
-    private createCacheKey(
-        document: vscode.TextDocument,
-        range: vscode.Range
-    ): string {
+    private createCacheKey(document: vscode.TextDocument, range: vscode.Range): string {
         return JSON.stringify({
             uri: document.uri.toString(),
             version: document.version,

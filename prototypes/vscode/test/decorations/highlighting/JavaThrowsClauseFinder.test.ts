@@ -3,6 +3,7 @@ import {test} from "node:test";
 
 import {JavaCodeMask} from "../../../src/java/JavaCodeMask";
 import {JavaThrowsClauseFinder} from "../../../src/decorations/highlighting/JavaThrowsClauseFinder";
+import {JavaTypeReferenceRangeReader} from "../../../src/decorations/highlighting/JavaTypeReferenceRangeReader";
 
 test("returns the throws reference instead of the same type in annotation arguments", () => {
     const source = `
@@ -15,18 +16,15 @@ test("returns the throws reference instead of the same type in annotation argume
     `;
 
     const code = new JavaCodeMask().maskNonCode(source);
-    const ranges = new JavaThrowsClauseFinder().findTypeReferenceRanges(code);
+    const ranges = createFinder().findTypeReferenceRanges(code);
     const start = source.indexOf("IOException {");
 
-    assert.deepEqual(
-        ranges,
-        [
-            {
-                start,
-                end: start + "IOException".length
-            }
-        ]
-    );
+    assert.deepEqual(ranges, [
+        {
+            start,
+            end: start + "IOException".length
+        }
+    ]);
 });
 
 test("finds throws type names outside annotations and package qualifiers", () => {
@@ -41,7 +39,7 @@ test("finds throws type names outside annotations and package qualifiers", () =>
     `;
 
     const code = new JavaCodeMask().maskNonCode(source);
-    const ranges = new JavaThrowsClauseFinder().findTypeReferenceRanges(code);
+    const ranges = createFinder().findTypeReferenceRanges(code);
 
     assert.deepEqual(
         ranges.map(range => source.slice(range.start, range.end)),
@@ -63,10 +61,7 @@ test("does not treat throws inside Java identifiers as a keyword", () => {
         }
     `;
 
-    assert.deepEqual(
-        findTypeLists(source),
-        []
-    );
+    assert.deepEqual(findTypeLists(source), []);
 });
 
 test("preserves throws types after nested annotation arguments", () => {
@@ -80,13 +75,9 @@ test("preserves throws types after nested annotation arguments", () => {
         }
     `;
 
-    assert.deepEqual(
-        findTypeLists(source),
-        [
-            "@Outer(@Inner({1, 2})) IOException,\n"
-            + "                       IllegalArgumentException"
-        ]
-    );
+    assert.deepEqual(findTypeLists(source), [
+        "@Outer(@Inner({1, 2})) IOException,\n" + "                       IllegalArgumentException"
+    ]);
 });
 
 test("ignores throws-like text outside Java code", () => {
@@ -107,10 +98,7 @@ test("ignores throws-like text outside Java code", () => {
         }
     `;
 
-    assert.deepEqual(
-        findTypeLists(source),
-        ["IOException"]
-    );
+    assert.deepEqual(findTypeLists(source), ["IOException"]);
 });
 
 test("does not include types inside the method body", () => {
@@ -123,10 +111,7 @@ test("does not include types inside the method body", () => {
         }    
     `;
 
-    assert.deepEqual(
-        findTypeLists(source),
-        ["IOException"]
-    );
+    assert.deepEqual(findTypeLists(source), ["IOException"]);
 });
 
 test("finds a type list in a semicolon-terminated method declaration", () => {
@@ -137,12 +122,7 @@ test("finds a type list in a semicolon-terminated method declaration", () => {
         }
     `;
 
-    assert.deepEqual(
-        findTypeLists(source),
-        [
-            "IOException, IllegalArgumentException"
-        ]
-    );
+    assert.deepEqual(findTypeLists(source), ["IOException, IllegalArgumentException"]);
 });
 
 test("finds type lists in constructor and method throws clauses", () => {
@@ -157,23 +137,17 @@ test("finds type lists in constructor and method throws clauses", () => {
         }
     `;
 
-    assert.deepEqual(
-        findTypeLists(source),
-        [
-            "IOException",
-            "IOException, IllegalArgumentException"
-        ]
-    );
+    assert.deepEqual(findTypeLists(source), ["IOException", "IOException, IllegalArgumentException"]);
 });
 
-function findTypeLists(
-    source: string
-): string[] {
+function createFinder(): JavaThrowsClauseFinder {
+    return new JavaThrowsClauseFinder(new JavaTypeReferenceRangeReader());
+}
+
+function findTypeLists(source: string): string[] {
     const code = new JavaCodeMask().maskNonCode(source);
 
-    const ranges = new JavaThrowsClauseFinder().findTypeRanges(code);
+    const ranges = createFinder().findTypeRanges(code);
 
-    return ranges.map(
-        range => source.slice(range.start, range.end).trim()
-    );
+    return ranges.map(range => source.slice(range.start, range.end).trim());
 }

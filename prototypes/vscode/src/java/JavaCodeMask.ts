@@ -1,13 +1,6 @@
-type LexicalState =
-    | "code"
-    | "lineComment"
-    | "blockComment"
-    | "string"
-    | "character"
-    | "textBlock";
+type LexicalState = "code" | "lineComment" | "blockComment" | "string" | "character" | "textBlock";
 
 export class JavaCodeMask {
-
     public maskNonCode(source: string): string {
         const masked = source.split("");
         let state: LexicalState = "code";
@@ -34,11 +27,7 @@ export class JavaCodeMask {
                     continue;
                 }
 
-                if (
-                    current === "\""
-                    && next === "\""
-                    && third === "\""
-                ) {
+                if (current === '"' && next === '"' && third === '"') {
                     this.maskCharacter(masked, index);
                     this.maskCharacter(masked, index + 1);
                     this.maskCharacter(masked, index + 2);
@@ -47,7 +36,7 @@ export class JavaCodeMask {
                     continue;
                 }
 
-                if (current === "\"") {
+                if (current === '"') {
                     this.maskCharacter(masked, index);
                     state = "string";
                     continue;
@@ -81,12 +70,7 @@ export class JavaCodeMask {
                 continue;
             }
 
-            if (
-                state === "textBlock"
-                && current === "\""
-                && next === "\""
-                && third === "\""
-            ) {
+            if (state === "textBlock" && current === '"' && next === '"' && third === '"') {
                 this.maskCharacter(masked, index + 1);
                 this.maskCharacter(masked, index + 2);
                 index += 2;
@@ -94,17 +78,13 @@ export class JavaCodeMask {
                 continue;
             }
 
-            if (
-                (state === "string" || state === "character")
-                && current === "\\"
-                && next !== undefined
-            ) {
+            if ((state === "string" || state === "character") && current === "\\" && next !== undefined) {
                 this.maskCharacter(masked, index + 1);
                 index++;
                 continue;
             }
 
-            if (state === "string" && current === "\"") {
+            if (state === "string" && current === '"') {
                 state = "code";
                 continue;
             }
@@ -117,10 +97,7 @@ export class JavaCodeMask {
         return masked.join("");
     }
 
-    private maskCharacter(
-        characters: string[],
-        index: number
-    ): void {
+    private maskCharacter(characters: string[], index: number): void {
         if (characters[index] !== "\n" && characters[index] !== "\r") {
             characters[index] = " ";
         }

@@ -1,16 +1,14 @@
 import type {
-    ClassDeclaration, ClassDeclarationResolver,
+    ClassDeclaration,
+    ClassDeclarationResolver,
     HierarchyResolutionContext,
-    ParentTypeResolver, ThrowableTypeResolution,
+    ParentTypeResolver,
+    ThrowableTypeResolution,
     TypeReference
 } from "./index";
 
 export class ThrowableHierarchyResolver<TReference extends TypeReference> {
-
-    constructor(
-        private readonly isFallbackThrowableType: (typeName: string) => boolean
-    ) {
-    }
+    constructor(private readonly isFallbackThrowableType: (typeName: string) => boolean) {}
 
     public async resolve(
         reference: TReference,
@@ -36,11 +34,7 @@ export class ThrowableHierarchyResolver<TReference extends TypeReference> {
         let hasUnavailable = declarationResolution.hasUnavailable;
 
         for (const declaration of declarationResolution.declarations) {
-            const resolution = await this.resolveDeclaration(
-                declaration,
-                context,
-                resolveParent
-            );
+            const resolution = await this.resolveDeclaration(declaration, context, resolveParent);
 
             if (resolution.kind === "unavailable") {
                 hasUnavailable = true;
@@ -52,9 +46,7 @@ export class ThrowableHierarchyResolver<TReference extends TypeReference> {
             }
         }
 
-        return hasUnavailable
-            ? { kind: "unavailable" }
-            : { kind: "confirmed", isThrowable: false };
+        return hasUnavailable ? {kind: "unavailable"} : {kind: "confirmed", isThrowable: false};
     }
 
     private async resolveDeclaration(
@@ -99,12 +91,9 @@ export class ThrowableHierarchyResolver<TReference extends TypeReference> {
         const visitedDeclarations = new Set(context.visitedDeclarations);
         visitedDeclarations.add(declaration.identity);
 
-        return resolveParent(
-            directSuperclass,
-            {
-                visitedDeclarations,
-                remainingDepth: context.remainingDepth - 1
-            }
-        );
+        return resolveParent(directSuperclass, {
+            visitedDeclarations,
+            remainingDepth: context.remainingDepth - 1
+        });
     }
 }

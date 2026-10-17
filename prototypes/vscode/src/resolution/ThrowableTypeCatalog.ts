@@ -8,11 +8,7 @@ export class ThrowableTypeCatalog {
         "IllegalStateException"
     ] as const;
 
-    public static isFallbackThrowableType(
-        typeName: string
-    ): boolean {
-        return this.FALLBACK_TYPES.some(
-            knownType => knownType === typeName
-        );
+    public static isFallbackThrowableType(typeName: string): boolean {
+        return this.FALLBACK_TYPES.some(knownType => knownType === typeName);
     }
 }

@@ -1,13 +1,10 @@
 import * as vscode from "vscode";
 import {JavaTypeDefinitionResolver} from "./JavaTypeDefinitionResolver";
 
-export const INSPECT_DEFINITION_COMMAND =
-    "throwableHighlighter.prototype.inspectDefinition";
+export const INSPECT_DEFINITION_COMMAND = "throwableHighlighter.prototype.inspectDefinition";
 
 export class DefinitionProbe {
-
     private readonly outputChannel: vscode.OutputChannel;
-
 
     constructor(
         outputChannel: vscode.OutputChannel,
@@ -30,10 +27,7 @@ export class DefinitionProbe {
         }
 
         const position = editor.selection.active;
-        const symbol = this.getSymbolAtPosition(
-            editor.document,
-            position
-        );
+        const symbol = this.getSymbolAtPosition(editor.document, position);
 
         this.outputChannel.show(true);
         this.writeLine("");
@@ -44,21 +38,14 @@ export class DefinitionProbe {
             )}.`
         );
 
-        const isThrowableType = await this.definitionResolver.isThrowableType(
-            editor.document,
-            position
-        );
+        const isThrowableType = await this.definitionResolver.isThrowableType(editor.document, position);
 
-        this.writeLine(
-            `Resolved as Throwable type: ${isThrowableType}.`
-        )
+        this.writeLine(`Resolved as Throwable type: ${isThrowableType}.`);
 
         try {
-            const definitions = await vscode.commands.executeCommand<readonly (vscode.Location | vscode.LocationLink)[]>(
-                "vscode.executeDefinitionProvider",
-                editor.document.uri,
-                position
-            );
+            const definitions = await vscode.commands.executeCommand<
+                readonly (vscode.Location | vscode.LocationLink)[]
+            >("vscode.executeDefinitionProvider", editor.document.uri, position);
 
             if (definitions === undefined || definitions.length === 0) {
                 this.writeLine("Definition provider returned no results.");
@@ -71,77 +58,44 @@ export class DefinitionProbe {
                 await this.inspectDefinition(index + 1, definition);
             }
         } catch (error) {
-            this.writeLine(
-                `Definition provider failed: ${this.getErrorMessage(error)}`
-            );
+            this.writeLine(`Definition provider failed: ${this.getErrorMessage(error)}`);
         }
     }
 
-    private async inspectDefinition(
-        index: number,
-        definition: vscode.Location | vscode.LocationLink
-    ): Promise<void> {
+    private async inspectDefinition(index: number, definition: vscode.Location | vscode.LocationLink): Promise<void> {
         const location = this.toLocation(definition);
 
-        this.writeLine(
-            `${index}. ${this.formatLocation(
-                location.uri,
-                location.range
-            )}`
-        );
+        this.writeLine(`${index}. ${this.formatLocation(location.uri, location.range)}`);
 
         try {
             const document = await vscode.workspace.openTextDocument(location.uri);
 
-            this.writeLine(
-                ` Document opened: ${document.languageId}, `
-                + `${document.lineCount} line(s).`
-            )
+            this.writeLine(` Document opened: ${document.languageId}, ` + `${document.lineCount} line(s).`);
         } catch (error) {
-            this.writeLine(
-                ` Document could not be opened: `
-                + this.getErrorMessage(error)
-            )
+            this.writeLine(` Document could not be opened: ` + this.getErrorMessage(error));
         }
     }
 
-    private getSymbolAtPosition(
-        document: vscode.TextDocument,
-        position: vscode.Position
-    ): string {
+    private getSymbolAtPosition(document: vscode.TextDocument, position: vscode.Position): string {
         const range = document.getWordRangeAtPosition(position);
 
-        return range === undefined
-            ? "<no symbol>"
-            : document.getText(range);
+        return range === undefined ? "<no symbol>" : document.getText(range);
     }
 
-    private toLocation(
-        definition: vscode.Location | vscode.LocationLink
-    ): vscode.Location {
+    private toLocation(definition: vscode.Location | vscode.LocationLink): vscode.Location {
         if ("targetUri" in definition) {
-            return new vscode.Location(
-                definition.targetUri,
-                definition.targetRange
-            );
+            return new vscode.Location(definition.targetUri, definition.targetRange);
         }
 
         return definition;
     }
 
-    private formatLocation(
-        uri: vscode.Uri,
-        range: vscode.Range
-    ): string {
-        return `${uri.toString()}:`
-            + `${range.start.line + 1}:`
-            + `${range.start.character + 1}`;
+    private formatLocation(uri: vscode.Uri, range: vscode.Range): string {
+        return `${uri.toString()}:` + `${range.start.line + 1}:` + `${range.start.character + 1}`;
     }
 
     private getErrorMessage(error: unknown): string {
-        return error instanceof Error
-            ? error.message
-            : String(error);
+        return error instanceof Error ? error.message : String(error);
     }
 
     private writeLine(message: string): void {

@@ -1,8 +1,4 @@
-import type {
-    TypeReference,
-    ClassDeclaration,
-    DirectSuperclassResolution
-} from "./hierarchy";
+import type {TypeReference, ClassDeclaration, DirectSuperclassResolution} from "./hierarchy";
 import * as vscode from "vscode";
 import {JavaCodeMask} from "../java/JavaCodeMask";
 
@@ -12,11 +8,7 @@ export type VsCodeTypeReference = TypeReference & {
 };
 
 export class JavaClassDeclarationReader {
-
-    constructor(
-        private readonly codeMask: JavaCodeMask
-    ) {
-    }
+    constructor(private readonly codeMask: JavaCodeMask) {}
 
     public readTypeReference(
         document: vscode.TextDocument,
@@ -35,18 +27,13 @@ export class JavaClassDeclarationReader {
         };
     }
 
-    public readClassDeclaration(
-        reference: VsCodeTypeReference
-    ): ClassDeclaration<VsCodeTypeReference> | undefined {
+    public readClassDeclaration(reference: VsCodeTypeReference): ClassDeclaration<VsCodeTypeReference> | undefined {
         const document = reference.document;
         const source = this.codeMask.maskNonCode(document.getText());
         const typeNameOffset = document.offsetAt(reference.range.start);
         const classOffset = source.lastIndexOf("class", typeNameOffset);
 
-        if (
-            classOffset === -1
-            || !this.isClassName(source, classOffset, typeNameOffset)
-        ) {
+        if (classOffset === -1 || !this.isClassName(source, classOffset, typeNameOffset)) {
             return undefined;
         }
 
@@ -59,12 +46,7 @@ export class JavaClassDeclarationReader {
 
         return {
             identity: this.createDeclarationIdentity(document, reference.range),
-            directSuperclass: this.readDirectSuperclass(
-                document,
-                source,
-                headerStart,
-                openingBrace
-            )
+            directSuperclass: this.readDirectSuperclass(document, source, headerStart, openingBrace)
         };
     }
 
@@ -89,24 +71,17 @@ export class JavaClassDeclarationReader {
                 continue;
             }
 
-            if (genericDepth === 0
-                && this.hasKeywordAt(source, index, "extends")
-            ) {
-                const reference =
-                    this.readSimpleTypeReference(
-                        document,
-                        source,
-                        index + "extends".length
-                    );
+            if (genericDepth === 0 && this.hasKeywordAt(source, index, "extends")) {
+                const reference = this.readSimpleTypeReference(document, source, index + "extends".length);
 
                 return reference === undefined
                     ? {
-                        kind: "unavailable"
-                    }
+                          kind: "unavailable"
+                      }
                     : {
-                        kind: "found",
-                        reference
-                    };
+                          kind: "found",
+                          reference
+                      };
             }
         }
 
@@ -120,10 +95,7 @@ export class JavaClassDeclarationReader {
         source: string,
         offset: number
     ): VsCodeTypeReference | undefined {
-        const match =
-            /^\s*(?:[A-Za-z_$][A-Za-z0-9_$]*\s*\.\s*)*([A-Za-z_$][A-Za-z0-9_$]*)/.exec(
-                source.slice(offset)
-            );
+        const match = /^\s*(?:[A-Za-z_$][A-Za-z0-9_$]*\s*\.\s*)*([A-Za-z_$][A-Za-z0-9_$]*)/.exec(source.slice(offset));
 
         if (match === null) {
             return undefined;
@@ -132,51 +104,32 @@ export class JavaClassDeclarationReader {
         const typeName = match[1];
         const typeNameOffset = offset + match[0].lastIndexOf(typeName);
 
-        return this.readTypeReference(
-            document,
-            document.positionAt(typeNameOffset)
-        );
+        return this.readTypeReference(document, document.positionAt(typeNameOffset));
     }
 
-    private isClassName(
-        source: string,
-        classOffset: number,
-        typeNameOffset: number
-    ): boolean {
+    private isClassName(source: string, classOffset: number, typeNameOffset: number): boolean {
         const beforeClass = source[classOffset - 1];
-        const between = source.slice(
-            classOffset + "class".length,
-            typeNameOffset
-        );
+        const between = source.slice(classOffset + "class".length, typeNameOffset);
 
-        return !this.isIdentifierPart(beforeClass)
-            && /^\s+$/.test(between);
+        return !this.isIdentifierPart(beforeClass) && /^\s+$/.test(between);
     }
 
-    private hasKeywordAt(
-        source: string,
-        index: number,
-        keyword: string
-    ): boolean {
+    private hasKeywordAt(source: string, index: number, keyword: string): boolean {
         const before = source[index - 1];
         const after = source[index + keyword.length];
 
-        return source.slice(index, index + keyword.length) === keyword
-            && !this.isIdentifierPart(before)
-            && !this.isIdentifierPart(after);
+        return (
+            source.slice(index, index + keyword.length) === keyword &&
+            !this.isIdentifierPart(before) &&
+            !this.isIdentifierPart(after)
+        );
     }
 
-    private isIdentifierPart(
-        character: string | undefined
-    ): boolean {
-        return character !== undefined
-            && /[A-Za-z0-9_$]/.test(character);
+    private isIdentifierPart(character: string | undefined): boolean {
+        return character !== undefined && /[A-Za-z0-9_$]/.test(character);
     }
 
-    private createDeclarationIdentity(
-        document: vscode.TextDocument,
-        range: vscode.Range
-    ): string {
+    private createDeclarationIdentity(document: vscode.TextDocument, range: vscode.Range): string {
         return JSON.stringify({
             uri: document.uri.toString(),
             start: {

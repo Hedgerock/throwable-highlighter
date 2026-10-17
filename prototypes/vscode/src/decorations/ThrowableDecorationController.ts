@@ -44,10 +44,7 @@ export class ThrowableDecorationController implements vscode.Disposable {
         this.disposeDecorationTypes();
     }
 
-    private async apply(
-        editor: vscode.TextEditor,
-        refreshGeneration: number
-    ): Promise<void> {
+    private async apply(editor: vscode.TextEditor, refreshGeneration: number): Promise<void> {
         if (this.isDisposed) {
             return;
         }
@@ -69,11 +66,12 @@ export class ThrowableDecorationController implements vscode.Disposable {
             }))
         );
 
-        if (this.isDisposed
-            || refreshGeneration !== this.refreshGeneration
-            || editor.document !== document
-            || document.version !== documentVersion
-            || !this.throwableHighlightingContext.isSupportedDocument(document)
+        if (
+            this.isDisposed ||
+            refreshGeneration !== this.refreshGeneration ||
+            editor.document !== document ||
+            document.version !== documentVersion ||
+            !this.throwableHighlightingContext.isSupportedDocument(document)
         ) {
             return;
         }
@@ -82,17 +80,12 @@ export class ThrowableDecorationController implements vscode.Disposable {
 
         for (const result of resolvedCandidates) {
             if (result.isThrowableType) {
-                highlights[result.candidate.context].push(
-                    result.candidate.range
-                );
+                highlights[result.candidate.context].push(result.candidate.range);
             }
         }
 
         for (const context of ThrowableHighlightingContext.HIGHLIGHT_CONTEXTS) {
-            editor.setDecorations(
-                this.decorationTypes[context],
-                highlights[context]
-            );
+            editor.setDecorations(this.decorationTypes[context], highlights[context]);
         }
     }
 
@@ -101,10 +94,7 @@ export class ThrowableDecorationController implements vscode.Disposable {
         candidate: ThrowableHighlightingCandidate
     ): Promise<boolean> {
         try {
-            return await this.definitionResolver.isThrowableType(
-                document,
-                candidate.range.start
-            );
+            return await this.definitionResolver.isThrowableType(document, candidate.range.start);
         } catch {
             return false;
         }
@@ -121,10 +111,7 @@ export class ThrowableDecorationController implements vscode.Disposable {
 
     private clear(editor: vscode.TextEditor): void {
         for (const context of ThrowableHighlightingContext.HIGHLIGHT_CONTEXTS) {
-            editor.setDecorations(
-                this.decorationTypes[context],
-                []
-            );
+            editor.setDecorations(this.decorationTypes[context], []);
         }
     }
 
@@ -139,26 +126,25 @@ export class ThrowableDecorationController implements vscode.Disposable {
             import: this.throwableHighlightingContext.createDecorationType(importColor),
             catch: this.throwableHighlightingContext.createDecorationType(catchColor),
             throws: this.throwableHighlightingContext.createDecorationType(throwsColor)
-        }
+        };
     }
 
     private getConfiguredColor(
         setting: "classColor" | "importColor" | "catchColor" | "throwsColor"
     ): string | undefined {
-        const value = vscode.workspace
-            .getConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION)
-            .get<string>(setting) ?? "";
+        const value =
+            vscode.workspace
+                .getConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION)
+                .get<string>(setting) ?? "";
 
         const color = value.trim();
 
-        return color === ""
-            ? undefined
-            : color;
+        return color === "" ? undefined : color;
     }
 
     private disposeDecorationTypes(): void {
         for (const context of ThrowableHighlightingContext.HIGHLIGHT_CONTEXTS) {
-            this.decorationTypes[context].dispose()
+            this.decorationTypes[context].dispose();
         }
     }
 }

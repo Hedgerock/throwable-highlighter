@@ -5,13 +5,6 @@
     "outDir": "out-test",
     "sourceMap": false
   },
-  "include": [
-    "src/resolution/hierarchy/**/*.ts",
-    "test/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "out",
-    "out-test"
-  ]
+  "include": ["src/resolution/hierarchy/**/*.ts", "test/**/*.ts"],
+  "exclude": ["node_modules", "out", "out-test"]
 }

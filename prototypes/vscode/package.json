@@ -63,11 +63,14 @@
     "watch": "tsc -w -p .",
     "test": "tsc -p tsconfig.test.json && node --test \"out-test/test/**/*.test.js\"",
     "test:hierarchy": "tsc -p tsconfig.test.json && node --test out-test/test/hierarchy/ThrowableHierarchyResolver.test.js",
-    "check": "npm run compile && npm test"
+    "check": "npm run format:check && npm run compile && npm test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/vscode": "1.85.0",
+    "prettier": "3.9.10",
     "typescript": "^5.7.3"
   }
 }
