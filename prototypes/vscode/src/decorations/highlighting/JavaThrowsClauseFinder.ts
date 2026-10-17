@@ -1,62 +1,17 @@
-export interface OffsetRange {
-    start: number;
-    end: number;
-}
+import {JavaTypeReferenceRangeReader} from "./JavaTypeReferenceRangeReader";
+import type {OffsetRange} from "./JavaTypeReferenceRangeReader";
 
 export class JavaThrowsClauseFinder {
     private static readonly THROWS_CLAUSE_PATTERN =
         /(?<![\p{ID_Continue}\p{Sc}\p{Cf}])throws(?![\p{ID_Continue}\p{Sc}\p{Cf}])/gu;
 
-    private static readonly TYPE_REFERENCE_TOKEN_PATTERN =
-        /@\s*[\p{ID_Continue}\p{Sc}\p{Cf}]+(?:\s*\.\s*[\p{ID_Continue}\p{Sc}\p{Cf}]+)*|[()]|[\p{ID_Continue}\p{Sc}\p{Cf}]+/gu;
+    constructor(private readonly typeReferenceRangeReader: JavaTypeReferenceRangeReader) {}
 
-    public findTypeReferenceRanges(
-        source: string
-    ): OffsetRange[] {
-        const ranges: OffsetRange[] = [];
-
-        for (const clause of this.findTypeRanges(source)) {
-            const typeList = source.slice(clause.start, clause.end);
-            let parenthesisDepth = 0;
-
-            for (const match of typeList.matchAll(JavaThrowsClauseFinder.TYPE_REFERENCE_TOKEN_PATTERN)) {
-                const token = match[0];
-
-                if (token === "(") {
-                    parenthesisDepth++;
-                    continue;
-                }
-
-                if (token === ")") {
-                    parenthesisDepth--;
-                    continue;
-                }
-
-                if (parenthesisDepth > 0 || token.startsWith("@")) {
-                    continue;
-                }
-
-                const suffix = typeList.slice(match.index + token.length);
-
-                if (/^\s*\./.test(suffix)) {
-                    continue;
-                }
-
-                const start = clause.start + match.index;
-
-                ranges.push({
-                    start,
-                    end: start + token.length
-                });
-            }
-        }
-
-        return ranges;
+    public findTypeReferenceRanges(source: string): OffsetRange[] {
+        return this.findTypeRanges(source).flatMap(range => this.typeReferenceRangeReader.read(source, range));
     }
 
-    public findTypeRanges(
-        source: string
-    ): OffsetRange[] {
+    public findTypeRanges(source: string): OffsetRange[] {
         const ranges: OffsetRange[] = [];
 
         for (const match of source.matchAll(JavaThrowsClauseFinder.THROWS_CLAUSE_PATTERN)) {
@@ -76,10 +31,7 @@ export class JavaThrowsClauseFinder {
         return ranges;
     }
 
-    private findTypeListEnd(
-        source: string,
-        start: number
-    ): number | undefined {
+    private findTypeListEnd(source: string, start: number): number | undefined {
         let parenthesisDepth = 0;
 
         for (let index = start; index < source.length; index++) {

@@ -1,12 +1,9 @@
 import vscode from "vscode";
-import {HighlightingContext, ThrowableHighlightingContext} from "./ThrowableHighlightingContext";
+import type {HighlightingContext} from "./ThrowableHighlightingContext";
 import {JavaThrowsClauseFinder} from "./JavaThrowsClauseFinder";
 import {JavaCodeMask} from "../../java/JavaCodeMask";
-
-export interface OffsetRange {
-    start: number;
-    end: number;
-}
+import type {OffsetRange} from "./JavaTypeReferenceRangeReader";
+import {JavaCatchClauseFinder} from "./JavaCatchClauseFinder";
 
 export interface ThrowableHighlightingCandidate {
     typeName: string;
@@ -15,25 +12,23 @@ export interface ThrowableHighlightingCandidate {
 }
 
 export class ThrowableHighlightingFinder {
-    private static readonly TYPE_CANDIDATE_PATTERN =
-        /\b[A-Z][A-Za-z0-9_]*\b/g;
+    private static readonly TYPE_CANDIDATE_PATTERN = /\b[A-Z][A-Za-z0-9_]*\b/g;
 
     private readonly codeMask: JavaCodeMask;
 
     constructor(
         codeMask: JavaCodeMask,
+        private readonly catchClauseFinder: JavaCatchClauseFinder,
         private readonly throwsClauseFinder: JavaThrowsClauseFinder
     ) {
         this.codeMask = codeMask;
     }
 
-    public findCandidates(
-        document: vscode.TextDocument
-    ): ThrowableHighlightingCandidate[] {
+    public findCandidates(document: vscode.TextDocument): ThrowableHighlightingCandidate[] {
         const candidates: ThrowableHighlightingCandidate[] = [];
         const source = document.getText();
         const code = this.codeMask.maskNonCode(source);
-        const catchParameterRanges = this.findCatchParameterRanges(code);
+        const catchTypeRanges = this.catchClauseFinder.findTypeReferenceRanges(code);
         const throwsTypeRanges = this.throwsClauseFinder.findTypeReferenceRanges(code);
 
         for (const match of code.matchAll(ThrowableHighlightingFinder.TYPE_CANDIDATE_PATTERN)) {
@@ -43,12 +38,7 @@ export class ThrowableHighlightingFinder {
                 continue;
             }
 
-            const context = this.getHighlightingContext(
-                code,
-                start,
-                catchParameterRanges,
-                throwsTypeRanges
-            );
+            const context = this.getHighlightingContext(code, start, catchTypeRanges, throwsTypeRanges);
 
             if (context === undefined) {
                 continue;
@@ -58,12 +48,9 @@ export class ThrowableHighlightingFinder {
 
             candidates.push({
                 typeName: match[0],
-                range: new vscode.Range(
-                    document.positionAt(start),
-                    document.positionAt(end)
-                ),
+                range: new vscode.Range(document.positionAt(start), document.positionAt(end)),
                 context
-            })
+            });
         }
 
         return candidates;
@@ -72,7 +59,7 @@ export class ThrowableHighlightingFinder {
     private getHighlightingContext(
         source: string,
         offset: number,
-        catchParameterRanges: readonly OffsetRange[],
+        catchTypeRanges: readonly OffsetRange[],
         throwsTypeRanges: readonly OffsetRange[]
     ): HighlightingContext | undefined {
         const lineStart = source.lastIndexOf("\n", offset - 1) + 1;
@@ -80,50 +67,17 @@ export class ThrowableHighlightingFinder {
         const importMatch = /^\s*import\s+(static\s+)?/.exec(linePrefix);
 
         if (importMatch != null) {
-            return importMatch[1] === undefined
-                ? "import"
-                : undefined;
+            return importMatch[1] === undefined ? "import" : undefined;
         }
 
-        if (catchParameterRanges.some(
-            range => range.start <= offset && offset < range.end)
-        ) {
-            return "catch"
+        if (catchTypeRanges.some(range => range.start <= offset && offset < range.end)) {
+            return "catch";
         }
 
-        if (throwsTypeRanges.some(
-            range => range.start <= offset && offset < range.end
-        )) {
+        if (throwsTypeRanges.some(range => range.start <= offset && offset < range.end)) {
             return "throws";
         }
 
-        return "class"
-    }
-
-    private findCatchParameterRanges(
-        source: string
-    ): OffsetRange[] {
-        const ranges: OffsetRange[] = [];
-
-        for (const match of source.matchAll(
-            ThrowableHighlightingContext.CATCH_PARAMETER_PATTERN
-        )) {
-            const start = match.index;
-
-            if (start === undefined) {
-                continue;
-            }
-
-            const openingParenthesis = source.indexOf("(", start);
-            const parameterStart = openingParenthesis + 1;
-            const parameterEnd = parameterStart + match[1].length;
-
-            ranges.push({
-                start: parameterStart,
-                end: parameterEnd
-            })
-        }
-
-        return ranges;
+        return "class";
     }
 }
