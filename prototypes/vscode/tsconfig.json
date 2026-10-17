@@ -9,7 +9,11 @@
     "sourceMap": true,
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@throwable-highlighter/*": ["*"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "out"]

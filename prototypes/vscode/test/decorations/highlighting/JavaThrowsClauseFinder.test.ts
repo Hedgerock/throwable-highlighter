@@ -1,9 +1,8 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-
-import {JavaCodeMask} from "../../../src/java/JavaCodeMask";
-import {JavaThrowsClauseFinder} from "../../../src/decorations/highlighting/JavaThrowsClauseFinder";
-import {JavaTypeReferenceRangeReader} from "../../../src/decorations/highlighting/JavaTypeReferenceRangeReader";
+import {JavaThrowsClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaThrowsClauseFinder";
+import {JavaTypeReferenceRangeReader} from "@throwable-highlighter/decorations/highlighting/JavaTypeReferenceRangeReader";
+import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 
 test("returns the throws reference instead of the same type in annotation arguments", () => {
     const source = `

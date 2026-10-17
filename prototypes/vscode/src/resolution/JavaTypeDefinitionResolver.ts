@@ -1,16 +1,18 @@
-import {JavaCodeMask} from "../java/JavaCodeMask";
 import * as vscode from "vscode";
-import {ThrowableTypeCatalog} from "./ThrowableTypeCatalog";
-import type {
-    ClassDeclaration,
-    ClassDeclarationResolution,
-    HierarchyResolutionContext,
-    ThrowableTypeResolution
-} from "./hierarchy";
-import {MAXIMUM_INHERITANCE_DEPTH} from "./hierarchy";
-import {ThrowableHierarchyResolver} from "./hierarchy/ThrowableHierarchyResolver";
-import type {VsCodeTypeReference} from "./JavaClassDeclarationReader";
-import {JavaClassDeclarationReader} from "./JavaClassDeclarationReader";
+import {
+    JavaClassDeclarationReader,
+    VsCodeTypeReference
+} from "@throwable-highlighter/resolution/JavaClassDeclarationReader";
+import {ThrowableHierarchyResolver} from "@throwable-highlighter/resolution/hierarchy/ThrowableHierarchyResolver";
+import {ThrowableTypeCatalog} from "@throwable-highlighter/resolution/ThrowableTypeCatalog";
+import {
+    type ClassDeclaration,
+    type ClassDeclarationResolution,
+    type HierarchyResolutionContext,
+    MAXIMUM_INHERITANCE_DEPTH,
+    type ThrowableTypeResolution
+} from "@throwable-highlighter/resolution/hierarchy/index";
+import type {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 
 export class JavaTypeDefinitionResolver {
     private readonly classDeclarationReader: JavaClassDeclarationReader;

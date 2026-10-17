@@ -5,7 +5,7 @@ import type {
     ParentTypeResolver,
     ThrowableTypeResolution,
     TypeReference
-} from "./index";
+} from "@throwable-highlighter/resolution/hierarchy/index";
 
 export class ThrowableHierarchyResolver<TReference extends TypeReference> {
     constructor(private readonly isFallbackThrowableType: (typeName: string) => boolean) {}

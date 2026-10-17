@@ -1,9 +1,9 @@
 import vscode from "vscode";
-import type {HighlightingContext} from "./ThrowableHighlightingContext";
-import {JavaThrowsClauseFinder} from "./JavaThrowsClauseFinder";
-import {JavaCodeMask} from "../../java/JavaCodeMask";
-import type {OffsetRange} from "./JavaTypeReferenceRangeReader";
-import {JavaCatchClauseFinder} from "./JavaCatchClauseFinder";
+import type {HighlightingContext} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingContext";
+import {JavaCatchClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaCatchClauseFinder";
+import {JavaThrowsClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaThrowsClauseFinder";
+import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
+import type {OffsetRange} from "@throwable-highlighter/decorations/highlighting/JavaTypeReferenceRangeReader";
 
 export interface ThrowableHighlightingCandidate {
     typeName: string;

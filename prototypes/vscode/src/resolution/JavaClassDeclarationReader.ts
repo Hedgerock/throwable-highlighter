@@ -1,6 +1,10 @@
-import type {TypeReference, ClassDeclaration, DirectSuperclassResolution} from "./hierarchy";
 import * as vscode from "vscode";
-import {JavaCodeMask} from "../java/JavaCodeMask";
+import type {
+    ClassDeclaration,
+    DirectSuperclassResolution,
+    TypeReference
+} from "@throwable-highlighter/resolution/hierarchy/index";
+import type {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 
 export type VsCodeTypeReference = TypeReference & {
     document: vscode.TextDocument;

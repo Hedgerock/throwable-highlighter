@@ -1,5 +1,7 @@
-import {JavaTypeReferenceRangeReader} from "./JavaTypeReferenceRangeReader";
-import type {OffsetRange} from "./JavaTypeReferenceRangeReader";
+import type {
+    JavaTypeReferenceRangeReader,
+    OffsetRange
+} from "@throwable-highlighter/decorations/highlighting/JavaTypeReferenceRangeReader";
 
 export class JavaThrowsClauseFinder {
     private static readonly THROWS_CLAUSE_PATTERN =

@@ -1,11 +1,15 @@
 import vscode from "vscode";
+
 import {
     DecorationTypes,
     HighlightingContext,
     ThrowableHighlightingContext
-} from "./highlighting/ThrowableHighlightingContext";
-import {ThrowableHighlightingCandidate, ThrowableHighlightingFinder} from "./highlighting/ThrowableHighlightingFinder";
-import {JavaTypeDefinitionResolver} from "../resolution/JavaTypeDefinitionResolver";
+} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingContext";
+import {
+    ThrowableHighlightingCandidate,
+    ThrowableHighlightingFinder
+} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingFinder";
+import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
 
 export class ThrowableDecorationController implements vscode.Disposable {
     private decorationTypes: DecorationTypes;

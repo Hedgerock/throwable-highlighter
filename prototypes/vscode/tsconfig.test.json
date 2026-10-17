@@ -3,7 +3,11 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "out-test",
-    "sourceMap": false
+    "sourceMap": false,
+    "baseUrl": ".",
+    "paths": {
+      "@throwable-highlighter/*": ["src/*"]
+    }
   },
   "include": ["src/resolution/hierarchy/**/*.ts", "test/**/*.ts"],
   "exclude": ["node_modules", "out", "out-test"]
