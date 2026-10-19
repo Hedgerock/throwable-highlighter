@@ -119,6 +119,7 @@ NNNN-краткое-название.md
 - [ADR-0009: Отдельная подсветка типов Throwable в throws](0009-throwable-throws-highlighting.md)
 - [ADR-0010: Подсветка типов Throwable в throws в прототипе VS Code](0010-vscode-throws-throwable-highlighting.md)
 - [ADR-0011: Выделение синтаксического разбора контекстов VS Code](0011-separate-vscode-context-parsing.md)
+- [ADR-0012: Выделение синтаксического разбора импортов VS Code](0012-separate-vscode-import-parsing.md)
 
 ---
 
