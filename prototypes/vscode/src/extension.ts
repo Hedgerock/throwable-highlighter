@@ -8,6 +8,7 @@ import {JavaThrowsClauseFinder} from "@throwable-highlighter/decorations/highlig
 import {JavaCatchClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaCatchClauseFinder";
 import {DefinitionProbe, INSPECT_DEFINITION_COMMAND} from "@throwable-highlighter/resolution/DefinitionProbe";
 import {ThrowableDecorationController} from "@throwable-highlighter/decorations/ThrowableDecorationController";
+import {JavaImportClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaImportClauseFinder";
 
 const INITIAL_REFRESH_DELAYS = [1_000, 3_000, 8_000] as const;
 
@@ -33,6 +34,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const controller = new ThrowableDecorationController(
         new ThrowableHighlightingFinder(
             javaCodeMask,
+            new JavaImportClauseFinder(),
             new JavaCatchClauseFinder(typeReferenceRangeReader),
             new JavaThrowsClauseFinder(typeReferenceRangeReader)
         ),

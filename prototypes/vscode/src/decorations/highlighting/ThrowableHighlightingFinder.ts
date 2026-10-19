@@ -4,6 +4,8 @@ import {JavaCatchClauseFinder} from "@throwable-highlighter/decorations/highligh
 import {JavaThrowsClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaThrowsClauseFinder";
 import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 import type {OffsetRange} from "@throwable-highlighter/decorations/highlighting/JavaTypeReferenceRangeReader";
+import type {JavaImportClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaImportClauseFinder";
+import type {JavaImportClause} from "@throwable-highlighter/decorations/highlighting/JavaImportClauseFinder";
 
 export interface ThrowableHighlightingCandidate {
     typeName: string;
@@ -18,6 +20,7 @@ export class ThrowableHighlightingFinder {
 
     constructor(
         codeMask: JavaCodeMask,
+        private readonly importClauseFinder: JavaImportClauseFinder,
         private readonly catchClauseFinder: JavaCatchClauseFinder,
         private readonly throwsClauseFinder: JavaThrowsClauseFinder
     ) {
@@ -28,6 +31,7 @@ export class ThrowableHighlightingFinder {
         const candidates: ThrowableHighlightingCandidate[] = [];
         const source = document.getText();
         const code = this.codeMask.maskNonCode(source);
+        const importClauses = this.importClauseFinder.findClauses(code);
         const catchTypeRanges = this.catchClauseFinder.findTypeReferenceRanges(code);
         const throwsTypeRanges = this.throwsClauseFinder.findTypeReferenceRanges(code);
 
@@ -38,7 +42,7 @@ export class ThrowableHighlightingFinder {
                 continue;
             }
 
-            const context = this.getHighlightingContext(code, start, catchTypeRanges, throwsTypeRanges);
+            const context = this.getHighlightingContext(start, importClauses, catchTypeRanges, throwsTypeRanges);
 
             if (context === undefined) {
                 continue;
@@ -57,17 +61,19 @@ export class ThrowableHighlightingFinder {
     }
 
     private getHighlightingContext(
-        source: string,
         offset: number,
+        importClauses: readonly JavaImportClause[],
         catchTypeRanges: readonly OffsetRange[],
         throwsTypeRanges: readonly OffsetRange[]
     ): HighlightingContext | undefined {
-        const lineStart = source.lastIndexOf("\n", offset - 1) + 1;
-        const linePrefix = source.slice(lineStart, offset);
-        const importMatch = /^\s*import\s+(static\s+)?/.exec(linePrefix);
+        const importClause = importClauses.find(clause => clause.range.start <= offset && offset < clause.range.end);
 
-        if (importMatch != null) {
-            return importMatch[1] === undefined ? "import" : undefined;
+        if (importClause !== undefined) {
+            const typeRange = importClause.typeRange;
+
+            return typeRange !== undefined && typeRange.start <= offset && offset < typeRange.end
+                ? "import"
+                : undefined;
         }
 
         if (catchTypeRanges.some(range => range.start <= offset && offset < range.end)) {
