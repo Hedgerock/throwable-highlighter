@@ -78,7 +78,11 @@ export class JavaCodeMask {
                 continue;
             }
 
-            if ((state === "string" || state === "character") && current === "\\" && next !== undefined) {
+            if (
+                (state === "string" || state === "character" || state === "textBlock") &&
+                current === "\\" &&
+                next !== undefined
+            ) {
                 this.maskCharacter(masked, index + 1);
                 index++;
                 continue;
