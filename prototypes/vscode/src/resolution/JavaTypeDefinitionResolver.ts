@@ -87,7 +87,8 @@ export class JavaTypeDefinitionResolver {
         reference: VsCodeTypeReference,
         context: HierarchyResolutionContext
     ): Promise<ThrowableTypeResolution> {
-        const pendingResolution = this.pendingResolutions.get(cacheKey);
+        const isTopLevelRequest = context.visitedDeclarations.size === 0;
+        const pendingResolution = isTopLevelRequest ? this.pendingResolutions.get(cacheKey) : undefined;
 
         if (pendingResolution !== undefined) {
             return pendingResolution;
@@ -96,7 +97,9 @@ export class JavaTypeDefinitionResolver {
         const cacheGeneration = this.cacheGeneration;
         const resolutionPromise = this.resolveHierarchy(reference, context);
 
-        this.pendingResolutions.set(cacheKey, resolutionPromise);
+        if (isTopLevelRequest) {
+            this.pendingResolutions.set(cacheKey, resolutionPromise);
+        }
 
         try {
             const resolution = await resolutionPromise;
@@ -107,7 +110,7 @@ export class JavaTypeDefinitionResolver {
 
             return resolution;
         } finally {
-            if (this.pendingResolutions.get(cacheKey) === resolutionPromise) {
+            if (isTopLevelRequest && this.pendingResolutions.get(cacheKey) === resolutionPromise) {
                 this.pendingResolutions.delete(cacheKey);
             }
         }

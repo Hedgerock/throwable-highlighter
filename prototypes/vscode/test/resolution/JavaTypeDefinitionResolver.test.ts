@@ -548,6 +548,80 @@ test("isolates pending requests and cached results across invalidation", async c
     }
 });
 
+test("finishes concurrent resolutions of cyclic inheritance", async context => {
+    const usage = createFixture("class Usage { |First first; Second second; }");
+    const first = createFixture("package example; class |First extends Second {}", "file:///First.java");
+    const second = createFixture("package example; class |Second extends First {}", "file:///Second.java");
+
+    const documents = new Map(
+        [usage, first, second].map(fixture => [fixture.document.uri.toString(), fixture.document])
+    );
+
+    const definitions = new Map([
+        ["First", new vscode.Location(first.document.uri, first.range)],
+        ["Second", new vscode.Location(second.document.uri, second.range)]
+    ]);
+
+    const requestedNames: string[] = [];
+
+    context.mock.method(
+        vscode.commands,
+        "executeCommand",
+        async (command: string, uri: vscode.Uri, position: vscode.Position) => {
+            if (command !== "vscode.executeDefinitionProvider") {
+                throw new Error("Unexpected command: " + command);
+            }
+
+            const document = documents.get(uri.toString());
+            const range = document?.getWordRangeAtPosition(position);
+
+            if (document === undefined || range === undefined) {
+                throw new Error("Unexpected reference: " + uri.toString());
+            }
+
+            const name = document.getText(range);
+            const definition = definitions.get(name);
+
+            if (definition === undefined) {
+                throw new Error("Unexpected type: " + name);
+            }
+
+            requestedNames.push(name);
+            return [definition];
+        }
+    );
+
+    context.mock.method(vscode.workspace, "openTextDocument", async (uri: vscode.Uri) => {
+        const document = documents.get(uri.toString());
+
+        if (document === undefined) {
+            throw new Error("Unexpected document: " + uri.toString());
+        }
+
+        return document;
+    });
+
+    const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask());
+    const resolutions = Promise.all([
+        resolver.isThrowableType(usage.document, usage.range.start),
+        resolver.isThrowableType(usage.document, rangeOf(usage.document, "Second").start)
+    ]);
+
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+
+    try {
+        const deadline = new Promise<never>((_resolve, reject) => {
+            timeout = setTimeout(() => reject(new Error("Concurrent hierarchy resolutions did not finish")), 5_000);
+        });
+
+        assert.deepEqual(await Promise.race([resolutions, deadline]), [false, false]);
+    } finally {
+        clearTimeout(timeout);
+    }
+
+    assert.deepEqual(requestedNames.sort(), ["First", "First", "First", "Second", "Second", "Second"]);
+});
+
 function createCacheFixture(
     context: TestContext,
     provideDefinitions: () => Promise<readonly vscode.Location[] | undefined>
