@@ -33,6 +33,10 @@ export class ThrowableDecorationController implements vscode.Disposable {
     }
 
     public refreshConfiguration(): void {
+        if (this.isDisposed) {
+            return;
+        }
+
         this.disposeDecorationTypes();
         this.decorationTypes = this.createDecorationTypes();
 
