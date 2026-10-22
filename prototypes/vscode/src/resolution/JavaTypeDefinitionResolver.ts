@@ -13,15 +13,18 @@ import {
     type ThrowableTypeResolution
 } from "@throwable-highlighter/resolution/hierarchy/index";
 import type {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
+import {JavaDefinitionClassLocator} from "@throwable-highlighter/resolution/JavaDefinitionClassLocator";
+import type {JavaDefinitionSymbol} from "@throwable-highlighter/resolution/JavaDefinitionClassLocator";
 
 export class JavaTypeDefinitionResolver {
     private readonly classDeclarationReader: JavaClassDeclarationReader;
     private readonly hierarchyResolver = new ThrowableHierarchyResolver<VsCodeTypeReference>(typeName =>
-        ThrowableTypeCatalog.isFallbackThrowableType(typeName)
+        ThrowableTypeCatalog.isKnownThrowableType(typeName)
     );
     private readonly cacheResolutions = new Map<string, boolean>();
     private readonly pendingResolutions = new Map<string, Promise<ThrowableTypeResolution>>();
     private cacheGeneration = 0;
+    private readonly definitionClassLocator = new JavaDefinitionClassLocator();
 
     constructor(codeMask: JavaCodeMask) {
         this.classDeclarationReader = new JavaClassDeclarationReader(codeMask);
@@ -61,13 +64,6 @@ export class JavaTypeDefinitionResolver {
         reference: VsCodeTypeReference,
         context: HierarchyResolutionContext
     ): Promise<ThrowableTypeResolution> {
-        if (ThrowableTypeCatalog.isFallbackThrowableType(reference.name)) {
-            return {
-                kind: "confirmed",
-                isThrowable: true
-            };
-        }
-
         if (this.classDeclarationReader.readClassDeclaration(reference) !== undefined) {
             return this.resolveHierarchy(reference, context);
         }
@@ -160,17 +156,7 @@ export class JavaTypeDefinitionResolver {
                 try {
                     const location = this.toLocation(definition);
                     const definitionDocument = await vscode.workspace.openTextDocument(location.uri);
-                    const definitionReference = this.classDeclarationReader.readTypeReference(
-                        definitionDocument,
-                        location.range.start
-                    );
-
-                    if (definitionReference === undefined || definitionReference.name !== reference.name) {
-                        hasUnavailableDefinition = true;
-                        continue;
-                    }
-
-                    const declaration = this.classDeclarationReader.readClassDeclaration(definitionReference);
+                    const declaration = await this.readDefinitionClass(definitionDocument, location.range, reference);
 
                     if (declaration === undefined) {
                         hasUnavailableDefinition = true;
@@ -201,13 +187,88 @@ export class JavaTypeDefinitionResolver {
         };
     }
 
-    private toLocation(definition: vscode.Location | vscode.LocationLink): vscode.Location {
-        if ("targetUri" in definition) {
-            if (!definition.targetUri || !definition.targetSelectionRange) {
-                throw new Error("Invalid location link");
+    private async readDefinitionClass(
+        document: vscode.TextDocument,
+        definitionRange: vscode.Range,
+        sourceReference: VsCodeTypeReference
+    ): Promise<ClassDeclaration<VsCodeTypeReference> | undefined> {
+        const directReference = this.classDeclarationReader.readTypeReference(document, definitionRange.start);
+
+        if (directReference?.name === sourceReference.name) {
+            const declaration = this.classDeclarationReader.readClassDeclaration(directReference);
+
+            if (declaration !== undefined) {
+                return declaration;
+            }
+        }
+
+        const symbols = await vscode.commands.executeCommand<
+            readonly (vscode.DocumentSymbol | vscode.SymbolInformation)[]
+        >("vscode.executeDocumentSymbolProvider", document.uri);
+
+        const sourceOffset =
+            document.uri.toString() === sourceReference.document.uri.toString()
+                ? document.offsetAt(sourceReference.range.start)
+                : undefined;
+
+        const classNameRange = this.definitionClassLocator.findClassNameRange(
+            this.toDefinitionSymbols(document, symbols ?? []),
+            document.offsetAt(definitionRange.start),
+            sourceOffset
+        );
+
+        if (classNameRange === undefined) {
+            return undefined;
+        }
+
+        const classReference = this.classDeclarationReader.readTypeReference(
+            document,
+            document.positionAt(classNameRange.start)
+        );
+
+        if (classReference?.name !== sourceReference.name) {
+            return undefined;
+        }
+
+        return this.classDeclarationReader.readClassDeclaration(classReference);
+    }
+
+    private toDefinitionSymbols(
+        document: vscode.TextDocument,
+        symbols: readonly (vscode.DocumentSymbol | vscode.SymbolInformation)[]
+    ): JavaDefinitionSymbol[] {
+        const result: JavaDefinitionSymbol[] = [];
+
+        for (const symbol of symbols) {
+            if (!("children" in symbol)) {
+                continue;
             }
 
-            return new vscode.Location(definition.targetUri, definition.targetSelectionRange);
+            result.push({
+                kind:
+                    symbol.kind === vscode.SymbolKind.Class
+                        ? "class"
+                        : symbol.kind === vscode.SymbolKind.Constructor
+                          ? "constructor"
+                          : "other",
+                range: {
+                    start: document.offsetAt(symbol.range.start),
+                    end: document.offsetAt(symbol.range.end)
+                },
+                nameRange: {
+                    start: document.offsetAt(symbol.selectionRange.start),
+                    end: document.offsetAt(symbol.selectionRange.end)
+                },
+                children: this.toDefinitionSymbols(document, symbol.children)
+            });
+        }
+
+        return result;
+    }
+
+    private toLocation(definition: vscode.Location | vscode.LocationLink): vscode.Location {
+        if ("targetUri" in definition) {
+            return new vscode.Location(definition.targetUri, definition.targetSelectionRange ?? definition.targetRange);
         }
 
         return definition;

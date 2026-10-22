@@ -11,6 +11,7 @@ export type DirectSuperclassResolution<TReference extends TypeReference> =
 
 export type ClassDeclaration<TReference extends TypeReference> = {
     identity: string;
+    qualifiedName: string | undefined;
     directSuperclass: DirectSuperclassResolution<TReference>;
 };
 

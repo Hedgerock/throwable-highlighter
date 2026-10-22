@@ -8,6 +8,7 @@ import type {
     ThrowableTypeResolution,
     TypeReference
 } from "@throwable-highlighter/resolution/hierarchy/index";
+import {ThrowableTypeCatalog} from "@throwable-highlighter/resolution/ThrowableTypeCatalog";
 
 type Reference = TypeReference;
 
@@ -22,6 +23,7 @@ test("returns unavailable when the direct superclass cannot be read", async () =
             declarationsOf([
                 {
                     identity: "UnreadableException",
+                    qualifiedName: "example.UnreadableException",
                     directSuperclass: {
                         kind: "unavailable"
                     }
@@ -145,40 +147,137 @@ test("passes traversal context to a transitive parent", async () => {
     assert.deepEqual(result, confirmed(true));
 });
 
-test("confirms a direct subclass of a fallback type", async () => {
-    const resolver = createResolver();
-    let parentWasResolved = false;
+test("resolves known-named parents instead of confirming them by name", async () => {
+    for (const parentResolution of [confirmed(true), confirmed(false), unavailable()]) {
+        const resolver = createResolver();
+        let parentWasResolved = false;
 
-    const result = await resolver.resolve(
-        reference("CustomException"),
-        context(),
-        async () => declarationsOf([declarationWithSuperclass("CustomException", "RuntimeException")]),
-        async () => {
-            parentWasResolved = true;
-            return unavailable();
-        }
-    );
+        const result = await resolver.resolve(
+            reference("CustomException"),
+            context(),
+            async () => declarationsOf([declarationWithSuperclass("CustomException", "RuntimeException")]),
+            async parentReference => {
+                parentWasResolved = true;
+                assert.equal(parentReference.name, "RuntimeException");
 
-    assert.deepEqual(result, confirmed(true));
-    assert.equal(parentWasResolved, false);
+                return parentResolution;
+            }
+        );
+
+        assert.deepEqual(result, parentResolution);
+        assert.equal(parentWasResolved, true);
+    }
 });
 
-test("confirms a fallback type without resolving declarations", async () => {
-    const resolver = createResolver();
-    let wasResolved = false;
+test("requires a resolved class declaration even for known type names", async () => {
+    for (const name of ["RuntimeException", "java.lang.RuntimeException"]) {
+        for (const declarationResolution of [unavailableDeclarations(), declarationsOf([])]) {
+            const resolver = createResolver();
+            let wasResolved = false;
+            let parentWasResolved = false;
 
-    const result = await resolver.resolve(
-        reference("RuntimeException"),
-        context(),
-        async () => {
-            wasResolved = true;
-            return unavailableDeclarations();
-        },
-        async () => unavailable()
-    );
+            const result = await resolver.resolve(
+                reference(name),
+                context(),
+                async () => {
+                    wasResolved = true;
+                    return declarationResolution;
+                },
+                async () => {
+                    parentWasResolved = true;
+                    return confirmed(true);
+                }
+            );
 
-    assert.deepEqual(result, confirmed(true));
-    assert.equal(wasResolved, false);
+            assert.deepEqual(result, unavailable());
+            assert.equal(wasResolved, true);
+            assert.equal(parentWasResolved, false);
+        }
+    }
+});
+
+test("confirms known types by the qualified name of their declarations", async () => {
+    for (const qualifiedName of ThrowableTypeCatalog.KNOWN_TYPES) {
+        const resolver = createResolver();
+        const name = qualifiedName.slice(qualifiedName.lastIndexOf(".") + 1);
+        let parentWasResolved = false;
+
+        const result = await resolver.resolve(
+            reference(name),
+            context(0),
+            async () =>
+                declarationsOf([
+                    {
+                        identity: qualifiedName,
+                        qualifiedName,
+                        directSuperclass: {
+                            kind: "unavailable"
+                        }
+                    }
+                ]),
+            async () => {
+                parentWasResolved = true;
+                return unavailable();
+            }
+        );
+
+        assert.deepEqual(result, confirmed(true), qualifiedName);
+        assert.equal(parentWasResolved, false);
+    }
+});
+
+test("does not confirm unrelated classes with known simple names", async () => {
+    for (const qualifiedName of ["RuntimeException", "example.RuntimeException", "java.lang.Outer.RuntimeException"]) {
+        const resolver = createResolver();
+
+        const result = await resolver.resolve(
+            reference("RuntimeException"),
+            context(),
+            async () =>
+                declarationsOf([
+                    {
+                        ...declarationWithoutSuperclass("RuntimeException"),
+                        qualifiedName
+                    }
+                ]),
+            async () => unavailable()
+        );
+
+        assert.deepEqual(result, confirmed(false), qualifiedName);
+    }
+});
+
+test("checks inheritance when the qualified name is unknown or outside the catalog", async () => {
+    for (const qualifiedName of [
+        undefined,
+        "RuntimeException",
+        "example.RuntimeException",
+        "java.lang.Outer.RuntimeException"
+    ]) {
+        const resolver = createResolver();
+        let parentWasResolved = false;
+
+        const result = await resolver.resolve(
+            reference("RuntimeException"),
+            context(),
+            async () =>
+                declarationsOf([
+                    {
+                        ...declarationWithSuperclass("RuntimeException", "Throwable"),
+                        qualifiedName
+                    }
+                ]),
+            async parentReference => {
+                parentWasResolved = true;
+                assert.equal(parentReference.name, "Throwable");
+
+                return confirmed(true);
+            }
+        );
+
+        assert.deepEqual(result, confirmed(true));
+        assert.equal(parentWasResolved, true);
+    }
 });
 
 function reference(name: string): Reference {
@@ -214,6 +313,7 @@ function unavailableDeclarations(): ClassDeclarationResolution<Reference> {
 function declarationWithoutSuperclass(identity: string): ClassDeclaration<Reference> {
     return {
         identity,
+        qualifiedName: "example." + identity,
         directSuperclass: {
             kind: "none"
         }
@@ -223,6 +323,7 @@ function declarationWithoutSuperclass(identity: string): ClassDeclaration<Refere
 function declarationWithSuperclass(identity: string, parentName: string): ClassDeclaration<Reference> {
     return {
         identity,
+        qualifiedName: "example." + identity,
         directSuperclass: {
             kind: "found",
             reference: reference(parentName)
@@ -242,5 +343,5 @@ function declarationsOf(
 }
 
 function createResolver(): ThrowableHierarchyResolver<Reference> {
-    return new ThrowableHierarchyResolver(typeName => typeName === "Throwable" || typeName === "RuntimeException");
+    return new ThrowableHierarchyResolver(qualifiedName => ThrowableTypeCatalog.isKnownThrowableType(qualifiedName));
 }

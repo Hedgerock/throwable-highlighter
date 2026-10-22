@@ -1,14 +1,14 @@
 export class ThrowableTypeCatalog {
-    public static readonly FALLBACK_TYPES = [
-        "Throwable",
-        "Exception",
-        "RuntimeException",
-        "IOException",
-        "IllegalArgumentException",
-        "IllegalStateException"
+    public static readonly KNOWN_TYPES = [
+        "java.lang.Throwable",
+        "java.lang.Exception",
+        "java.lang.RuntimeException",
+        "java.io.IOException",
+        "java.lang.IllegalArgumentException",
+        "java.lang.IllegalStateException"
     ] as const;
 
-    public static isFallbackThrowableType(typeName: string): boolean {
-        return this.FALLBACK_TYPES.some(knownType => knownType === typeName);
+    public static isKnownThrowableType(qualifiedName: string): boolean {
+        return this.KNOWN_TYPES.some(knownType => knownType === qualifiedName);
     }
 }

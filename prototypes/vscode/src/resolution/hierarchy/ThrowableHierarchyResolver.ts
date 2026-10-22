@@ -8,7 +8,7 @@ import type {
 } from "@throwable-highlighter/resolution/hierarchy/index";
 
 export class ThrowableHierarchyResolver<TReference extends TypeReference> {
-    constructor(private readonly isFallbackThrowableType: (typeName: string) => boolean) {}
+    constructor(private readonly isKnownThrowableType: (qualifiedName: string) => boolean) {}
 
     public async resolve(
         reference: TReference,
@@ -16,16 +16,9 @@ export class ThrowableHierarchyResolver<TReference extends TypeReference> {
         resolveDeclarations: ClassDeclarationResolver<TReference>,
         resolveParent: ParentTypeResolver<TReference>
     ): Promise<ThrowableTypeResolution> {
-        if (this.isFallbackThrowableType(reference.name)) {
-            return {
-                kind: "confirmed",
-                isThrowable: true
-            };
-        }
-
         const declarationResolution = await resolveDeclarations(reference);
 
-        if (declarationResolution.kind === "unavailable") {
+        if (declarationResolution.kind === "unavailable" || declarationResolution.declarations.length === 0) {
             return {
                 kind: "unavailable"
             };
@@ -60,6 +53,13 @@ export class ThrowableHierarchyResolver<TReference extends TypeReference> {
             };
         }
 
+        if (declaration.qualifiedName !== undefined && this.isKnownThrowableType(declaration.qualifiedName)) {
+            return {
+                kind: "confirmed",
+                isThrowable: true
+            };
+        }
+
         if (declaration.directSuperclass.kind === "unavailable") {
             return {
                 kind: "unavailable"
@@ -73,15 +73,6 @@ export class ThrowableHierarchyResolver<TReference extends TypeReference> {
             };
         }
 
-        const directSuperclass = declaration.directSuperclass.reference;
-
-        if (this.isFallbackThrowableType(directSuperclass.name)) {
-            return {
-                kind: "confirmed",
-                isThrowable: true
-            };
-        }
-
         if (context.remainingDepth === 0) {
             return {
                 kind: "unavailable"
@@ -91,7 +82,7 @@ export class ThrowableHierarchyResolver<TReference extends TypeReference> {
         const visitedDeclarations = new Set(context.visitedDeclarations);
         visitedDeclarations.add(declaration.identity);
 
-        return resolveParent(directSuperclass, {
+        return resolveParent(declaration.directSuperclass.reference, {
             visitedDeclarations,
             remainingDepth: context.remainingDepth - 1
         });

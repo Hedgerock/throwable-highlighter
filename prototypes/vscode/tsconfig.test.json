@@ -6,7 +6,8 @@
     "sourceMap": false,
     "baseUrl": ".",
     "paths": {
-      "@throwable-highlighter/*": ["src/*"]
+      "@throwable-highlighter/*": ["src/*"],
+      "vscode": ["test/support/vscode.ts"]
     }
   },
   "include": ["src/resolution/hierarchy/**/*.ts", "test/**/*.ts"],

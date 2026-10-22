@@ -5,6 +5,7 @@ import type {
     TypeReference
 } from "@throwable-highlighter/resolution/hierarchy/index";
 import type {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
+import {JavaClassNameReader} from "@throwable-highlighter/resolution/JavaClassNameReader";
 
 export type VsCodeTypeReference = TypeReference & {
     document: vscode.TextDocument;
@@ -12,6 +13,8 @@ export type VsCodeTypeReference = TypeReference & {
 };
 
 export class JavaClassDeclarationReader {
+    private readonly classNameReader = new JavaClassNameReader();
+
     constructor(private readonly codeMask: JavaCodeMask) {}
 
     public readTypeReference(
@@ -50,6 +53,7 @@ export class JavaClassDeclarationReader {
 
         return {
             identity: this.createDeclarationIdentity(document, reference.range),
+            qualifiedName: this.classNameReader.readQualifiedName(source, typeNameOffset),
             directSuperclass: this.readDirectSuperclass(document, source, headerStart, openingBrace)
         };
     }
