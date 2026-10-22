@@ -135,6 +135,23 @@ wildcard imports и статические импорты.
 
 Работа с реальной Java-поддержкой и визуальное применение editor decorations проверяются отдельно в Extension Development Host.
 
+---
+
+## CI
+
+Workflow [CI](../../.github/workflows/build.yml) запускается при push в `master` и для pull requests в `master`.
+
+Отдельная job `vscode` выполняет проверки прототипа на Ubuntu с Node.js 22. Команды запускаются из каталога `prototypes/vscode`.
+
+Зависимости устанавливаются командой `npm ci` по зафиксированному lock-файлу. Команда `npm run check` проверяет форматирование,
+собирает прототип и запускает автоматические тесты.
+
+CI не запускает Extension Development Host и не проверяет работу реальной Java-поддержки или визуальное применение decorations.
+
+Сборка VSIX и публикация расширения VS Code в текущий workflow не входят.
+
+---
+
 ## Форматирование
 
 TypeScript-код и JSON-конфигурация прототипа формируются через Prettier.
