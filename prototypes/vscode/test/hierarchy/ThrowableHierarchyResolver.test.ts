@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
+
 import {ThrowableHierarchyResolver} from "@throwable-highlighter/resolution/hierarchy/ThrowableHierarchyResolver";
+import {ThrowableTypeCatalog} from "@throwable-highlighter/resolution/ThrowableTypeCatalog";
 import type {
     ClassDeclaration,
     ClassDeclarationResolution,
@@ -8,7 +10,6 @@ import type {
     ThrowableTypeResolution,
     TypeReference
 } from "@throwable-highlighter/resolution/hierarchy/index";
-import {ThrowableTypeCatalog} from "@throwable-highlighter/resolution/ThrowableTypeCatalog";
 
 type Reference = TypeReference;
 

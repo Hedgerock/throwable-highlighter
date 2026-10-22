@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
+
 import * as vscode from "vscode";
-import type {VsCodeTypeReference} from "@throwable-highlighter/resolution/JavaClassDeclarationReader";
-import {JavaClassDeclarationReader} from "@throwable-highlighter/resolution/JavaClassDeclarationReader";
+
 import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
+import {JavaClassDeclarationReader} from "@throwable-highlighter/resolution/JavaClassDeclarationReader";
+import type {VsCodeTypeReference} from "@throwable-highlighter/resolution/JavaClassDeclarationReader";
 
 test("includes the package in a class declaration", () => {
     const reader = new JavaClassDeclarationReader(new JavaCodeMask());

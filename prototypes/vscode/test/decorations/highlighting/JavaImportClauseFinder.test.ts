@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import type {JavaImportClause} from "@throwable-highlighter/decorations/highlighting/JavaImportClauseFinder";
-import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
+
 import {JavaImportClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaImportClauseFinder";
+import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
+import type {JavaImportClause} from "@throwable-highlighter/decorations/highlighting/JavaImportClauseFinder";
 
 test("returns the declaration range and the final type name", () => {
     const source = "  import java.io.IOException;  ";

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
+
 import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 import {JavaClassNameReader} from "@throwable-highlighter/resolution/JavaClassNameReader";
 

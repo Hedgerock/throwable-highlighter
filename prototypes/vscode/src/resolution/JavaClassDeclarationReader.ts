@@ -1,11 +1,12 @@
 import * as vscode from "vscode";
+
+import {JavaClassNameReader} from "@throwable-highlighter/resolution/JavaClassNameReader";
+import type {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 import type {
     ClassDeclaration,
     DirectSuperclassResolution,
     TypeReference
 } from "@throwable-highlighter/resolution/hierarchy/index";
-import type {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
-import {JavaClassNameReader} from "@throwable-highlighter/resolution/JavaClassNameReader";
 
 export type VsCodeTypeReference = TypeReference & {
     document: vscode.TextDocument;

@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+
 import type {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
 
 export const INSPECT_DEFINITION_COMMAND = "throwableHighlighter.prototype.inspectDefinition";

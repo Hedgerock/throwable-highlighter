@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import type {JavaDefinitionSymbol} from "@throwable-highlighter/resolution/JavaDefinitionClassLocator";
+
 import {JavaDefinitionClassLocator} from "@throwable-highlighter/resolution/JavaDefinitionClassLocator";
+import type {JavaDefinitionSymbol} from "@throwable-highlighter/resolution/JavaDefinitionClassLocator";
 
 test("locates a class by its declaration start or name", () => {
     const locator = new JavaDefinitionClassLocator();

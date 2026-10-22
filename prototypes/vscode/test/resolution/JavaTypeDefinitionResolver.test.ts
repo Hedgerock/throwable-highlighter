@@ -1,9 +1,11 @@
-import * as vscode from "vscode";
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
-import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 import type {TestContext} from "node:test";
+
+import * as vscode from "vscode";
+
+import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
+import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
 
 type DefinitionResponse = readonly (vscode.Location | vscode.LocationLink)[] | undefined;
 

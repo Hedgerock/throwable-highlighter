@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
+
 import {JavaCatchClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaCatchClauseFinder";
 import {JavaTypeReferenceRangeReader} from "@throwable-highlighter/decorations/highlighting/JavaTypeReferenceRangeReader";
+import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 
 test("skips nested annotation arguments and qualified type prefixes", () => {
     const source =
