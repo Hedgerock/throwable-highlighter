@@ -5,6 +5,14 @@ import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/Java
 import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 import type {TestContext} from "node:test";
 
+type DefinitionResponse = readonly (vscode.Location | vscode.LocationLink)[] | undefined;
+
+type MockCallSource = {
+    mock: {
+        calls: readonly {arguments: readonly unknown[]}[];
+    };
+};
+
 test("caches confirmed results after resolving a class declaration", async context => {
     const cases = [
         {
@@ -30,13 +38,9 @@ test("caches confirmed results after resolving a class declaration", async conte
             const definition = createFixture(scenario.source, "jdt://contents/RuntimeException.java");
             const location = new vscode.Location(definition.document.uri, definition.range);
 
-            const provider = current.mock.method(vscode.commands, "executeCommand", async () => [location]);
+            const provider = mockDefinitionProvider(current, async () => [location]);
 
-            const documentProvider = current.mock.method(
-                vscode.workspace,
-                "openTextDocument",
-                async () => definition.document
-            );
+            const documentProvider = mockDocumentProvider(current, [definition.document]);
 
             const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask());
 
@@ -67,7 +71,7 @@ test("does not confirm or cache a known name without a definition", async contex
     ]) {
         await context.test(source, async current => {
             const usage = createFixture(source);
-            const provider = current.mock.method(vscode.commands, "executeCommand", async () => undefined);
+            const provider = mockDefinitionProvider(current, async () => undefined);
 
             const documentProvider = current.mock.method(vscode.workspace, "openTextDocument", async () => {
                 assert.fail("An unavailable definition must not open a document.");
@@ -173,21 +177,7 @@ test("resolves constructor definitions through their declaring classes", async c
                     }
                 );
 
-                const documentProvider = current.mock.method(
-                    vscode.workspace,
-                    "openTextDocument",
-                    async (uri: vscode.Uri) => {
-                        if (uri.toString() === target.document.uri.toString()) {
-                            return target.document;
-                        }
-
-                        if (uri.toString() === standard.document.uri.toString()) {
-                            return standard.document;
-                        }
-
-                        throw new Error("Unexpected document: " + uri.toString());
-                    }
-                );
+                const documentProvider = mockDocumentProvider(current, [target.document, standard.document]);
 
                 const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask());
                 const expectedCalls: unknown[][] = [
@@ -206,14 +196,9 @@ test("resolves constructor definitions through their declaring classes", async c
                 }
 
                 assert.equal(await resolver.isThrowableType(usage.document, usage.range.start), true);
-                assert.deepEqual(
-                    provider.mock.calls.map(call => call.arguments),
-                    expectedCalls
-                );
-                assert.deepEqual(
-                    documentProvider.mock.calls.map(call => call.arguments),
-                    expectedDocuments
-                );
+
+                assertMockCalls(provider, expectedCalls);
+                assertMockCalls(documentProvider, expectedDocuments);
 
                 assert.equal(await resolver.isThrowableType(usage.document, usage.range.start), true);
                 assert.equal(provider.mock.callCount(), expectedCalls.length);
@@ -256,11 +241,7 @@ test("does not resolve methods or constructor declarations as class references",
 
                 throw new Error("Unexpected command: " + command);
             });
-            const documentProvider = current.mock.method(
-                vscode.workspace,
-                "openTextDocument",
-                async () => target.document
-            );
+            const documentProvider = mockDocumentProvider(current, [target.document]);
             const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask());
 
             for (let attempt = 0; attempt < 2; attempt++) {
@@ -275,14 +256,8 @@ test("does not resolve methods or constructor declarations as class references",
                 ["vscode.executeDocumentSymbolProvider", target.document.uri]
             ];
 
-            assert.deepEqual(
-                provider.mock.calls.map(call => call.arguments),
-                [...expectedCalls, ...expectedCalls]
-            );
-            assert.deepEqual(
-                documentProvider.mock.calls.map(call => call.arguments),
-                [[target.document.uri], [target.document.uri]]
-            );
+            assertMockCalls(provider, [...expectedCalls, ...expectedCalls]);
+            assertMockCalls(documentProvider, [[target.document.uri], [target.document.uri]]);
         });
     }
 });
@@ -372,14 +347,9 @@ test("retries unavailable provider results and caches a later confirmation", asy
             }
 
             assert.equal(await resolver.isThrowableType(usage.document, usage.range.start), false);
-            assert.deepEqual(
-                provider.mock.calls.map(call => call.arguments),
-                expectedCalls
-            );
-            assert.deepEqual(
-                documentProvider.mock.calls.map(call => call.arguments),
-                expectedDocuments
-            );
+
+            assertMockCalls(provider, expectedCalls);
+            assertMockCalls(documentProvider, expectedDocuments);
 
             isAvailable = true;
 
@@ -387,14 +357,9 @@ test("retries unavailable provider results and caches a later confirmation", asy
             expectedDocuments.push([target.document.uri]);
 
             assert.equal(await resolver.isThrowableType(usage.document, usage.range.start), true);
-            assert.deepEqual(
-                provider.mock.calls.map(call => call.arguments),
-                expectedCalls
-            );
-            assert.deepEqual(
-                documentProvider.mock.calls.map(call => call.arguments),
-                expectedDocuments
-            );
+
+            assertMockCalls(provider, expectedCalls);
+            assertMockCalls(documentProvider, expectedDocuments);
 
             assert.equal(await resolver.isThrowableType(usage.document, usage.range.start), true);
             assert.equal(provider.mock.callCount(), expectedCalls.length);
@@ -420,14 +385,9 @@ test("shares pending resolutions for the same reference", async context => {
 
             assert.equal(pendingCalls, 1);
             assert.equal(pendingDocuments, 0);
-            assert.deepEqual(
-                fixture.provider.mock.calls.map(call => call.arguments),
-                [fixture.definitionCall]
-            );
-            assert.deepEqual(
-                fixture.documentProvider.mock.calls.map(call => call.arguments),
-                [[location.uri]]
-            );
+
+            assertMockCalls(fixture.provider, [fixture.definitionCall]);
+            assertMockCalls(fixture.documentProvider, [[location.uri]]);
 
             assert.equal(
                 await fixture.resolver.isThrowableType(fixture.usage.document, fixture.usage.range.start),
@@ -525,17 +485,15 @@ test("isolates pending requests and cached results across invalidation", async c
                         await fixture.resolver.isThrowableType(fixture.usage.document, fixture.usage.range.start),
                         false
                     );
-                    assert.deepEqual(
-                        fixture.provider.mock.calls.map(call => call.arguments),
-                        [fixture.definitionCall, fixture.definitionCall]
-                    );
+
+                    assertMockCalls(fixture.provider, [fixture.definitionCall, fixture.definitionCall]);
 
                     const documentUris = obsoleteFinishesFirst
                         ? [fixture.throwableLocation.uri, fixture.plainLocation.uri]
                         : [fixture.plainLocation.uri, fixture.throwableLocation.uri];
 
-                    assert.deepEqual(
-                        fixture.documentProvider.mock.calls.map(call => call.arguments),
+                    assertMockCalls(
+                        fixture.documentProvider,
                         documentUris.map(uri => [uri])
                     );
                 } finally {
@@ -564,42 +522,26 @@ test("finishes concurrent resolutions of cyclic inheritance", async context => {
 
     const requestedNames: string[] = [];
 
-    context.mock.method(
-        vscode.commands,
-        "executeCommand",
-        async (command: string, uri: vscode.Uri, position: vscode.Position) => {
-            if (command !== "vscode.executeDefinitionProvider") {
-                throw new Error("Unexpected command: " + command);
-            }
-
-            const document = documents.get(uri.toString());
-            const range = document?.getWordRangeAtPosition(position);
-
-            if (document === undefined || range === undefined) {
-                throw new Error("Unexpected reference: " + uri.toString());
-            }
-
-            const name = document.getText(range);
-            const definition = definitions.get(name);
-
-            if (definition === undefined) {
-                throw new Error("Unexpected type: " + name);
-            }
-
-            requestedNames.push(name);
-            return [definition];
-        }
-    );
-
-    context.mock.method(vscode.workspace, "openTextDocument", async (uri: vscode.Uri) => {
+    mockDefinitionProvider(context, async (uri, position) => {
         const document = documents.get(uri.toString());
+        const range = document?.getWordRangeAtPosition(position);
 
-        if (document === undefined) {
-            throw new Error("Unexpected document: " + uri.toString());
+        if (document === undefined || range === undefined) {
+            throw new Error("Unexpected reference: " + uri.toString());
         }
 
-        return document;
+        const name = document.getText(range);
+        const definition = definitions.get(name);
+
+        if (definition === undefined) {
+            throw new Error("Unexpected type: " + name);
+        }
+
+        requestedNames.push(name);
+        return [definition];
     });
+
+    mockDocumentProvider(context, [...documents.values()]);
 
     const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask());
     const resolutions = Promise.all([
@@ -622,6 +564,215 @@ test("finishes concurrent resolutions of cyclic inheritance", async context => {
     assert.deepEqual(requestedNames.sort(), ["First", "First", "First", "Second", "Second", "Second"]);
 });
 
+test("does not confirm value symbols with known Throwable names", async context => {
+    const cases = [
+        {
+            name: "local variable",
+            member: "void run() { int |RuntimeException = 0; int value = RuntimeException; }"
+        },
+        {
+            name: "field",
+            member: "int |RuntimeException; void run() { int value = RuntimeException; }"
+        },
+        {
+            name: "parameter",
+            member: "void run(int |RuntimeException) { int value = RuntimeException; }"
+        },
+        {
+            name: "ordinary method",
+            member: "void |RuntimeException() {} void run() { RuntimeException(); }"
+        }
+    ] as const;
+
+    for (const scenario of cases) {
+        await context.test(scenario.name, async current => {
+            const fixture = createFixture(
+                [
+                    "package java.lang;",
+                    "public class RuntimeException extends Exception {",
+                    "   " + scenario.member,
+                    "}"
+                ].join("\n")
+            );
+
+            const source = fixture.document.getText();
+            const usageOffset = source.lastIndexOf("RuntimeException");
+            assert.ok(usageOffset > fixture.document.offsetAt(fixture.range.start));
+
+            const positions = [fixture.range.start, fixture.document.positionAt(usageOffset)];
+            const classSymbol = createDocumentSymbol(
+                fixture.document,
+                vscode.SymbolKind.Class,
+                "RuntimeException",
+                source.slice(source.indexOf("public class"))
+            );
+
+            const provider = current.mock.method(vscode.commands, "executeCommand", async (command: string) => {
+                if (command === "vscode.executeDefinitionProvider") {
+                    return [new vscode.Location(fixture.document.uri, fixture.range)];
+                }
+
+                if (command === "vscode.executeDocumentSymbolProvider") {
+                    return [classSymbol];
+                }
+
+                throw new Error("Unexpected command: " + command);
+            });
+
+            const documentProvider = mockDocumentProvider(current, [fixture.document]);
+
+            const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask());
+
+            for (const position of positions) {
+                assert.equal(await resolver.isThrowableType(fixture.document, position), false);
+            }
+
+            assertMockCalls(
+                provider,
+                positions.flatMap(position => [
+                    ["vscode.executeDefinitionProvider", fixture.document.uri, position],
+                    ["vscode.executeDocumentSymbolProvider", fixture.document.uri]
+                ])
+            );
+
+            assertMockCalls(
+                documentProvider,
+                positions.map(() => [fixture.document.uri])
+            );
+        });
+    }
+});
+
+test("confirms each class in an inheritance chain through its declaration", async context => {
+    const cases = [
+        {
+            name: "direct inheritance",
+            typeName: "CustomException",
+            sources: [
+                "package example; class |CustomException extends RuntimeException {}",
+                "package java.lang; public class |RuntimeException extends Exception {}"
+            ],
+            expected: true
+        },
+        {
+            name: "transitive inheritance",
+            typeName: "NestedException",
+            sources: [
+                "package example; class |NestedException extends BaseException {}",
+                "package example; class |BaseException extends RuntimeException {}",
+                "package java.lang; public class |RuntimeException extends Exception {}"
+            ],
+            expected: true
+        },
+        {
+            name: "parent with a known name but no Throwable inheritance",
+            typeName: "CustomException",
+            sources: [
+                "package example; class |CustomException extends RuntimeException {}",
+                "package example; class |RuntimeException {}"
+            ],
+            expected: false
+        },
+        {
+            name: "custom Throwable class with a known simple name",
+            typeName: "RuntimeException",
+            sources: [
+                "package example; class |RuntimeException extends java.lang.Throwable {}",
+                "package java.lang; public class |Throwable {}"
+            ],
+            expected: true
+        }
+    ] as const;
+
+    for (const scenario of cases) {
+        await context.test(scenario.name, async current => {
+            const usage = createFixture("class Usage { |" + scenario.typeName + " value; }");
+            const declarations = scenario.sources.map((source, index) =>
+                createFixture(source, "file:///Hierarchy" + index + ".java")
+            );
+            const locations = declarations.map(
+                declaration => new vscode.Location(declaration.document.uri, declaration.range)
+            );
+            const definitions = new Map<string, vscode.Location>([[usage.document.uri.toString(), locations[0]]]);
+
+            for (let index = 0; index + 1 < declarations.length; index++) {
+                definitions.set(declarations[index].document.uri.toString(), locations[index + 1]);
+            }
+
+            const provider = mockDefinitionProvider(current, async uri => {
+                const definition = definitions.get(uri.toString());
+
+                return definition === undefined ? [] : [definition];
+            });
+
+            const documentProvider = mockDocumentProvider(
+                current,
+                declarations.map(declaration => declaration.document)
+            );
+            const expectedCalls: unknown[][] = [
+                ["vscode.executeDefinitionProvider", usage.document.uri, usage.range.start]
+            ];
+
+            for (let index = 0; index + 1 < declarations.length; index++) {
+                const declaration = declarations[index];
+                const parent = declarations[index + 1];
+                const parentName = parent.document.getText(parent.range);
+
+                expectedCalls.push([
+                    "vscode.executeDefinitionProvider",
+                    declaration.document.uri,
+                    rangeOf(declaration.document, parentName).start
+                ]);
+            }
+
+            const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask());
+
+            assert.equal(await resolver.isThrowableType(usage.document, usage.range.start), scenario.expected);
+
+            assertMockCalls(provider, expectedCalls);
+            assertMockCalls(
+                documentProvider,
+                declarations.map(declaration => [declaration.document.uri])
+            );
+
+            assert.equal(await resolver.isThrowableType(usage.document, usage.range.start), scenario.expected);
+            assert.equal(provider.mock.callCount(), declarations.length);
+            assert.equal(documentProvider.mock.callCount(), declarations.length);
+        });
+    }
+});
+
+function mockDefinitionProvider(
+    context: TestContext,
+    provideDefinitions: (uri: vscode.Uri, position: vscode.Position) => Promise<DefinitionResponse>
+) {
+    return context.mock.method(
+        vscode.commands,
+        "executeCommand",
+        async (command: string, uri: vscode.Uri, position: vscode.Position) => {
+            if (command !== "vscode.executeDefinitionProvider") {
+                throw new Error("Unexpected command: " + command);
+            }
+
+            return provideDefinitions(uri, position);
+        }
+    );
+}
+
+function mockDocumentProvider(context: TestContext, documents: readonly vscode.TextDocument[]) {
+    const documentsByUri = new Map(documents.map(document => [document.uri.toString(), document]));
+
+    return context.mock.method(vscode.workspace, "openTextDocument", async (uri: vscode.Uri) => {
+        const document = documentsByUri.get(uri.toString());
+
+        if (document === undefined) {
+            throw new Error("Unexpected document: " + uri.toString());
+        }
+
+        return document;
+    });
+}
+
 function createCacheFixture(
     context: TestContext,
     provideDefinitions: () => Promise<readonly vscode.Location[] | undefined>
@@ -633,28 +784,9 @@ function createCacheFixture(
     );
 
     const plain = createFixture("package example; class |RuntimeException {}", "file:///RuntimeException.java");
-    const documents = new Map([
-        [throwable.document.uri.toString(), throwable.document],
-        [plain.document.uri.toString(), plain.document]
-    ]);
 
-    const provider = context.mock.method(vscode.commands, "executeCommand", async (command: string) => {
-        if (command !== "vscode.executeDefinitionProvider") {
-            throw new Error("Unexpected command: " + command);
-        }
-
-        return provideDefinitions();
-    });
-
-    const documentProvider = context.mock.method(vscode.workspace, "openTextDocument", async (uri: vscode.Uri) => {
-        const document = documents.get(uri.toString());
-
-        if (document === undefined) {
-            throw new Error("unexpected document: " + uri.toString());
-        }
-
-        return document;
-    });
+    const provider = mockDefinitionProvider(context, provideDefinitions);
+    const documentProvider = mockDocumentProvider(context, [throwable.document, plain.document]);
 
     return {
         usage,
@@ -674,6 +806,18 @@ function createDeferred<T>() {
     });
 
     return {promise, resolve};
+}
+
+function assertMockCalls(
+    mocked: MockCallSource,
+    expectedCalls: readonly (readonly unknown[])[],
+    message?: string
+): void {
+    assert.deepEqual(
+        mocked.mock.calls.map(call => call.arguments),
+        expectedCalls,
+        message
+    );
 }
 
 function createConstructorFixture(name: string, packageName: string, superclass: string, uri: string) {
