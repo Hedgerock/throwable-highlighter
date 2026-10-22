@@ -38,22 +38,81 @@
         "throwableHighlighter.prototype.classColor": {
           "type": "string",
           "default": "",
-          "description": "Foreground color for Throwable types. Leave empty to preserve the native Java class color."
+          "description": "Stored foreground color for Throwable types in the class context. Custom sources require HEX. With no explicit source, an empty value preserves native Java highlighting."
         },
         "throwableHighlighter.prototype.importColor": {
           "type": "string",
           "default": "",
-          "description": "Foreground color for Throwable types in explicit imports. Leave empty to inherit the class color."
+          "description": "Stored foreground color for Throwable types in explicit imports. Custom sources require HEX. With no explicit source, an empty value inherits the class color."
         },
         "throwableHighlighter.prototype.catchColor": {
           "type": "string",
           "default": "",
-          "description": "Foreground color for Throwable types in catch parameters. Leave empty to inherit the class color."
+          "description": "Stored foreground color for Throwable types in catch parameters. Custom sources require HEX. With no explicit source, an empty value inherits the class color."
         },
         "throwableHighlighter.prototype.throwsColor": {
           "type": "string",
           "default": "",
-          "description": "Foreground color for Throwable types in throws clauses. Leave empty to inherit the class color."
+          "description": "Stored foreground color for Throwable types in throws clauses. Custom sources require HEX. With no explicit source, an empty value inherits the class color."
+        },
+        "throwableHighlighter.prototype.classColorSource": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            null,
+            "custom",
+            "native"
+          ],
+          "default": null,
+          "scope": "window",
+          "description": "Color source for Throwable types in the class context. Null preserves the existing classColor rules."
+        },
+        "throwableHighlighter.prototype.importColorSource": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            null,
+            "custom",
+            "inherit",
+            "native"
+          ],
+          "default": null,
+          "scope": "window",
+          "description": "Color source for Throwable types in explicit imports. Null preserves the existing importColor rules."
+        },
+        "throwableHighlighter.prototype.catchColorSource": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            null,
+            "custom",
+            "inherit",
+            "native"
+          ],
+          "default": null,
+          "scope": "window",
+          "description": "Color source for Throwable types in catch parameters. Null preserves the existing catchColor rules."
+        },
+        "throwableHighlighter.prototype.throwsColorSource": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            null,
+            "custom",
+            "inherit",
+            "native"
+          ],
+          "default": null,
+          "scope": "window",
+          "description": "Color source for Throwable types in throws clauses. Null preserves the existing throwsColor rules."
         }
       }
     }

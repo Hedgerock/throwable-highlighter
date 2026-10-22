@@ -10,6 +10,8 @@ import {
     ThrowableHighlightingFinder
 } from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingFinder";
 import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
+import {ThrowableColorConfigurationReader} from "@throwable-highlighter/settings/ThrowableColorConfigurationReader";
+import {ThrowableColorResolver} from "@throwable-highlighter/settings/ThrowableColorResolver";
 
 export class ThrowableDecorationController implements vscode.Disposable {
     private decorationTypes: DecorationTypes;
@@ -19,7 +21,9 @@ export class ThrowableDecorationController implements vscode.Disposable {
     constructor(
         private readonly throwableHighlightingFinder: ThrowableHighlightingFinder,
         private readonly definitionResolver: JavaTypeDefinitionResolver,
-        private readonly throwableHighlightingContext: ThrowableHighlightingContext
+        private readonly throwableHighlightingContext: ThrowableHighlightingContext,
+        private readonly colorConfigurationReader = new ThrowableColorConfigurationReader(),
+        private readonly colorResolver = new ThrowableColorResolver()
     ) {
         this.decorationTypes = this.createDecorationTypes();
     }
@@ -124,30 +128,23 @@ export class ThrowableDecorationController implements vscode.Disposable {
     }
 
     private createDecorationTypes(): DecorationTypes {
-        const classColor = this.getConfiguredColor("classColor");
-        const importColor = this.getConfiguredColor("importColor") ?? classColor;
-        const catchColor = this.getConfiguredColor("catchColor") ?? classColor;
-        const throwsColor = this.getConfiguredColor("throwsColor") ?? classColor;
+        const {effective} = this.colorConfigurationReader.read(
+            vscode.workspace.getConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION)
+        );
+
+        const colors = this.colorResolver.resolve({
+            class: effective.class.kind === "valid" ? effective.class.setting : {source: "native"},
+            import: effective.import.kind === "valid" ? effective.import.setting : {source: "native"},
+            catch: effective.catch.kind === "valid" ? effective.catch.setting : {source: "native"},
+            throws: effective.throws.kind === "valid" ? effective.throws.setting : {source: "native"}
+        });
 
         return {
-            class: this.throwableHighlightingContext.createDecorationType(classColor),
-            import: this.throwableHighlightingContext.createDecorationType(importColor),
-            catch: this.throwableHighlightingContext.createDecorationType(catchColor),
-            throws: this.throwableHighlightingContext.createDecorationType(throwsColor)
+            class: this.throwableHighlightingContext.createDecorationType(colors.class),
+            import: this.throwableHighlightingContext.createDecorationType(colors.import),
+            catch: this.throwableHighlightingContext.createDecorationType(colors.catch),
+            throws: this.throwableHighlightingContext.createDecorationType(colors.throws)
         };
-    }
-
-    private getConfiguredColor(
-        setting: "classColor" | "importColor" | "catchColor" | "throwsColor"
-    ): string | undefined {
-        const value =
-            vscode.workspace
-                .getConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION)
-                .get<string>(setting) ?? "";
-
-        const color = value.trim();
-
-        return color === "" ? undefined : color;
     }
 
     private disposeDecorationTypes(): void {

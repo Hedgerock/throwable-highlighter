@@ -16,7 +16,7 @@ import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/Java
 import type {HighlightingContext} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingContext";
 import type {ThrowableHighlightingCandidate} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingFinder";
 
-type ColorSettings = Partial<Record<"classColor" | "importColor" | "catchColor" | "throwsColor", string>>;
+type ColorSettings = Partial<Record<`${HighlightingContext}Color` | `${HighlightingContext}ColorSource`, unknown>>;
 
 test("applies only confirmed candidates", async context => {
     for (const fails of [false, true]) {
@@ -337,6 +337,140 @@ test("recreates decoration types and invalidates pending results when configurat
     }
 });
 
+test("uses explicit color sources and isolates invalid settings", async context => {
+    const scenarios = [
+        {
+            name: "explicit sources override inactive saved colors",
+            colors: {
+                classColorSource: "custom",
+                classColor: "#FF5555",
+                importColorSource: "inherit",
+                importColor: "#FFAA00",
+                catchColorSource: "native",
+                catchColor: "#AA55FF",
+                throwsColorSource: "custom",
+                throwsColor: " #55FFFF "
+            },
+            expected: [{color: "#FF5555"}, {color: "#FF5555"}, {}, {color: "#55FFFF"}]
+        },
+        {
+            name: "inherited contexts follow a native class while custom colors remain active",
+            colors: {
+                classColorSource: "native",
+                classColor: "#FF5555",
+                importColorSource: "inherit",
+                importColor: "#FFAA00",
+                catchColorSource: "custom",
+                catchColor: "#AA55FF",
+                throwsColorSource: "inherit",
+                throwsColor: "#55FFFF"
+            },
+            expected: [{}, {}, {color: "#AA55FF"}, {}]
+        },
+        {
+            name: "null sources preserve legacy non-HEX colors",
+            colors: {
+                classColorSource: null,
+                classColor: " red ",
+                importColorSource: null,
+                importColor: "",
+                catchColorSource: null,
+                catchColor: "rgb(1, 2, 3)",
+                throwsColorSource: null
+            },
+            expected: [{color: "red"}, {color: "red"}, {color: "rgb(1, 2, 3)"}, {color: "red"}]
+        },
+        {
+            name: "invalid derived settings use native highlighting instead of the class color",
+            colors: {
+                classColorSource: "custom",
+                classColor: "#FF5555",
+                importColorSource: "custom",
+                importColor: "red",
+                catchColorSource: "unknown",
+                catchColor: "#AA55FF",
+                throwsColor: false
+            },
+            expected: [{color: "#FF5555"}, {}, {}, {}]
+        },
+        {
+            name: "invalid class inheritance does not disable independent custom colors",
+            colors: {
+                classColorSource: "inherit",
+                classColor: "#FF5555",
+                importColorSource: "inherit",
+                catchColorSource: "custom",
+                catchColor: "#AA55FF"
+            },
+            expected: [{}, {}, {color: "#AA55FF"}, {}]
+        },
+        {
+            name: "an invalid custom class color is not passed to decorations",
+            colors: {
+                classColorSource: "custom",
+                classColor: "red",
+                importColorSource: "custom",
+                importColor: "#FFAA00",
+                catchColorSource: "inherit",
+                throwsColorSource: "native",
+                throwsColor: "#55FFFF"
+            },
+            expected: [{}, {color: "#FFAA00"}, {}, {}]
+        }
+    ] as const;
+
+    for (const scenario of scenarios) {
+        await context.test(scenario.name, current => {
+            const fixture = createFixture(current, [], scenario.colors);
+
+            assert.deepEqual(
+                fixture.createDecorationType.mock.calls.map(call => call.arguments),
+                scenario.expected.map(options => [options])
+            );
+        });
+    }
+});
+
+test("updates color sources without changing stored colors", context => {
+    const colors: ColorSettings = {
+        classColor: "#FF5555",
+        catchColor: "#AA55FF",
+        catchColorSource: "custom"
+    };
+    const fixture = createFixture(context, [], colors);
+    const scenarios = [
+        {source: "native", expected: {}},
+        {source: "inherit", expected: {color: "#FF5555"}},
+        {source: "custom", expected: {color: "#AA55FF"}}
+    ] as const;
+
+    assert.deepEqual(
+        fixture.createDecorationType.mock.calls.map(call => call.arguments),
+        [{color: "#FF5555"}, {color: "#FF5555"}, {color: "#AA55FF"}, {color: "#FF5555"}].map(options => [options])
+    );
+
+    for (const scenario of scenarios) {
+        const disposals = fixture.decorationTypes.slice(-4).map(type => context.mock.method(type, "dispose"));
+
+        colors.catchColorSource = scenario.source;
+        fixture.controller.refreshConfiguration();
+
+        assert.deepEqual(
+            fixture.createDecorationType.mock.calls.slice(-4).map(call => call.arguments),
+            [{color: "#FF5555"}, {color: "#FF5555"}, scenario.expected, {color: "#FF5555"}].map(options => [options])
+        );
+        assert.deepEqual(colors, {
+            classColor: "#FF5555",
+            catchColor: "#AA55FF",
+            catchColorSource: scenario.source
+        });
+
+        for (const dispose of disposals) {
+            assert.equal(dispose.mock.callCount(), 1);
+        }
+    }
+});
+
 function createFixture(
     context: TestContext,
     candidates: ThrowableHighlightingCandidate[] = [],
@@ -355,6 +489,12 @@ function createFixture(
     const configuration = {
         get<T>(setting: string): T | undefined {
             return colors[setting as keyof ColorSettings] as T | undefined;
+        },
+        inspect<T>(setting: string) {
+            return {
+                key: setting,
+                workspaceValue: colors[setting as keyof ColorSettings] as T | undefined
+            };
         }
     } as vscode.WorkspaceConfiguration;
 
