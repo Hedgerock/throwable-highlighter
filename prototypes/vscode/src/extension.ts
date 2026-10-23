@@ -14,6 +14,7 @@ import {
     OPEN_COLOR_SETTINGS_COMMAND,
     ThrowableColorSettingsPanel
 } from "@throwable-highlighter/settings/panel/ThrowableColorSettingsPanel";
+import {ThrowableColorSettingsResources} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsResources";
 
 const INITIAL_REFRESH_DELAYS = [1_000, 3_000, 8_000] as const;
 
@@ -52,7 +53,9 @@ export function activate(context: vscode.ExtensionContext): void {
     outputChannel.appendLine("Decoration controller activated.");
 
     const definitionProbe = new DefinitionProbe(outputChannel, definitionResolver);
-    const colorSettingsPanel = new ThrowableColorSettingsPanel();
+    const colorSettingsPanel = new ThrowableColorSettingsPanel(
+        new ThrowableColorSettingsResources(context.extensionUri)
+    );
 
     const invalidateTypeResolutionCache = (): void => {
         definitionResolver.clearCache();
@@ -74,7 +77,7 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.workspace.onDidChangeConfiguration(event => {
             if (event.affectsConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION)) {
                 controller.refreshConfiguration();
-                colorSettingsPanel.refresh();
+                void colorSettingsPanel.refresh();
             }
         }),
         vscode.commands.registerCommand(INSPECT_DEFINITION_COMMAND, () => definitionProbe.inspectActiveSelection()),

@@ -3,28 +3,30 @@ import * as vscode from "vscode";
 import {ThrowableHighlightingContext} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingContext";
 import {ThrowableColorSettingsHtml} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsHtml";
 import {ThrowableColorConfigurationReader} from "@throwable-highlighter/settings/ThrowableColorConfigurationReader";
+import type {ThrowableColorSettingsResources} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsResources";
 
 export const OPEN_COLOR_SETTINGS_COMMAND = "throwableHighlighter.prototype.openColorSettings";
 
 export class ThrowableColorSettingsPanel implements vscode.Disposable {
     private panel: vscode.WebviewPanel | undefined;
     private panelSubscription: vscode.Disposable | undefined;
+    private refreshVersion = 0;
     private isDisposed = false;
 
     constructor(
+        private readonly resources: Pick<ThrowableColorSettingsResources, "rootUri" | "stylesUri" | "load">,
         private readonly configurationReader = new ThrowableColorConfigurationReader(),
         private readonly html = new ThrowableColorSettingsHtml()
     ) {}
 
-    public show(): void {
+    public async show(): Promise<void> {
         if (this.isDisposed) {
             return;
         }
 
         if (this.panel !== undefined) {
             this.panel.reveal();
-            this.refresh();
-            return;
+            return this.refresh();
         }
 
         const panel = vscode.window.createWebviewPanel(
@@ -35,7 +37,7 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
                 enableScripts: false,
                 enableForms: false,
                 enableCommandUris: false,
-                localResourceRoots: []
+                localResourceRoots: [this.resources.rootUri]
             }
         );
 
@@ -46,18 +48,41 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
             }
         });
 
-        this.refresh();
+        return this.refresh();
     }
 
-    public refresh(): void {
-        if (this.panel === undefined) {
+    public async refresh(): Promise<void> {
+        const panel = this.panel;
+
+        if (panel === undefined) {
             return;
         }
 
-        const configuration = vscode.workspace.getConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION);
-        const snapshot = this.configurationReader.read(configuration);
+        const version = ++this.refreshVersion;
 
-        this.panel.webview.html = this.html.render(snapshot.effective);
+        try {
+            const templates = await this.resources.load();
+
+            if (!this.isCurrent(panel, version)) {
+                return;
+            }
+
+            const configuration = vscode.workspace.getConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION);
+            const snapshot = this.configurationReader.read(configuration);
+
+            panel.webview.html = this.html.renderTemplate(snapshot.effective, templates, {
+                cspSource: panel.webview.cspSource,
+                stylesUri: panel.webview.asWebviewUri(this.resources.stylesUri).toString()
+            });
+        } catch (error) {
+            if (!this.isCurrent(panel, version)) {
+                return;
+            }
+
+            const reason = error instanceof Error ? error.message : String(error);
+
+            void vscode.window.showErrorMessage("Throwable Highlighter: Unable to display color settings: " + reason);
+        }
     }
 
     public dispose(): void {
@@ -72,7 +97,12 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
         panel?.dispose();
     }
 
+    private isCurrent(panel: vscode.WebviewPanel, version: number): boolean {
+        return this.panel === panel && this.refreshVersion === version;
+    }
+
     private releasePanel(): void {
+        ++this.refreshVersion;
         this.panel = undefined;
         const subscription = this.panelSubscription;
         this.panelSubscription = undefined;

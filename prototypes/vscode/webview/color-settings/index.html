@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; style-src {{cspSource}}; base-uri 'none'; form-action 'none';"
+        />
+        <title>Throwable Highlighter</title>
+        <link rel="stylesheet" href="{{stylesUri}}" />
+    </head>
+
+    <body>
+        <main>
+            <h1>Throwable Highlighter</h1>
+            <p>This panel is read-only. Editing and applying changes are not available yet.</p>
+
+            <table>
+                <caption>
+                    Effective color configuration
+                </caption>
+
+                <thead>
+                    <tr>
+                        <th scope="col">Context</th>
+                        <th scope="col">Source</th>
+                        <th scope="col">Stored own color</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {{rows}}
+                </tbody>
+            </table>
+
+            <p>Values include configuration priorities. A stored own color can be inactive for the selected source.</p>
+
+            <p>Legacy rules use the existing color settings when no explicit source is configured.</p>
+
+            <button type="button" disabled>Apply</button>
+        </main>
+    </body>
+</html>

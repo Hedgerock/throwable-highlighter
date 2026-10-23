@@ -1,0 +1,55 @@
+body {
+    padding: 24px;
+    color: var(--vscode-foreground);
+    background: var(--vscode-editor-background);
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+}
+
+main {
+    max-width: 900px;
+}
+
+h1 {
+    font-size: 1.5em;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+caption {
+    text-align: left;
+    padding: 12px 0;
+    font-weight: bold;
+}
+
+th,
+td {
+    padding: 12px;
+    text-align: left;
+    vertical-align: top;
+    border: 1px solid var(--vscode-panel-border, var(--vscode-contrastBorder, currentColor));
+}
+
+code {
+    font-family: var(--vscode-editor-font-family);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.error {
+    color: var(--vscode-errorForeground);
+}
+
+button {
+    padding: 6px 16px;
+    color: var(--vscode-button-foreground);
+    background: var(--vscode-button-background);
+    border: 1px solid var(--vscode-contrastBorder, transparent);
+}
+
+button:disabled {
+    opacity: 0.5;
+}
