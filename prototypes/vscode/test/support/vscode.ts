@@ -6,6 +6,10 @@ export const SymbolKind = {
     Constructor: 8
 } satisfies Pick<typeof vscode.SymbolKind, "Class" | "Method" | "Constructor">;
 
+export const ViewColumn = {
+    Beside: -2
+} satisfies Pick<typeof vscode.ViewColumn, "Beside">;
+
 export class Location {
     constructor(
         public uri: vscode.Uri,
@@ -41,11 +45,20 @@ export const window = {
     },
     createTextEditorDecorationType(_options: vscode.DecorationRenderOptions): vscode.TextEditorDecorationType {
         throw new Error("Unexpected decoration type request.");
+    },
+    createWebviewPanel(
+        _viewType: string,
+        _title: string,
+        _showOptions: vscode.ViewColumn | {viewColumn: vscode.ViewColumn; preserveFocus?: boolean},
+        _options?: vscode.WebviewPanelOptions & vscode.WebviewOptions
+    ): vscode.WebviewPanel {
+        throw new Error("Unexpected webview panel request.");
     }
 };
 
 export default {
     SymbolKind,
+    ViewColumn,
     Location,
     Range,
     commands,

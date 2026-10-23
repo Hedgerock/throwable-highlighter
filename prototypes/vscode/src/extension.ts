@@ -10,6 +10,10 @@ import {ThrowableDecorationController} from "@throwable-highlighter/decorations/
 import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 import {DefinitionProbe, INSPECT_DEFINITION_COMMAND} from "@throwable-highlighter/resolution/DefinitionProbe";
 import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
+import {
+    OPEN_COLOR_SETTINGS_COMMAND,
+    ThrowableColorSettingsPanel
+} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsPanel";
 
 const INITIAL_REFRESH_DELAYS = [1_000, 3_000, 8_000] as const;
 
@@ -48,6 +52,7 @@ export function activate(context: vscode.ExtensionContext): void {
     outputChannel.appendLine("Decoration controller activated.");
 
     const definitionProbe = new DefinitionProbe(outputChannel, definitionResolver);
+    const colorSettingsPanel = new ThrowableColorSettingsPanel();
 
     const invalidateTypeResolutionCache = (): void => {
         definitionResolver.clearCache();
@@ -56,6 +61,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(
         controller,
+        colorSettingsPanel,
         scheduleInitialRefreshes(controller),
         outputChannel,
         vscode.window.onDidChangeActiveTextEditor(() => controller.refresh()),
@@ -68,9 +74,11 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.workspace.onDidChangeConfiguration(event => {
             if (event.affectsConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION)) {
                 controller.refreshConfiguration();
+                colorSettingsPanel.refresh();
             }
         }),
-        vscode.commands.registerCommand(INSPECT_DEFINITION_COMMAND, () => definitionProbe.inspectActiveSelection())
+        vscode.commands.registerCommand(INSPECT_DEFINITION_COMMAND, () => definitionProbe.inspectActiveSelection()),
+        vscode.commands.registerCommand(OPEN_COLOR_SETTINGS_COMMAND, () => colorSettingsPanel.show())
     );
 
     controller.refresh();

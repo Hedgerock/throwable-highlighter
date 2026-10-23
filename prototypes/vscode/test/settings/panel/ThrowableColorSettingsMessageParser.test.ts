@@ -1,8 +1,6 @@
 import assert from "node:assert/strict";
 import {test} from "node:test";
 
-import {workspace} from "vscode";
-
 import {ThrowableColorSettingsMessageParser} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsMessageParser";
 
 test("accepts the ready message without an open workspace", () => {

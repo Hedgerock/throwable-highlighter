@@ -14,7 +14,8 @@
   ],
   "activationEvents": [
     "onLanguage:java",
-    "onCommand:throwableHighlighter.prototype.inspectDefinition"
+    "onCommand:throwableHighlighter.prototype.inspectDefinition",
+    "onCommand:throwableHighlighter.prototype.openColorSettings"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -22,6 +23,10 @@
       {
         "command": "throwableHighlighter.prototype.inspectDefinition",
         "title": "Throwable Highlighter Prototype: Inspect Definition"
+      },
+      {
+        "command": "throwableHighlighter.prototype.openColorSettings",
+        "title": "Throwable Highlighter Prototype: Open Color Settings"
       }
     ],
     "menus": {
