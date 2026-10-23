@@ -127,6 +127,7 @@ NNNN-краткое-название.md
 - [ADR-0012: Выделение синтаксического разбора импортов VS Code](0012-separate-vscode-import-parsing.md)
 - [ADR-0013: Определение Throwable по разрешённому Java-типу в VS Code](0013-resolved-vscode-throwable-types.md)
 - [ADR-0014: Интерактивная настройка цветов в VS Code](0014-interactive-vscode-color-settings.md)
+- [ADR-0015: Разделение разметки, стилей и логики панели цветов VS Code](0015-separate-vscode-color-settings-presentation.md)
 
 ---
 
