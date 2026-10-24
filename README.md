@@ -49,6 +49,7 @@ Project documentation is available in Russian:
 - [Roadmap](docs/roadmap.md)
 - [Architecture decisions](docs/decisions/README.md)
 - [Java highlighting contract](docs/specification/java-highlighting-contract.md)
+- [Local checks](docs/local-checks.md)
 
 ## Requirements
 

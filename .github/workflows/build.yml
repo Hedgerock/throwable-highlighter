@@ -57,6 +57,10 @@ jobs:
           cache: npm
           cache-dependency-path: prototypes/vscode/package-lock.json
 
+      - name: Test local check runner
+        run: node --test scripts/test/check-staged.test.cjs
+        working-directory: .
+
       - name: Install dependencies
         run: npm ci
 
