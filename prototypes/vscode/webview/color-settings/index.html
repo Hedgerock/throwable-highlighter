@@ -13,32 +13,41 @@
 
     <body>
         <main>
-            <h1>Throwable Highlighter</h1>
-            <p>This panel is read-only. Editing and applying changes are not available yet.</p>
+            <header class="panel-header">
+                <h1>Throwable Highlighter</h1>
+                <p>This panel is read-only. Editing and applying changes are not available yet.</p>
+            </header>
 
-            <table>
-                <caption>
-                    Effective color configuration
-                </caption>
+            <div class="settings-table-container" role="region" aria-labelledby="color-settings-caption" tabindex="0">
+                <table>
+                    <caption id="color-settings-caption">
+                        Effective color configuration
+                    </caption>
 
-                <thead>
-                    <tr>
-                        <th scope="col">Context</th>
-                        <th scope="col">Source</th>
-                        <th scope="col">Stored own color</th>
-                    </tr>
-                </thead>
+                    <thead>
+                        <tr>
+                            <th scope="col">Context</th>
+                            <th scope="col">Source</th>
+                            <th scope="col">Stored own color</th>
+                        </tr>
+                    </thead>
 
-                <tbody>
-                    {{rows}}
-                </tbody>
-            </table>
+                    <tbody>
+                        {{rows}}
+                    </tbody>
+                </table>
+            </div>
 
-            <p>Values include configuration priorities. A stored own color can be inactive for the selected source.</p>
+            <div class="settings-notes">
+                <p>
+                    Values include configuration priorities. A stored own color can be inactive for the selected source.
+                </p>
+                <p>Legacy rules use the existing color settings when no explicit source is configured.</p>
+            </div>
 
-            <p>Legacy rules use the existing color settings when no explicit source is configured.</p>
-
-            <button type="button" disabled>Apply</button>
+            <footer class="panel-actions">
+                <button type="button" disabled>Apply</button>
+            </footer>
         </main>
     </body>
 </html>
