@@ -1,6 +1,5 @@
 import type {ThrowableColorSettingsTemplate} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsTemplate";
-import type {ParsedThrowableColorSettings} from "@throwable-highlighter/settings/ThrowableColorConfiguration";
-import type {ColorSettingParseResult} from "@throwable-highlighter/settings/ThrowableColorSettingParser";
+import type {ThrowableColorSettingsViewModel} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsViewModel";
 
 const CONTEXTS = ["class", "import", "catch", "throws"] as const;
 const SOURCE_LABELS = {
@@ -12,36 +11,61 @@ const SOURCE_LABELS = {
 
 export class ThrowableColorSettingsHtml {
     public renderTemplate(
-        settings: ParsedThrowableColorSettings,
+        model: ThrowableColorSettingsViewModel,
         templates: ThrowableColorSettingsTemplate,
         resources: {readonly cspSource: string; readonly stylesUri: string}
     ): string {
-        const rows = CONTEXTS.map(context => this.renderTemplateRow(context, settings[context], templates)).join("\n");
+        const rows = CONTEXTS.map(context => this.renderTemplateRow(context, model, templates)).join("\n");
 
         return this.fillTemplate(templates.document, {
             cspSource: this.escapeHtml(resources.cspSource),
             stylesUri: this.escapeHtml(resources.stylesUri),
+            targetLabel: this.escapeHtml(model.target === "user" ? "User" : "Workspace"),
             rows
         });
     }
 
     private renderTemplateRow(
         context: (typeof CONTEXTS)[number],
-        result: ColorSettingParseResult,
+        model: ThrowableColorSettingsViewModel,
         templates: ThrowableColorSettingsTemplate
     ): string {
+        const scoped = model.scoped[context];
+        const result = model.effective[context];
+        const values = {
+            context: this.escapeHtml(context),
+            scopedSource: this.escapeHtml(this.formatScopedValue(scoped.source)),
+            scopedColor: this.escapeHtml(this.formatScopedValue(scoped.color))
+        };
+
         if (result.kind === "invalid") {
             return this.fillTemplate(templates.invalidContextRow, {
-                context: this.escapeHtml(context),
+                ...values,
                 reason: this.escapeHtml(result.reason)
             });
         }
 
         return this.fillTemplate(templates.contextRow, {
-            context: this.escapeHtml(context),
+            ...values,
             source: this.escapeHtml(SOURCE_LABELS[result.setting.source ?? "legacy"]),
             color: this.escapeHtml(result.setting.color || "Not set")
         });
+    }
+
+    private formatScopedValue(value: unknown): string {
+        if (value === undefined) {
+            return "Not set in this scope";
+        }
+
+        if (typeof value === "string") {
+            return JSON.stringify(value);
+        }
+
+        if (value === null || typeof value === "boolean" || typeof value === "number") {
+            return String(value);
+        }
+
+        return "Unsupported value";
     }
 
     private fillTemplate(template: string, values: Readonly<Record<string, string>>): string {

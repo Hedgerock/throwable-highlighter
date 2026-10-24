@@ -21,14 +21,16 @@
             <div class="settings-table-container" role="region" aria-labelledby="color-settings-caption" tabindex="0">
                 <table>
                     <caption id="color-settings-caption">
-                        Effective color configuration
+                        Color configuration
                     </caption>
 
                     <thead>
                         <tr>
                             <th scope="col">Context</th>
-                            <th scope="col">Source</th>
-                            <th scope="col">Stored own color</th>
+                            <th scope="col">Source in {{targetLabel}}</th>
+                            <th scope="col">Color in {{targetLabel}}</th>
+                            <th scope="col">Effective source</th>
+                            <th scope="col">Effective stored color</th>
                         </tr>
                     </thead>
 
@@ -39,8 +41,10 @@
             </div>
 
             <div class="settings-notes">
+                <p>Scoped values are shown as stored. Not set in this scope means the setting is not defined there.</p>
                 <p>
-                    Values include configuration priorities. A stored own color can be inactive for the selected source.
+                    Effective values include configuration priorities. A stored own color can be inactive for the
+                    selected source.
                 </p>
                 <p>Legacy rules use the existing color settings when no explicit source is configured.</p>
             </div>

@@ -54,7 +54,10 @@ export const workspace = {
         async stat(_uri: vscode.Uri): Promise<vscode.FileStat> {
             throw new Error("Unexpected file metadata request.");
         }
-    } satisfies Pick<vscode.FileSystem, "readFile" | "stat">
+    } satisfies Pick<vscode.FileSystem, "readFile" | "stat">,
+    get workspaceFolders(): readonly vscode.WorkspaceFolder[] | undefined {
+        return undefined;
+    }
 };
 
 export const window = {

@@ -52,7 +52,7 @@ main {
 
 table {
     width: 100%;
-    min-width: 560px;
+    min-width: 900px;
     border-collapse: collapse;
     table-layout: fixed;
 }
@@ -77,14 +77,6 @@ thead th {
     font-weight: 600;
     border-top: 1px solid var(--vscode-contrastBorder, var(--vscode-panel-border, currentColor));
     border-bottom: 1px solid var(--vscode-contrastBorder, var(--vscode-panel-border, currentColor));
-}
-
-thead th:first-child {
-    width: 28%;
-}
-
-thead th:nth-child(2) {
-    width: 38%;
 }
 
 tbody th {

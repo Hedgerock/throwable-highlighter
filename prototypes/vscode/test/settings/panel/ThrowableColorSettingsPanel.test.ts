@@ -241,8 +241,23 @@ test("reports a current resource failure and allows another attempt", async cont
     assert.equal(fixture.update.mock.callCount(), 0);
 });
 
+test("shows User values separately from effective configuration", async context => {
+    const fixture = createFixture(context);
+
+    await fixture.settingsPanel.show();
+
+    const html = fixture.panels[0].webview.html;
+
+    assert.ok(html.includes("Source in User"));
+    assert.ok(html.includes("Color in User"));
+    assert.ok(html.includes("<code>&quot;#ABCDEF&quot;</code>"));
+    assert.ok(html.includes("<code>#123456</code>"));
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
 function createFixture(context: TestContext) {
     const values: Record<string, unknown> = {classColor: "#123456"};
+    const userValues: Record<string, unknown> = {classColor: "#ABCDEF"};
     const update = context.mock.fn(async () => {
         throw new Error("Configuration must not be changed.");
     });
@@ -250,7 +265,9 @@ function createFixture(context: TestContext) {
         get<T>(key: string): T | undefined {
             return values[key] as T | undefined;
         },
-        inspect: () => undefined,
+        inspect<T>(key: string) {
+            return {key, globalValue: userValues[key] as T | undefined};
+        },
         update
     } as unknown as vscode.WorkspaceConfiguration;
     const getConfiguration = context.mock.method(vscode.workspace, "getConfiguration", () => configuration);

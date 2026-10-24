@@ -5,7 +5,11 @@ import {test} from "node:test";
 
 import {ThrowableColorSettingsHtml} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsHtml";
 import type {ThrowableColorSettingsTemplate} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsTemplate";
-import type {ParsedThrowableColorSettings} from "@throwable-highlighter/settings/ThrowableColorConfiguration";
+import type {ThrowableColorSettingsViewModel} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsViewModel";
+import type {
+    ParsedThrowableColorSettings,
+    RawThrowableColorSettings
+} from "@throwable-highlighter/settings/ThrowableColorConfiguration";
 
 const WEBVIEW_RESOURCES = {
     cspSource: "test-webview:",
@@ -101,17 +105,109 @@ test("escapes webview resource values in HTML attributes", () => {
         stylesUri: 'test-webview:/styles.css?value="<&'
     };
 
-    const html = new ThrowableColorSettingsHtml().renderTemplate(createSettings(), readTemplates(), resources);
+    const html = new ThrowableColorSettingsHtml().renderTemplate(createModel(), readTemplates(), resources);
 
     assert.ok(html.includes("style-src test-webview:&quot;&lt;&amp;;"));
     assert.ok(html.includes('href="test-webview:/styles.css?value=&quot;&lt;&amp;"'));
+});
+
+test("keeps scoped values separate from effective configuration", () => {
+    const model = createModel({
+        target: "workspace",
+        workspaceAvailable: true,
+        scoped: createRawSettings({class: {source: "custom", color: undefined}}),
+        effective: createSettings({
+            class: {kind: "valid", setting: {source: "custom", color: "#123456"}}
+        })
+    });
+
+    const html = new ThrowableColorSettingsHtml().renderTemplate(model, readTemplates(), WEBVIEW_RESOURCES);
+
+    assert.ok(html.includes("Source in Workspace"));
+    assert.ok(html.includes("Color in Workspace"));
+    assert.ok(html.includes("<code>&quot;custom&quot;</code>"));
+    assert.ok(html.includes("<code>Not set in this scope</code>"));
+    assert.ok(html.includes("<code>#123456</code>"));
+});
+
+test("distinguishes missing, null, empty and unsupported scoped values", () => {
+    const model = createModel({
+        scoped: createRawSettings({
+            class: {source: null, color: ""},
+            import: {source: undefined, color: undefined},
+            catch: {source: false, color: 42},
+            throws: {source: {}, color: []}
+        })
+    });
+
+    const html = new ThrowableColorSettingsHtml().renderTemplate(model, readTemplates(), WEBVIEW_RESOURCES);
+
+    for (const value of ["null", "&quot;&quot;", "Not set in this scope", "false", "42", "Unsupported value"]) {
+        assert.ok(html.includes("<code>" + value + "</code>"));
+    }
+});
+
+test("escapes scoped strings without interpreting placeholders", () => {
+    const model = createModel({
+        scoped: createRawSettings({
+            class: {source: "{{rows}} <script>", color: "<img src=x onerror=alert(1)>"}
+        })
+    });
+
+    const html = new ThrowableColorSettingsHtml().renderTemplate(model, readTemplates(), WEBVIEW_RESOURCES);
+
+    assert.ok(html.includes("{{rows}} &lt;script&gt;"));
+    assert.ok(html.includes("&lt;img src=x onerror=alert(1)&gt;"));
+    assert.equal(html.includes("<script"), false);
+    assert.equal(html.includes("<img"), false);
+});
+
+test("keeps scoped values visible when effective configuration is invalid", () => {
+    const model = createModel({
+        scoped: createRawSettings({
+            class: {source: "custom", color: "#123456"}
+        }),
+        effective: createSettings({
+            class: {kind: "invalid", reason: "invalid-source"}
+        })
+    });
+
+    const html = new ThrowableColorSettingsHtml().renderTemplate(model, readTemplates(), WEBVIEW_RESOURCES);
+
+    assert.ok(html.includes("<code>&quot;custom&quot;</code>"));
+    assert.ok(html.includes("<code>&quot;#123456&quot;</code>"));
+    assert.ok(html.includes('colspan="2" class="error">Invalid configuration: invalid-source</td>'));
 });
 
 function renderTemplate(
     settings: ParsedThrowableColorSettings,
     overrides: Partial<ThrowableColorSettingsTemplate> = {}
 ): string {
-    return new ThrowableColorSettingsHtml().renderTemplate(settings, readTemplates(overrides), WEBVIEW_RESOURCES);
+    return new ThrowableColorSettingsHtml().renderTemplate(
+        createModel({effective: settings}),
+        readTemplates(overrides),
+        WEBVIEW_RESOURCES
+    );
+}
+
+function createModel(overrides: Partial<ThrowableColorSettingsViewModel> = {}): ThrowableColorSettingsViewModel {
+    return {
+        target: "user",
+        workspaceAvailable: false,
+        scoped: createRawSettings(),
+        effective: createSettings(),
+        ...overrides
+    };
+}
+
+function createRawSettings(overrides: Partial<RawThrowableColorSettings> = {}): RawThrowableColorSettings {
+    return {
+        class: {source: undefined, color: undefined},
+        import: {source: undefined, color: undefined},
+        catch: {source: undefined, color: undefined},
+        throws: {source: undefined, color: undefined},
+        ...overrides
+    };
 }
 
 function readTemplates(overrides: Partial<ThrowableColorSettingsTemplate> = {}): ThrowableColorSettingsTemplate {

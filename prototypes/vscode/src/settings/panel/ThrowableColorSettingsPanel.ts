@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 
 import {ThrowableHighlightingContext} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingContext";
 import {ThrowableColorSettingsHtml} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsHtml";
+import {ThrowableColorSettingsViewModelBuilder} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsViewModelBuilder";
 import {ThrowableColorConfigurationReader} from "@throwable-highlighter/settings/ThrowableColorConfigurationReader";
 import type {ThrowableColorSettingsResources} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsResources";
 
@@ -16,7 +17,8 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
     constructor(
         private readonly resources: Pick<ThrowableColorSettingsResources, "rootUri" | "stylesUri" | "load">,
         private readonly configurationReader = new ThrowableColorConfigurationReader(),
-        private readonly html = new ThrowableColorSettingsHtml()
+        private readonly html = new ThrowableColorSettingsHtml(),
+        private readonly viewModelBuilder = new ThrowableColorSettingsViewModelBuilder()
     ) {}
 
     public async show(): Promise<void> {
@@ -70,7 +72,13 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
             const configuration = vscode.workspace.getConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION);
             const snapshot = this.configurationReader.read(configuration);
 
-            panel.webview.html = this.html.renderTemplate(snapshot.effective, templates, {
+            const model = this.viewModelBuilder.build(
+                snapshot,
+                "user",
+                vscode.workspace.workspaceFolders !== undefined
+            );
+
+            panel.webview.html = this.html.renderTemplate(model, templates, {
                 cspSource: panel.webview.cspSource,
                 stylesUri: panel.webview.asWebviewUri(this.resources.stylesUri).toString()
             });
