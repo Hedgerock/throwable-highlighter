@@ -18,6 +18,7 @@
     "onCommand:throwableHighlighter.prototype.openColorSettings"
   ],
   "main": "./out/extension.js",
+  "web-types": "./web-types.json",
   "contributes": {
     "commands": [
       {
