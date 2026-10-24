@@ -5,24 +5,30 @@
   "contributions": {
     "css": {
       "properties": [
-        {"name": "--vscode-button-background"},
-        {"name": "--vscode-button-border"},
-        {"name": "--vscode-button-foreground"},
-        {"name": "--vscode-button-secondaryBackground"},
-        {"name": "--vscode-contrastBorder"},
-        {"name": "--vscode-descriptionForeground"},
-        {"name": "--vscode-disabledForeground"},
-        {"name": "--vscode-editor-background"},
-        {"name": "--vscode-editor-font-family"},
-        {"name": "--vscode-editorWidget-background"},
-        {"name": "--vscode-editorWidget-foreground"},
-        {"name": "--vscode-errorForeground"},
-        {"name": "--vscode-focusBorder"},
-        {"name": "--vscode-font-family"},
-        {"name": "--vscode-font-size"},
-        {"name": "--vscode-foreground"},
-        {"name": "--vscode-panel-border"},
-        {"name": "--vscode-textCodeBlock-background"}
+        {"name": "--vscode-button-background", "description": "Фоновый цвет основных кнопок."},
+        {"name": "--vscode-button-border", "description": "Цвет границы кнопок."},
+        {"name": "--vscode-button-foreground", "description": "Цвет текста основных кнопок."},
+        {"name": "--vscode-button-secondaryBackground", "description": "Фоновый цвет второстепенных кнопок."},
+        {
+          "name": "--vscode-contrastBorder",
+          "description": "Цвет дополнительных границ для повышения контрастности элементов."
+        },
+        {"name": "--vscode-descriptionForeground", "description": "Цвет вспомогательного текста и пояснений."},
+        {"name": "--vscode-disabledForeground", "description": "Цвет текста недоступных элементов интерфейса."},
+        {"name": "--vscode-editor-background", "description": "Фоновый цвет редактора, используемый как фон панели."},
+        {
+          "name": "--vscode-editor-font-family",
+          "description": "Семейство шрифта редактора из настройки editor.fontFamily."
+        },
+        {"name": "--vscode-editorWidget-background", "description": "Фоновый цвет виджетов редактора."},
+        {"name": "--vscode-editorWidget-foreground", "description": "Цвет текста виджетов редактора."},
+        {"name": "--vscode-errorForeground", "description": "Цвет сообщений об ошибках."},
+        {"name": "--vscode-focusBorder", "description": "Цвет рамки элемента, получившего фокус."},
+        {"name": "--vscode-font-family", "description": "Семейство шрифта интерфейса VS Code."},
+        {"name": "--vscode-font-size", "description": "Размер шрифта интерфейса VS Code."},
+        {"name": "--vscode-foreground", "description": "Основной цвет текста интерфейса VS Code."},
+        {"name": "--vscode-panel-border", "description": "Цвет границы панели VS Code."},
+        {"name": "--vscode-textCodeBlock-background", "description": "Фоновый цвет блоков кода."}
       ]
     }
   }
