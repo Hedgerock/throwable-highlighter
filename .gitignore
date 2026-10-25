@@ -21,6 +21,7 @@ prototypes/vscode/node_modules/
 prototypes/vscode/.vscode-test/
 prototypes/vscode/*.vsix
 prototypes/vscode/out-test/
+!prototypes/vscode/tooling/build/
 
 ### OS ###
 .DS_Store

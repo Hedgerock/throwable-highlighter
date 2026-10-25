@@ -124,10 +124,11 @@
     }
   },
   "scripts": {
-    "compile": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
-    "compile:test": "tsc -p tsconfig.test.json && tsc-alias -p tsconfig.test.json",
-    "watch": "npm run compile && concurrently --kill-others --names typescript,aliases \"tsc -w -p tsconfig.json\" \"tsc-alias -w -p tsconfig.json\"",
-    "test": "npm run compile:test && node --test \"out-test/test/**/*.test.js\"",
+    "compile": "node tooling/build/compile.cjs tsconfig.json",
+    "compile:test": "node tooling/build/compile.cjs tsconfig.test.json",
+    "watch": "node tooling/build/watch.cjs tsconfig.json",
+    "test:build": "node --test \"tooling/build/test/*.test.cjs\"",
+    "test": "npm run test:build && npm run compile:test && node --test \"out-test/test/**/*.test.js\"",
     "test:hierarchy": "npm run compile:test && node --test out-test/test/hierarchy/ThrowableHierarchyResolver.test.js",
     "check": "npm run format:check && npm run compile && npm test",
     "format": "prettier --write .",
@@ -137,7 +138,6 @@
     "@ianvs/prettier-plugin-sort-imports": "4.7.1",
     "@types/node": "^22.0.0",
     "@types/vscode": "1.85.0",
-    "concurrently": "10.0.6",
     "prettier": "3.9.10",
     "tsc-alias": "1.9.7",
     "typescript": "^5.7.3"

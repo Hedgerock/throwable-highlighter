@@ -1,2 +1,3 @@
 /.githooks/* text eol=lf
 /scripts/**/*.cjs text eol=lf
+/prototypes/vscode/tooling/**/*.cjs text eol=lf
