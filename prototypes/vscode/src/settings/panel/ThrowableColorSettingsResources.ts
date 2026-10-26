@@ -5,10 +5,12 @@ import type {ThrowableColorSettingsTemplate} from "@throwable-highlighter/settin
 export class ThrowableColorSettingsResources {
     public readonly rootUri: vscode.Uri;
     public readonly stylesUri: vscode.Uri;
+    public readonly scriptUri: vscode.Uri;
 
     constructor(extensionUri: vscode.Uri) {
         this.rootUri = vscode.Uri.joinPath(extensionUri, "webview", "color-settings");
         this.stylesUri = vscode.Uri.joinPath(this.rootUri, "styles.css");
+        this.scriptUri = vscode.Uri.joinPath(this.rootUri, "app.js");
     }
 
     public async load(): Promise<ThrowableColorSettingsTemplate> {
@@ -16,7 +18,8 @@ export class ThrowableColorSettingsResources {
             this.readText("index.html"),
             this.readText("context-row.html"),
             this.readText("invalid-context-row.html"),
-            vscode.workspace.fs.stat(this.stylesUri)
+            vscode.workspace.fs.stat(this.stylesUri),
+            vscode.workspace.fs.stat(this.scriptUri)
         ]);
 
         return {document, contextRow, invalidContextRow};

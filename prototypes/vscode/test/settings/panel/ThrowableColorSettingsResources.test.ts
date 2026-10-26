@@ -13,10 +13,11 @@ test("resolves resource paths relative to the supplied extension URI", context =
 
     assert.equal(fixture.resources.rootUri.toString(), fixture.root);
     assert.equal(fixture.resources.stylesUri.toString(), fixture.root + "/styles.css");
+    assert.equal(fixture.resources.scriptUri.toString(), fixture.root + "/app.js");
 
     assert.deepEqual(fixture.joinPath.mock.calls[0].arguments, [fixture.extensionUri, "webview", "color-settings"]);
-
     assert.deepEqual(fixture.joinPath.mock.calls[1].arguments, [fixture.resources.rootUri, "styles.css"]);
+    assert.deepEqual(fixture.joinPath.mock.calls[2].arguments, [fixture.resources.rootUri, "app.js"]);
 });
 
 test("loads all templates as UTF-8 and checks the stylesheet", async context => {
@@ -37,7 +38,7 @@ test("loads all templates as UTF-8 and checks the stylesheet", async context => 
     );
     assert.deepEqual(
         fixture.stat.mock.calls.map(call => call.arguments),
-        [[fixture.resources.stylesUri]]
+        [[fixture.resources.stylesUri], [fixture.resources.scriptUri]]
     );
 });
 
@@ -80,7 +81,7 @@ test("can load resources again after a failed attempt", async context => {
 test("includes the templates and stylesheet in the extension resources", async () => {
     const directory = resolve(__dirname, "../../../../webview/color-settings");
 
-    for (const fileName of ["index.html", "context-row.html", "invalid-context-row.html", "styles.css"]) {
+    for (const fileName of ["index.html", "context-row.html", "invalid-context-row.html", "styles.css", "app.js"]) {
         const content = await readFile(resolve(directory, fileName), "utf-8");
 
         assert.notEqual(content.trim(), "", fileName + " must not be empty.");

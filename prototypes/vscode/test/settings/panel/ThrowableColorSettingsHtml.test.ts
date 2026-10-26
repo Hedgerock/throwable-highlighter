@@ -13,7 +13,9 @@ import type {
 
 const WEBVIEW_RESOURCES = {
     cspSource: "test-webview:",
-    stylesUri: "test-webview:/styles.css"
+    stylesUri: "test-webview:/styles.css",
+    scriptUri: "test-webview:/app.js",
+    nonce: "test-nonce"
 } as const;
 
 test("renders all contexts with explicit and legacy source labels", () => {
@@ -51,18 +53,19 @@ test("escapes configured strings instead of inserting markup or CSS", () => {
 
     assert.ok(html.includes("<code>&lt;script&gt;alert(&quot;x&quot; &amp; &#39;y&#39;)&lt;/script&gt;</code>"));
     assert.equal(html.includes(color), false);
-    assert.equal(html.includes("<script"), false);
+    assert.equal((html.match(/<script\b/g) ?? []).length, 1);
 });
 
-test("links the stylesheet without inline styles or scripts", () => {
+test("links resources and permits only the script with its nonce", () => {
     const html = renderTemplate(createSettings());
 
     assert.ok(html.includes(`href="test-webview:/styles.css"`));
     assert.ok(html.includes("style-src test-webview:;"));
+    assert.ok(html.includes("script-src 'nonce-test-nonce';"));
+    assert.ok(html.includes('<script nonce="test-nonce" src="test-webview:/app.js"></script>'));
     assert.ok(html.includes("default-src 'none';"));
     assert.ok(html.includes("base-uri 'none'; form-action 'none';"));
     assert.equal(html.includes("<style"), false);
-    assert.equal(html.includes("<script"), false);
     assert.equal(html.includes("unsafe-inline"), false);
 });
 
@@ -101,6 +104,7 @@ test("rejects unknown and inherited template placeholders", () => {
 
 test("escapes webview resource values in HTML attributes", () => {
     const resources = {
+        ...WEBVIEW_RESOURCES,
         cspSource: 'test-webview:"<&',
         stylesUri: 'test-webview:/styles.css?value="<&'
     };
@@ -158,8 +162,8 @@ test("escapes scoped strings without interpreting placeholders", () => {
 
     assert.ok(html.includes("{{rows}} &lt;script&gt;"));
     assert.ok(html.includes("&lt;img src=x onerror=alert(1)&gt;"));
-    assert.equal(html.includes("<script"), false);
     assert.equal(html.includes("<img"), false);
+    assert.equal((html.match(/<script\b/g) ?? []).length, 1);
 });
 
 test("keeps scoped values visible when effective configuration is invalid", () => {
@@ -177,6 +181,21 @@ test("keeps scoped values visible when effective configuration is invalid", () =
     assert.ok(html.includes("<code>&quot;custom&quot;</code>"));
     assert.ok(html.includes("<code>&quot;#123456&quot;</code>"));
     assert.ok(html.includes('colspan="2" class="error">Invalid configuration: invalid-source</td>'));
+});
+
+test("selects User and disables Workspace when no workspace is open", () => {
+    const html = new ThrowableColorSettingsHtml().renderTemplate(createModel(), readTemplates(), WEBVIEW_RESOURCES);
+
+    assert.match(html, /value="user"\s+selected/);
+    assert.match(html, /value="workspace"\s+disabled/);
+});
+
+test("selects Workspace when it is available and requested", () => {
+    const model = createModel({target: "workspace", workspaceAvailable: true});
+    const html = new ThrowableColorSettingsHtml().renderTemplate(model, readTemplates(), WEBVIEW_RESOURCES);
+
+    assert.match(html, /value="workspace"\s+selected/);
+    assert.doesNotMatch(html, /value="workspace"[^>]*disabled/);
 });
 
 function renderTemplate(

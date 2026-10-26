@@ -7,9 +7,9 @@ test("accepts the ready message without an open workspace", () => {
     assertValid({type: "ready"}, false);
 });
 
-test("accepts scoped apply and discard requests without accepting settings", () => {
+test("accepts scoped target selection, apply and discard requests without accepting settings", () => {
     for (const target of ["user", "workspace"]) {
-        for (const type of ["apply", "discard"]) {
+        for (const type of ["selectTarget", "apply", "discard"]) {
             assertValid({type, target});
         }
     }
@@ -65,6 +65,7 @@ test("rejects missing or invalid targets and contexts", () => {
     for (const target of [undefined, null, false, 0, "", "global", "Workspace", {}, []]) {
         assertInvalid({type: "apply", target});
         assertInvalid({type: "setColor", target, context: "class", color: "#123456"});
+        assertInvalid({type: "selectTarget", target});
     }
 
     for (const context of [undefined, null, false, 0, "", "CLASS", "__proto__", {}, []]) {
@@ -90,7 +91,8 @@ test("rejects Workspace operations when no workspace is available", () => {
         {type: "discard"},
         {type: "setColor", context: "class", color: "#123456"},
         {type: "setSource", context: "catch", source: "inherit"},
-        {type: "resetField", context: "import", field: "color"}
+        {type: "resetField", context: "import", field: "color"},
+        {type: "selectTarget"}
     ];
 
     for (const message of messages) {
@@ -106,7 +108,8 @@ test("rejects extra payload fields for every message type", () => {
         {type: "discard", target: "user"},
         {type: "setColor", target: "user", context: "class", color: "#123456"},
         {type: "setSource", target: "user", context: "class", source: "native"},
-        {type: "resetField", target: "user", context: "class", field: "color"}
+        {type: "resetField", target: "user", context: "class", field: "color"},
+        {type: "selectTarget", target: "user"}
     ];
 
     for (const message of messages) {
@@ -117,6 +120,7 @@ test("rejects extra payload fields for every message type", () => {
 test("requires message fields to be own enumerable properties", () => {
     assertInvalid(Object.create({type: "ready"}));
     assertInvalid(Object.assign(Object.create({target: "user"}), {type: "apply"}));
+    assertInvalid(Object.assign(Object.create({target: "user"}), {type: "selectTarget"}));
 });
 
 test("returns a new message without retaining the input object", () => {
@@ -138,6 +142,25 @@ test("returns a new message without retaining the input object", () => {
         context: "class",
         source: "custom"
     });
+});
+
+test("accepts selecting User without an open workspace", () => {
+    assertValid({type: "selectTarget", target: "user"}, false);
+});
+
+test("returns a detached target selection message", () => {
+    const parser = new ThrowableColorSettingsMessageParser();
+    const message = {type: "selectTarget", target: "user"};
+
+    const result = parser.parse(message, true);
+
+    if (result.kind !== "valid") {
+        assert.fail("Expected a valid message.");
+    }
+
+    assert.notEqual(result.message, message);
+    message.target = "workspace";
+    assert.deepEqual(result.message, {type: "selectTarget", target: "user"});
 });
 
 function assertValid(message: unknown, workspaceAvailable = true): void {

@@ -1,24 +1,33 @@
+import {randomBytes} from "node:crypto";
+
 import * as vscode from "vscode";
 
 import {ThrowableHighlightingContext} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingContext";
 import {ThrowableColorSettingsHtml} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsHtml";
+import {ThrowableColorSettingsMessageParser} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsMessageParser";
 import {ThrowableColorSettingsViewModelBuilder} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsViewModelBuilder";
 import {ThrowableColorConfigurationReader} from "@throwable-highlighter/settings/ThrowableColorConfigurationReader";
 import type {ThrowableColorSettingsResources} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsResources";
+import type {ColorSettingsTarget} from "@throwable-highlighter/settings/ThrowableColorSettingsDraft";
 
 export const OPEN_COLOR_SETTINGS_COMMAND = "throwableHighlighter.prototype.openColorSettings";
 
 export class ThrowableColorSettingsPanel implements vscode.Disposable {
     private panel: vscode.WebviewPanel | undefined;
-    private panelSubscription: vscode.Disposable | undefined;
+    private panelSubscriptions: readonly vscode.Disposable[] = [];
+    private selectedTarget: ColorSettingsTarget = "user";
     private refreshVersion = 0;
     private isDisposed = false;
 
     constructor(
-        private readonly resources: Pick<ThrowableColorSettingsResources, "rootUri" | "stylesUri" | "load">,
+        private readonly resources: Pick<
+            ThrowableColorSettingsResources,
+            "rootUri" | "stylesUri" | "scriptUri" | "load"
+        >,
         private readonly configurationReader = new ThrowableColorConfigurationReader(),
         private readonly html = new ThrowableColorSettingsHtml(),
-        private readonly viewModelBuilder = new ThrowableColorSettingsViewModelBuilder()
+        private readonly viewModelBuilder = new ThrowableColorSettingsViewModelBuilder(),
+        private readonly messageParser = new ThrowableColorSettingsMessageParser()
     ) {}
 
     public async show(): Promise<void> {
@@ -36,7 +45,7 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
             "Throwable Highlighter",
             vscode.ViewColumn.Beside,
             {
-                enableScripts: false,
+                enableScripts: true,
                 enableForms: false,
                 enableCommandUris: false,
                 localResourceRoots: [this.resources.rootUri]
@@ -44,11 +53,14 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
         );
 
         this.panel = panel;
-        this.panelSubscription = panel.onDidDispose(() => {
-            if (this.panel === panel) {
-                this.releasePanel();
-            }
-        });
+        this.panelSubscriptions = [
+            panel.onDidDispose(() => {
+                if (this.panel === panel) {
+                    this.releasePanel();
+                }
+            }),
+            panel.webview.onDidReceiveMessage((value: unknown) => this.handleMessage(panel, value))
+        ];
 
         return this.refresh();
     }
@@ -72,15 +84,15 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
             const configuration = vscode.workspace.getConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION);
             const snapshot = this.configurationReader.read(configuration);
 
-            const model = this.viewModelBuilder.build(
-                snapshot,
-                "user",
-                vscode.workspace.workspaceFolders !== undefined
-            );
+            const model = this.viewModelBuilder.build(snapshot, this.selectedTarget, this.isWorkspaceAvailable());
+
+            this.selectedTarget = model.target;
 
             panel.webview.html = this.html.renderTemplate(model, templates, {
                 cspSource: panel.webview.cspSource,
-                stylesUri: panel.webview.asWebviewUri(this.resources.stylesUri).toString()
+                stylesUri: panel.webview.asWebviewUri(this.resources.stylesUri).toString(),
+                scriptUri: panel.webview.asWebviewUri(this.resources.scriptUri).toString(),
+                nonce: randomBytes(16).toString("base64")
             });
         } catch (error) {
             if (!this.isCurrent(panel, version)) {
@@ -105,6 +117,29 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
         panel?.dispose();
     }
 
+    private async handleMessage(panel: vscode.WebviewPanel, value: unknown): Promise<void> {
+        if (this.panel !== panel) {
+            return;
+        }
+
+        const result = this.messageParser.parse(value, this.isWorkspaceAvailable());
+
+        if (result.kind !== "valid" || result.message.type !== "selectTarget") {
+            return;
+        }
+
+        if (result.message.target === this.selectedTarget) {
+            return;
+        }
+
+        this.selectedTarget = result.message.target;
+        return this.refresh();
+    }
+
+    private isWorkspaceAvailable(): boolean {
+        return vscode.workspace.workspaceFolders !== undefined;
+    }
+
     private isCurrent(panel: vscode.WebviewPanel, version: number): boolean {
         return this.panel === panel && this.refreshVersion === version;
     }
@@ -112,9 +147,11 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
     private releasePanel(): void {
         ++this.refreshVersion;
         this.panel = undefined;
-        const subscription = this.panelSubscription;
-        this.panelSubscription = undefined;
+        const subscriptions = this.panelSubscriptions;
+        this.panelSubscriptions = [];
 
-        subscription?.dispose();
+        for (const subscription of subscriptions) {
+            subscription.dispose();
+        }
     }
 }

@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'none'; style-src {{cspSource}}; base-uri 'none'; form-action 'none';"
+            content="default-src 'none'; style-src {{cspSource}}; script-src 'nonce-{{nonce}}'; base-uri 'none'; form-action 'none';"
         />
         <title>Throwable Highlighter</title>
         <link rel="stylesheet" href="{{stylesUri}}" />
@@ -15,15 +15,23 @@
         <main>
             <header class="panel-header">
                 <h1>Throwable Highlighter</h1>
-                <p>This panel is read-only. Editing and applying changes are not available yet.</p>
+                <p>
+                    Choose a settings scope to inspect its values. Editing and applying changes are not available yet.
+                </p>
             </header>
 
-            <div class="settings-table-container" role="region" aria-labelledby="color-settings-caption" tabindex="0">
-                <table>
-                    <caption id="color-settings-caption">
-                        Color configuration
-                    </caption>
+            <div class="settings-target">
+                <label for="settings-target">Settings scope</label>
+                <select id="settings-target">
+                    <option value="user" {{userSelected}}>User</option>
+                    <option value="workspace" {{workspaceSelected}} {{workspaceDisabled}}>Workspace</option>
+                </select>
+            </div>
 
+            <h2 class="settings-table-title" id="color-settings-caption">Color configuration</h2>
+
+            <div class="settings-table-container" role="region" aria-labelledby="color-settings-caption" tabindex="0">
+                <table aria-labelledby="color-settings-caption">
                     <thead>
                         <tr>
                             <th scope="col">Context</th>
@@ -53,5 +61,7 @@
                 <button type="button" disabled>Apply</button>
             </footer>
         </main>
+
+        <script nonce="{{nonce}}" src="{{scriptUri}}"></script>
     </body>
 </html>

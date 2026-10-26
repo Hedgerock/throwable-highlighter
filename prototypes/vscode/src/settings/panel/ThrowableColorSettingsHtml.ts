@@ -13,13 +13,23 @@ export class ThrowableColorSettingsHtml {
     public renderTemplate(
         model: ThrowableColorSettingsViewModel,
         templates: ThrowableColorSettingsTemplate,
-        resources: {readonly cspSource: string; readonly stylesUri: string}
+        resources: {
+            readonly cspSource: string;
+            readonly stylesUri: string;
+            readonly scriptUri: string;
+            readonly nonce: string;
+        }
     ): string {
         const rows = CONTEXTS.map(context => this.renderTemplateRow(context, model, templates)).join("\n");
 
         return this.fillTemplate(templates.document, {
             cspSource: this.escapeHtml(resources.cspSource),
             stylesUri: this.escapeHtml(resources.stylesUri),
+            scriptUri: this.escapeHtml(resources.scriptUri),
+            nonce: this.escapeHtml(resources.nonce),
+            userSelected: model.target === "user" ? "selected" : "",
+            workspaceSelected: model.target === "workspace" ? "selected" : "",
+            workspaceDisabled: model.workspaceAvailable ? "" : "disabled",
             targetLabel: this.escapeHtml(model.target === "user" ? "User" : "Workspace"),
             rows
         });

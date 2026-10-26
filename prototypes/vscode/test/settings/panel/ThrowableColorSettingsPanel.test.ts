@@ -18,7 +18,7 @@ test("opens a read-only panel with restricted resource access", async context =>
         "throwableHighlighter.prototype.colorSettings",
         "Throwable Highlighter",
         vscode.ViewColumn.Beside,
-        {enableScripts: false, enableForms: false, enableCommandUris: false, localResourceRoots: [fixture.rootUri]}
+        {enableScripts: true, enableForms: false, enableCommandUris: false, localResourceRoots: [fixture.rootUri]}
     ]);
     assert.equal(fixture.getConfiguration.mock.calls[0].arguments[0], "throwableHighlighter.prototype");
     assert.ok(fixture.panels[0].webview.html.includes("<code>#123456</code>"));
@@ -95,6 +95,7 @@ test("disposes the panel and subscription once and does not reopen", async conte
 
     assert.equal(fixture.panels[0].dispose.mock.callCount(), 1);
     assert.equal(fixture.panels[0].unsubscribe.mock.callCount(), 1);
+    assert.equal(fixture.panels[0].messageUnsubscribe.mock.callCount(), 1);
     assert.equal(fixture.getConfiguration.mock.callCount(), 1);
     assert.equal(fixture.update.mock.callCount(), 0);
 });
@@ -255,9 +256,79 @@ test("shows User values separately from effective configuration", async context 
     assert.equal(fixture.update.mock.callCount(), 0);
 });
 
+test("switches scoped values between Workspace and User without writing settings", async context => {
+    const fixture = createFixture(context);
+    context.mock.getter(vscode.workspace, "workspaceFolders", () => []);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+
+    await panel.receive({type: "selectTarget", target: "workspace"});
+
+    assert.ok(panel.webview.html.includes("Source in Workspace"));
+    assert.ok(panel.webview.html.includes("<code>&quot;#FEDCBA&quot;</code>"));
+    assert.ok(panel.webview.html.includes("<code>#123456</code>"));
+
+    await panel.receive({type: "selectTarget", target: "user"});
+
+    assert.ok(panel.webview.html.includes("Source in User"));
+    assert.ok(panel.webview.html.includes("<code>&quot;#ABCDEF&quot;</code>"));
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("ignores unavailable targets, extra payloads and unsupported operations", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+    const previous = panel.webview.html;
+
+    for (const message of [
+        {type: "selectTarget", target: "workspace"},
+        {type: "selectTarget", target: "user", color: "#FFFFFF"},
+        {type: "apply", target: "user"}
+    ]) {
+        await panel.receive(message);
+    }
+
+    assert.equal(panel.webview.html, previous);
+
+    assert.equal(fixture.getConfiguration.mock.callCount(), 1);
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("ignores messages from a panel that has been closed", async context => {
+    const fixture = createFixture(context);
+    context.mock.getter(vscode.workspace, "workspaceFolders", () => []);
+    await fixture.settingsPanel.show();
+    const first = fixture.panels[0];
+    first.close();
+    await fixture.settingsPanel.show();
+
+    await first.receive({type: "selectTarget", target: "workspace"});
+
+    assert.equal(first.messageUnsubscribe.mock.callCount(), 1);
+    assert.ok(fixture.panels[1].webview.html.includes("Source in User"));
+
+    assert.equal(fixture.getConfiguration.mock.callCount(), 2);
+});
+
+test("returns to User when the workspace becomes unavailable", async context => {
+    const fixture = createFixture(context);
+    let folders: readonly vscode.WorkspaceFolder[] | undefined = [];
+    context.mock.getter(vscode.workspace, "workspaceFolders", () => folders);
+    await fixture.settingsPanel.show();
+    await fixture.panels[0].receive({type: "selectTarget", target: "workspace"});
+
+    folders = undefined;
+    await fixture.settingsPanel.refresh();
+
+    assert.ok(fixture.panels[0].webview.html.includes("Source in User"));
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
 function createFixture(context: TestContext) {
     const values: Record<string, unknown> = {classColor: "#123456"};
     const userValues: Record<string, unknown> = {classColor: "#ABCDEF"};
+    const workspaceValues: Record<string, unknown> = {classColor: "#FEDCBA"};
     const update = context.mock.fn(async () => {
         throw new Error("Configuration must not be changed.");
     });
@@ -266,7 +337,11 @@ function createFixture(context: TestContext) {
             return values[key] as T | undefined;
         },
         inspect<T>(key: string) {
-            return {key, globalValue: userValues[key] as T | undefined};
+            return {
+                key,
+                globalValue: userValues[key] as T | undefined,
+                workspaceValue: workspaceValues[key] as T | undefined
+            };
         },
         update
     } as unknown as vscode.WorkspaceConfiguration;
@@ -282,10 +357,11 @@ function createFixture(context: TestContext) {
 
     const rootUri = createUri("test-extension:/webview/color-settings");
     const stylesUri = createUri(rootUri.toString() + "/styles.css");
+    const scriptUri = createUri(rootUri.toString() + "/app.js");
     const load = context.mock.fn(async () => readTemplates());
     const showErrorMessage = context.mock.method(vscode.window, "showErrorMessage", async () => undefined);
 
-    const settingsPanel = new ThrowableColorSettingsPanel({rootUri, stylesUri, load});
+    const settingsPanel = new ThrowableColorSettingsPanel({rootUri, stylesUri, scriptUri, load});
 
     context.after(() => settingsPanel.dispose());
 
@@ -331,13 +407,19 @@ function createDeferred<T>() {
 
 function createPanelFixture(context: TestContext) {
     let onDispose: (() => void) | undefined;
+    let onMessage: ((value: unknown) => unknown) | undefined;
     const unsubscribe = context.mock.fn();
+    const messageUnsubscribe = context.mock.fn();
     const close = (): void => onDispose?.();
 
     return {
         webview: {
             html: "",
             cspSource: "test-webview:",
+            onDidReceiveMessage(listener: (value: unknown) => unknown) {
+                onMessage = listener;
+                return {dispose: messageUnsubscribe};
+            },
             asWebviewUri: context.mock.fn((uri: vscode.Uri) => createUri("test-webview:" + uri.toString()))
         },
         reveal: context.mock.fn(),
@@ -348,6 +430,10 @@ function createPanelFixture(context: TestContext) {
             return {dispose: unsubscribe};
         },
         close,
+        async receive(value: unknown): Promise<void> {
+            await onMessage?.(value);
+        },
+        messageUnsubscribe,
         unsubscribe
     };
 }

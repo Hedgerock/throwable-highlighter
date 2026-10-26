@@ -73,7 +73,10 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.workspace.onDidCreateFiles(invalidateTypeResolutionCache),
         vscode.workspace.onDidDeleteFiles(invalidateTypeResolutionCache),
         vscode.workspace.onDidRenameFiles(invalidateTypeResolutionCache),
-        vscode.workspace.onDidChangeWorkspaceFolders(invalidateTypeResolutionCache),
+        vscode.workspace.onDidChangeWorkspaceFolders(() => {
+            invalidateTypeResolutionCache();
+            void colorSettingsPanel.refresh();
+        }),
         vscode.workspace.onDidChangeConfiguration(event => {
             if (event.affectsConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION)) {
                 controller.refreshConfiguration();

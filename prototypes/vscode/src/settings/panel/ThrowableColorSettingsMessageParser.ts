@@ -18,7 +18,7 @@ export class ThrowableColorSettingsMessageParser {
 
         const target = value.target;
 
-        if (value.type === "apply" || value.type === "discard") {
+        if (value.type === "selectTarget" || value.type === "apply" || value.type === "discard") {
             return this.hasKeys(value, ["type", "target"])
                 ? {kind: "valid", message: {type: value.type, target}}
                 : {kind: "invalid"};

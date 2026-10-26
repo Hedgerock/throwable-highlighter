@@ -33,7 +33,7 @@ export type ColorSettingsMessage =
     | SourceMessage
     | (ContextMessage & {readonly type: "setColor"; readonly color: string})
     | (ContextMessage & {readonly type: "resetField"; readonly field: ColorSettingChange["field"]})
-    | (ScopedMessage & {readonly type: "discard" | "apply"});
+    | (ScopedMessage & {readonly type: "selectTarget" | "discard" | "apply"});
 
 export type ColorSettingsMessageParseResult =
     {readonly kind: "valid"; readonly message: ColorSettingsMessage} | {readonly kind: "invalid"};
