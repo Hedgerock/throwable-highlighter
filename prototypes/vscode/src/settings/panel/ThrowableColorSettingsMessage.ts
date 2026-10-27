@@ -1,3 +1,4 @@
+import type {ThrowableColorSettingsControlState} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsControlState";
 import type {
     ClassColorSetting,
     ColorSetting,
@@ -32,6 +33,7 @@ export type ColorSettingsDraftStateMessage = {
     readonly type: "draftState";
     readonly target: ColorSettingsTarget;
     readonly isDirty: boolean;
+    readonly controls: ThrowableColorSettingsControlState;
 };
 
 export type ColorSettingsMessage =
@@ -49,4 +51,5 @@ export type ColorSettingsFieldRevertedMessage = ContextMessage & {
     readonly field: ColorSettingChange["field"];
     readonly value: unknown;
     readonly isDirty: boolean;
+    readonly controls: ThrowableColorSettingsControlState;
 };

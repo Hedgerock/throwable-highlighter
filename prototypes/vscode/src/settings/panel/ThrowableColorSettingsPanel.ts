@@ -3,6 +3,7 @@ import {randomBytes} from "node:crypto";
 import * as vscode from "vscode";
 
 import {ThrowableHighlightingContext} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingContext";
+import {ThrowableColorSettingsControlStateBuilder} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsControlStateBuilder";
 import {ThrowableColorSettingsHtml} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsHtml";
 import {ThrowableColorSettingsMessageParser} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsMessageParser";
 import {ThrowableColorSettingsViewModelBuilder} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsViewModelBuilder";
@@ -15,7 +16,8 @@ import type {
 import type {ThrowableColorSettingsResources} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsResources";
 import type {
     RawColorSetting,
-    RawThrowableColorSettings
+    RawThrowableColorSettings,
+    ThrowableColorConfigurationSnapshot
 } from "@throwable-highlighter/settings/ThrowableColorConfiguration";
 import type {ColorSettingsTarget} from "@throwable-highlighter/settings/ThrowableColorSettingsDraft";
 
@@ -28,6 +30,7 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
     private refreshVersion = 0;
     private isDisposed = false;
     private readonly drafts = new Map<ColorSettingsTarget, ThrowableColorSettingsDraft>();
+    private configurationSnapshot: ThrowableColorConfigurationSnapshot | undefined;
 
     constructor(
         private readonly resources: Pick<
@@ -37,7 +40,8 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
         private readonly configurationReader = new ThrowableColorConfigurationReader(),
         private readonly html = new ThrowableColorSettingsHtml(),
         private readonly viewModelBuilder = new ThrowableColorSettingsViewModelBuilder(),
-        private readonly messageParser = new ThrowableColorSettingsMessageParser()
+        private readonly messageParser = new ThrowableColorSettingsMessageParser(),
+        private readonly controlsStateBuilder = new ThrowableColorSettingsControlStateBuilder()
     ) {}
 
     public async show(): Promise<void> {
@@ -91,8 +95,7 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
                 return;
             }
 
-            const configuration = vscode.workspace.getConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION);
-            const snapshot = this.configurationReader.read(configuration);
+            const snapshot = this.readConfiguration();
 
             const model = this.viewModelBuilder.build(snapshot, this.selectedTarget, this.isWorkspaceAvailable());
 
@@ -203,8 +206,8 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
         context: keyof RawThrowableColorSettings,
         field: keyof RawColorSetting
     ): Promise<void> {
-        const configuration = vscode.workspace.getConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION);
-        const snapshot = this.configurationReader.read(configuration);
+        const snapshot = this.readConfiguration();
+        const saved = snapshot[draft.target];
         const value = snapshot[draft.target][context][field];
 
         draft.revertField(context, field, value);
@@ -215,23 +218,8 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
             context,
             field,
             value,
-            isDirty: draft.isDirty
-        };
-
-        await panel.webview.postMessage(message);
-    }
-
-    private async publishDraftState(panel: vscode.WebviewPanel): Promise<void> {
-        const draft = this.drafts.get(this.selectedTarget);
-
-        if (draft === undefined) {
-            return;
-        }
-
-        const message: ColorSettingsDraftStateMessage = {
-            type: "draftState",
-            target: draft.target,
-            isDirty: draft.isDirty
+            isDirty: draft.isDirty,
+            controls: this.controlsStateBuilder.build(draft.read(), saved)
         };
 
         await panel.webview.postMessage(message);
@@ -248,6 +236,33 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
         this.drafts.set(target, current);
 
         return current;
+    }
+
+    private async publishDraftState(panel: vscode.WebviewPanel): Promise<void> {
+        const draft = this.drafts.get(this.selectedTarget);
+        const saved = this.configurationSnapshot?.[this.selectedTarget];
+
+        if (draft === undefined || saved === undefined) {
+            return;
+        }
+
+        const message: ColorSettingsDraftStateMessage = {
+            type: "draftState",
+            target: draft.target,
+            isDirty: draft.isDirty,
+            controls: this.controlsStateBuilder.build(draft.read(), saved)
+        };
+
+        await panel.webview.postMessage(message);
+    }
+
+    private readConfiguration(): ThrowableColorConfigurationSnapshot {
+        const configuration = vscode.workspace.getConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION);
+        const snapshot = this.configurationReader.read(configuration);
+
+        this.configurationSnapshot = snapshot;
+
+        return snapshot;
     }
 
     private isWorkspaceAvailable(): boolean {
@@ -269,5 +284,7 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
         for (const subscription of subscriptions) {
             subscription.dispose();
         }
+
+        this.configurationSnapshot = undefined;
     }
 }

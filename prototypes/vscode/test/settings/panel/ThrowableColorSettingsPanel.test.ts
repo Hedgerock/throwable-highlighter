@@ -7,6 +7,7 @@ import type {TestContext} from "node:test";
 import * as vscode from "vscode";
 
 import {ThrowableColorSettingsPanel} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsPanel";
+import type {ThrowableColorSettingsControlState} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsControlState";
 import type {ThrowableColorSettingsTemplate} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsTemplate";
 
 test("opens a read-only panel with restricted resource access", async context => {
@@ -528,14 +529,14 @@ test("publishes the current draft state when the webview is ready", async contex
     await panel.receive({type: "ready"});
 
     assert.deepEqual(panel.webview.postMessage.mock.calls[0].arguments, [
-        {type: "draftState", target: "user", isDirty: false}
+        {type: "draftState", target: "user", isDirty: false, controls: createControlState()}
     ]);
 
     await panel.receive({type: "selectTarget", target: "workspace"});
     await panel.receive({type: "ready"});
 
     assert.deepEqual(panel.webview.postMessage.mock.calls[1].arguments, [
-        {type: "draftState", target: "workspace", isDirty: false}
+        {type: "draftState", target: "workspace", isDirty: false, controls: createControlState()}
     ]);
     assert.equal(fixture.update.mock.callCount(), 0);
 });
@@ -551,7 +552,21 @@ test("publishes draft changes without reloading the document or reading configur
 
     assert.deepEqual(
         panel.webview.postMessage.mock.calls.map(call => call.arguments),
-        [[{type: "draftState", target: "user", isDirty: true}], [{type: "draftState", target: "user", isDirty: false}]]
+        [
+            [
+                {
+                    type: "draftState",
+                    target: "user",
+                    isDirty: true,
+                    controls: createControlState({
+                        class: {
+                            color: {canRevert: true, canRemove: true}
+                        }
+                    })
+                }
+            ],
+            [{type: "draftState", target: "user", isDirty: false, controls: createControlState()}]
+        ]
     );
     assert.equal(panel.webview.html, previous);
     assert.equal(fixture.load.mock.callCount(), 1);
@@ -569,7 +584,7 @@ test("publishes a clean state after discarding changes", async context => {
     await panel.receive({type: "ready"});
 
     assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
-        {type: "draftState", target: "user", isDirty: false}
+        {type: "draftState", target: "user", isDirty: false, controls: createControlState()}
     ]);
     assert.ok(panel.webview.html.includes("<code>&quot;#ABCDEF&quot;</code>"));
     assert.equal(fixture.update.mock.callCount(), 0);
@@ -588,7 +603,19 @@ test("reverts a field to the latest saved scope value without reloading the pane
     await panel.receive({type: "revertField", target: "user", context: "class", field: "color"});
 
     assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
-        {type: "fieldReverted", target: "user", context: "class", field: "color", value: "#654321", isDirty: true}
+        {
+            type: "fieldReverted",
+            target: "user",
+            context: "class",
+            field: "color",
+            value: "#654321",
+            isDirty: true,
+            controls: createControlState({
+                catch: {
+                    source: {canRevert: true, canRemove: true}
+                }
+            })
+        }
     ]);
     assert.equal(panel.webview.html, html);
     assert.equal(fixture.load.mock.callCount(), 1);
@@ -597,7 +624,15 @@ test("reverts a field to the latest saved scope value without reloading the pane
     await panel.receive({type: "revertField", target: "user", context: "catch", field: "source"});
 
     assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
-        {type: "fieldReverted", target: "user", context: "catch", field: "source", value: undefined, isDirty: false}
+        {
+            type: "fieldReverted",
+            target: "user",
+            context: "catch",
+            field: "source",
+            value: undefined,
+            isDirty: false,
+            controls: createControlState()
+        }
     ]);
 });
 
@@ -612,14 +647,30 @@ test("reverts Workspace fields without substituting User or effective values", a
     await panel.receive({type: "revertField", target: "workspace", context: "class", field: "color"});
 
     assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
-        {type: "fieldReverted", target: "workspace", context: "class", field: "color", value: "#FEDCBA", isDirty: false}
+        {
+            type: "fieldReverted",
+            target: "workspace",
+            context: "class",
+            field: "color",
+            value: "#FEDCBA",
+            isDirty: false,
+            controls: createControlState()
+        }
     ]);
 
     await panel.receive({type: "setColor", target: "workspace", context: "catch", color: "#111111"});
     await panel.receive({type: "revertField", target: "workspace", context: "catch", field: "color"});
 
     assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
-        {type: "fieldReverted", target: "workspace", context: "catch", field: "color", value: undefined, isDirty: false}
+        {
+            type: "fieldReverted",
+            target: "workspace",
+            context: "catch",
+            field: "color",
+            value: undefined,
+            isDirty: false,
+            controls: createControlState()
+        }
     ]);
     assert.equal(fixture.update.mock.callCount(), 0);
 });
@@ -641,6 +692,147 @@ test("ignores revert requests from inactive scopes and closed panels", async con
 
     assert.equal(fixture.getConfiguration.mock.callCount(), 2);
     assert.equal(first.webview.postMessage.mock.callCount(), 0);
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("updates color action states for empty input, removal and reverting", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+    const html = panel.webview.html;
+
+    await panel.receive({type: "setColor", target: "user", context: "class", color: ""});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
+        {
+            type: "draftState",
+            target: "user",
+            isDirty: true,
+            controls: createControlState({
+                class: {color: {canRevert: true, canRemove: true}}
+            })
+        }
+    ]);
+
+    await panel.receive({type: "resetField", target: "user", context: "class", field: "color"});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
+        {
+            type: "draftState",
+            target: "user",
+            isDirty: true,
+            controls: createControlState({
+                class: {color: {canRevert: true, canRemove: false}}
+            })
+        }
+    ]);
+
+    assert.equal(fixture.getConfiguration.mock.callCount(), 1);
+
+    await panel.receive({type: "revertField", target: "user", context: "class", field: "color"});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
+        {
+            type: "fieldReverted",
+            target: "user",
+            context: "class",
+            field: "color",
+            value: "#ABCDEF",
+            isDirty: false,
+            controls: createControlState()
+        }
+    ]);
+    assert.equal(panel.webview.html, html);
+    assert.equal(fixture.load.mock.callCount(), 1);
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("publishes action states for values in the selected scope", async context => {
+    const fixture = createFixture(context);
+    context.mock.getter(vscode.workspace, "workspaceFolders", () => []);
+    delete fixture.userValues.classColor;
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+
+    await panel.receive({type: "ready"});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
+        {
+            type: "draftState",
+            target: "user",
+            isDirty: false,
+            controls: createControlState({
+                class: {color: {canRevert: false, canRemove: false}}
+            })
+        }
+    ]);
+
+    await panel.receive({type: "selectTarget", target: "workspace"});
+    await panel.receive({type: "ready"});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
+        {type: "draftState", target: "workspace", isDirty: false, controls: createControlState()}
+    ]);
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("refreshes saved values for action states while preserving other draft changes", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+
+    fixture.userValues.catchColor = "#654321";
+    await fixture.settingsPanel.refresh();
+    await panel.receive({type: "ready"});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
+        {
+            type: "draftState",
+            target: "user",
+            isDirty: true,
+            controls: createControlState({
+                class: {color: {canRevert: true, canRemove: true}},
+                catch: {color: {canRevert: true, canRemove: false}}
+            })
+        }
+    ]);
+    assert.ok(panel.webview.html.includes("<code>&quot;#111111&quot;</code>"));
+
+    fixture.userValues.catchColor = "#FEDCBA";
+    await panel.receive({type: "revertField", target: "user", context: "catch", field: "color"});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
+        {
+            type: "fieldReverted",
+            target: "user",
+            context: "catch",
+            field: "color",
+            value: "#FEDCBA",
+            isDirty: true,
+            controls: createControlState({
+                class: {color: {canRevert: true, canRemove: true}},
+                catch: {color: {canRevert: false, canRemove: true}}
+            })
+        }
+    ]);
+
+    await panel.receive({type: "ready"});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
+        {
+            type: "draftState",
+            target: "user",
+            isDirty: true,
+            controls: createControlState({
+                class: {color: {canRevert: true, canRemove: true}},
+                catch: {color: {canRevert: false, canRemove: true}}
+            })
+        }
+    ]);
+    assert.equal(fixture.getConfiguration.mock.callCount(), 3);
+    assert.equal(fixture.load.mock.callCount(), 2);
     assert.equal(fixture.update.mock.callCount(), 0);
 });
 
@@ -697,6 +889,24 @@ function createFixture(context: TestContext) {
         stylesUri,
         load,
         showErrorMessage
+    };
+}
+
+function createControlState(
+    overrides: {
+        readonly [TContext in keyof ThrowableColorSettingsControlState]?: Partial<
+            ThrowableColorSettingsControlState[TContext]
+        >;
+    } = {}
+): ThrowableColorSettingsControlState {
+    const missing = {canRevert: false, canRemove: false};
+    const present = {canRevert: false, canRemove: true};
+
+    return {
+        class: {source: missing, color: present, ...overrides.class},
+        import: {source: missing, color: missing, ...overrides.import},
+        catch: {source: missing, color: missing, ...overrides.catch},
+        throws: {source: missing, color: missing, ...overrides.throws}
     };
 }
 

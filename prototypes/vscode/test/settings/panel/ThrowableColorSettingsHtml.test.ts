@@ -299,6 +299,14 @@ test("binds revert and remove actions to the intended fields in normal and error
             [...row.matchAll(/data-reset-field="([^"]+)"/g)].map(match => match[1]),
             ["color"]
         );
+
+        const buttons = [...row.matchAll(/<button\b[^>]*>/g)];
+
+        assert.equal(buttons.length, 3);
+
+        for (const [button] of buttons) {
+            assert.match(button, /\sdisabled(?=[\s>])/);
+        }
     }
 });
 

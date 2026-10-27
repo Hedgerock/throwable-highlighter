@@ -23,7 +23,8 @@
             typeof message !== "object" ||
             (message.type !== "draftState" && message.type !== "fieldReverted") ||
             message.target !== target.value ||
-            typeof message.isDirty !== "boolean"
+            typeof message.isDirty !== "boolean" ||
+            !isControlState(message.controls)
         ) {
             return;
         }
@@ -31,6 +32,8 @@
         if (message.type === "fieldReverted" && !applyRevertedField(message)) {
             return;
         }
+
+        applyControlState(message.controls);
 
         if (draftStatus instanceof HTMLElement) {
             draftStatus.textContent = message.isDirty
@@ -42,6 +45,66 @@
             discard.disabled = !message.isDirty;
         }
     });
+
+    function isFieldState(state) {
+        return (
+            state !== null &&
+            typeof state === "object" &&
+            typeof state.canRevert === "boolean" &&
+            typeof state.canRemove === "boolean"
+        );
+    }
+
+    function isControlState(state) {
+        if (state === null || typeof state !== "object") {
+            return false;
+        }
+
+        return ["class", "import", "catch", "throws"].every(context => {
+            const fields = state[context];
+
+            return (
+                fields !== null &&
+                typeof fields === "object" &&
+                isFieldState(fields.source) &&
+                isFieldState(fields.color)
+            );
+        });
+    }
+
+    function applyControlState(state) {
+        for (const row of document.querySelectorAll("tbody tr[data-context]")) {
+            const context = row.dataset.context;
+
+            if (!["class", "import", "catch", "throws"].includes(context)) {
+                continue;
+            }
+
+            for (const button of row.querySelectorAll("[data-revert-field]")) {
+                if (!(button instanceof HTMLButtonElement)) {
+                    continue;
+                }
+
+                const field = button.dataset.revertField;
+
+                if (field === "source" || field === "color") {
+                    button.disabled = !state[context][field].canRevert;
+                }
+            }
+
+            for (const button of row.querySelectorAll("[data-reset-field]")) {
+                if (!(button instanceof HTMLButtonElement)) {
+                    continue;
+                }
+
+                const field = button.dataset.resetField;
+
+                if (field === "source" || field === "color") {
+                    button.disabled = !state[context][field].canRemove;
+                }
+            }
+        }
+    }
 
     function formatScopedValue(value) {
         if (value === undefined) {
@@ -193,6 +256,10 @@
             }
 
             button.addEventListener("click", () => {
+                if (button.disabled) {
+                    return;
+                }
+
                 sendChange({type: "revertField", field});
             });
         }
@@ -209,6 +276,10 @@
             }
 
             button.addEventListener("click", () => {
+                if (button.disabled) {
+                    return;
+                }
+
                 if (field === "source" && source instanceof HTMLSelectElement) {
                     source.value = "";
                 }
