@@ -6,10 +6,13 @@ import {ThrowableHighlightingContext} from "@throwable-highlighter/decorations/h
 import {ThrowableColorSettingsControlStateBuilder} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsControlStateBuilder";
 import {ThrowableColorSettingsHtml} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsHtml";
 import {ThrowableColorSettingsMessageParser} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsMessageParser";
+import {ThrowableColorSettingsPreviewBuilder} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsPreviewBuilder";
 import {ThrowableColorSettingsViewModelBuilder} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsViewModelBuilder";
 import {ThrowableColorConfigurationReader} from "@throwable-highlighter/settings/ThrowableColorConfigurationReader";
 import {ThrowableColorSettingsDraft} from "@throwable-highlighter/settings/ThrowableColorSettingsDraft";
+import {ThrowableColorSettingsDraftConfigurationBuilder} from "@throwable-highlighter/settings/ThrowableColorSettingsDraftConfigurationBuilder";
 import type {
+    ColorSettingsDraftState,
     ColorSettingsDraftStateMessage,
     ColorSettingsFieldRevertedMessage
 } from "@throwable-highlighter/settings/panel/ThrowableColorSettingsMessage";
@@ -41,7 +44,9 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
         private readonly html = new ThrowableColorSettingsHtml(),
         private readonly viewModelBuilder = new ThrowableColorSettingsViewModelBuilder(),
         private readonly messageParser = new ThrowableColorSettingsMessageParser(),
-        private readonly controlsStateBuilder = new ThrowableColorSettingsControlStateBuilder()
+        private readonly controlsStateBuilder = new ThrowableColorSettingsControlStateBuilder(),
+        private readonly draftConfigurationBuilder = new ThrowableColorSettingsDraftConfigurationBuilder(),
+        private readonly previewBuilder = new ThrowableColorSettingsPreviewBuilder()
     ) {}
 
     public async show(): Promise<void> {
@@ -207,7 +212,6 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
         field: keyof RawColorSetting
     ): Promise<void> {
         const snapshot = this.readConfiguration();
-        const saved = snapshot[draft.target];
         const value = snapshot[draft.target][context][field];
 
         draft.revertField(context, field, value);
@@ -218,8 +222,7 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
             context,
             field,
             value,
-            isDirty: draft.isDirty,
-            controls: this.controlsStateBuilder.build(draft.read(), saved)
+            ...this.buildDraftState(snapshot, draft)
         };
 
         await panel.webview.postMessage(message);
@@ -240,20 +243,32 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
 
     private async publishDraftState(panel: vscode.WebviewPanel): Promise<void> {
         const draft = this.drafts.get(this.selectedTarget);
-        const saved = this.configurationSnapshot?.[this.selectedTarget];
+        const snapshot = this.configurationSnapshot;
 
-        if (draft === undefined || saved === undefined) {
+        if (draft === undefined || snapshot === undefined) {
             return;
         }
 
         const message: ColorSettingsDraftStateMessage = {
             type: "draftState",
             target: draft.target,
-            isDirty: draft.isDirty,
-            controls: this.controlsStateBuilder.build(draft.read(), saved)
+            ...this.buildDraftState(snapshot, draft)
         };
 
         await panel.webview.postMessage(message);
+    }
+
+    private buildDraftState(
+        snapshot: ThrowableColorConfigurationSnapshot,
+        draft: ThrowableColorSettingsDraft
+    ): ColorSettingsDraftState {
+        const settings = this.draftConfigurationBuilder.build(snapshot, draft.target, draft.getChanges());
+
+        return {
+            isDirty: draft.isDirty,
+            controls: this.controlsStateBuilder.build(draft.read(), snapshot[draft.target]),
+            preview: this.previewBuilder.build(settings)
+        };
     }
 
     private readConfiguration(): ThrowableColorConfigurationSnapshot {

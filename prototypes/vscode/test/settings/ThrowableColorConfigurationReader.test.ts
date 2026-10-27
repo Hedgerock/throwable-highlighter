@@ -168,8 +168,25 @@ test("does not copy effective defaults into target values when inspection is una
     assert.deepEqual(snapshot.workspace.class, {source: undefined, color: undefined});
 });
 
+test("reads defaults separately from effective and scoped values", () => {
+    const snapshot = new ThrowableColorConfigurationReader().read(
+        createConfiguration({
+            defaults: {classColorSource: null, classColor: ""},
+            effective: {classColorSource: "custom", classColor: "#123456"}
+        })
+    );
+
+    assert.deepEqual(snapshot.defaults.class, {source: null, color: ""});
+    assert.deepEqual(snapshot.effective.class, {
+        kind: "valid",
+        setting: {source: "custom", color: "#123456"}
+    });
+    assert.deepEqual(snapshot.user.class, {source: undefined, color: undefined});
+    assert.deepEqual(snapshot.workspace.class, {source: undefined, color: undefined});
+});
+
 function createConfiguration(
-    values: {effective?: Values; user?: Values; workspace?: Values} = {}
+    values: {effective?: Values; defaults?: Values; user?: Values; workspace?: Values} = {}
 ): Pick<vscode.WorkspaceConfiguration, "get" | "inspect"> {
     return {
         get<T>(key: string, defaultValue?: T): T {
@@ -181,7 +198,8 @@ function createConfiguration(
             return {
                 key,
                 globalValue: values.user?.[key] as T | undefined,
-                workspaceValue: values.workspace?.[key] as T | undefined
+                workspaceValue: values.workspace?.[key] as T | undefined,
+                defaultValue: values.defaults?.[key] as T | undefined
             };
         }
     };

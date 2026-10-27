@@ -14,6 +14,7 @@ export type ParsedThrowableColorSettings = {
 
 export type ThrowableColorConfigurationSnapshot = {
     readonly effective: ParsedThrowableColorSettings;
+    readonly defaults: RawThrowableColorSettings;
     readonly user: RawThrowableColorSettings;
     readonly workspace: RawThrowableColorSettings;
 };

@@ -44,8 +44,8 @@ export class ThrowableColorSettingsHtml {
         const result = model.effective[context];
         const values = {
             context: this.escapeHtml(context),
-            scopedSource: this.escapeHtml(this.formatScopedValue(scoped.source)),
-            scopedColor: this.escapeHtml(this.formatScopedValue(scoped.color)),
+            scopedSource: this.escapeHtml(this.formatScopedValue(scoped.source, "source")),
+            scopedColor: this.escapeHtml(this.formatScopedValue(scoped.color, "color")),
             sourceOptions: this.renderSourceOptions(context, scoped.source, templates.sourceOption),
             colorValue: this.escapeHtml(typeof scoped.color === "string" ? scoped.color : "")
         };
@@ -98,9 +98,9 @@ export class ThrowableColorSettingsHtml {
             .join("\n");
     }
 
-    private formatScopedValue(value: unknown): string {
+    private formatScopedValue(value: unknown, field: "source" | "color"): string {
         if (value === undefined) {
-            return "Not set in this scope";
+            return field === "color" ? "Not set" : "Not set in this scope";
         }
 
         if (typeof value === "string") {

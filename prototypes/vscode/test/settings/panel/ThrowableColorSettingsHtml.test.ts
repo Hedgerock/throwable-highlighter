@@ -291,6 +291,9 @@ test("binds revert and remove actions to the intended fields in normal and error
         const row = html.match(new RegExp('<tr data-context="' + context + '">([\\s\\S]*?)<\\/tr>'))?.[1];
 
         assert.ok(row);
+        assert.equal([...row.matchAll(/\bdata-color-preview(?=[\s>])/g)].length, 1);
+        assert.ok(row.includes("Preview: loading..."));
+        assert.match(row, /<input\b[^>]*\sdisabled(?=[\s>])/);
         assert.deepEqual(
             [...row.matchAll(/data-revert-field="([^"]+)"/g)].map(match => match[1]),
             ["source", "color"]

@@ -72,20 +72,59 @@ main {
     outline-offset: 2px;
 }
 
-.settings-table-container {
-    overflow-x: auto;
+.settings-table-frame {
+    min-width: 0;
+    overflow: hidden;
     border: 1px solid var(--vscode-contrastBorder, var(--vscode-panel-border, currentColor));
     border-radius: 0 0 4px 4px;
 }
 
+.settings-table-container {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
 .settings-table-container:focus-visible {
     outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: 3px;
+    outline-offset: -2px;
+}
+
+.settings-table-container::-webkit-scrollbar {
+    height: 10px;
+}
+
+.settings-table-container::-webkit-scrollbar-track {
+    background: var(--vscode-editor-background);
+}
+
+.settings-table-container::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-color: var(--vscode-scrollbarSlider-background, var(--vscode-descriptionForeground));
+    background-clip: padding-box;
+}
+
+.settings-table-container::-webkit-scrollbar-thumb:hover {
+    background-color: var(--vscode-scrollbarSlider-hoverBackground, var(--vscode-descriptionForeground));
+}
+
+.settings-table-container::-webkit-scrollbar-thumb:active {
+    background-color: var(--vscode-scrollbarSlider-activeBackground, var(--vscode-descriptionForeground));
+}
+
+.settings-table-container::-webkit-scrollbar-button {
+    width: 0;
+    height: 0;
+    display: none;
 }
 
 table {
+    margin: 0;
     width: 100%;
-    min-width: 1000px;
+    min-width: 960px;
     border-collapse: separate;
     border-spacing: 0;
     table-layout: fixed;
@@ -113,7 +152,7 @@ table .effective-color-column {
 
 .settings-table-title {
     margin: 0;
-    padding: 14px 16px;
+    padding: 10px 12px;
     text-align: left;
     font-size: inherit;
     font-weight: 600;
@@ -126,7 +165,7 @@ table .effective-color-column {
 
 th,
 td {
-    padding: clamp(10px, 1.5vw, 12px) clamp(12px, 2vw, 16px);
+    padding: 8px 12px;
     text-align: left;
     vertical-align: top;
     white-space: nowrap;
@@ -181,7 +220,56 @@ code {
 
 .settings-notes {
     margin-top: 16px;
+    overflow: hidden;
+    border-radius: 4px;
     font-size: 0.95em;
+}
+
+.settings-notes > summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 4px;
+    color: var(--vscode-foreground);
+    background-color: transparent;
+    font-weight: 600;
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 140ms ease;
+}
+
+.settings-notes > summary::-webkit-details-marker {
+    display: none;
+}
+
+.settings-notes > summary::before {
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    content: "";
+    transform: rotate(-45deg);
+    transition: transform 180ms ease;
+}
+
+.settings-notes[open] > summary::before {
+    transform: rotate(45deg);
+}
+
+.settings-notes > summary[aria-expanded="false"]::before {
+    transform: rotate(-45deg);
+}
+
+.settings-notes > summary:hover,
+.settings-notes > summary:focus-visible {
+    background-color: var(--vscode-toolbar-hoverBackground, var(--vscode-editorWidget-background));
+}
+
+.settings-notes-content {
+    padding: 8px 10px 10px 27px;
 }
 
 .settings-notes p {
@@ -198,9 +286,9 @@ code {
     align-items: center;
     gap: 8px;
     justify-content: flex-end;
-    margin-top: 24px;
-    padding-top: 16px;
-    border-top: 1px solid var(--vscode-contrastBorder, var(--vscode-panel-border, currentColor));
+    margin-top: 12px;
+    padding-top: 0;
+    border-top: 0;
 }
 
 button {
@@ -267,8 +355,29 @@ button:disabled {
 }
 
 .setting-value {
+    display: flex;
     min-width: 0;
-    margin-top: 6px;
+    margin-top: 5px;
+    font-size: 0.85em;
+}
+
+.setting-value code {
+    min-width: 0;
+    padding: 1px 5px;
+    font-size: inherit;
+}
+
+.setting-meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    margin-top: 5px;
+}
+
+.setting-meta .setting-value {
+    margin-top: 0;
 }
 
 .setting-value code,
@@ -284,6 +393,41 @@ tbody td > code {
     grid-template-columns: minmax(0, 1fr) 32px 32px;
 }
 
+.setting-field input:disabled {
+    color: var(--vscode-disabledForeground, var(--vscode-foreground));
+    cursor: default;
+    opacity: 1;
+}
+
+.setting-field input:disabled::placeholder {
+    color: var(--vscode-disabledForeground, var(--vscode-foreground));
+    opacity: 1;
+}
+
+.setting-preview {
+    display: block;
+    min-width: 0;
+    margin: 0;
+    padding: 1px 5px;
+    overflow: hidden;
+    border-radius: 3px;
+    color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+    background: var(--vscode-textCodeBlock-background, transparent);
+    font-size: 0.85em;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.setting-preview::before {
+    margin-right: 4px;
+    content: "→";
+}
+
+.setting-preview.error {
+    color: var(--vscode-errorForeground);
+}
+
 tbody td:nth-child(n + 4) {
     vertical-align: middle;
 }
@@ -296,6 +440,53 @@ tbody td:nth-child(4) {
 tbody td > code {
     display: inline-block;
     vertical-align: middle;
+}
+
+main :focus,
+main :focus-visible,
+main :focus-within {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+main button:not(:disabled),
+main select:not(:disabled) {
+    cursor: pointer;
+    transition: background-color 140ms ease;
+}
+
+main button:not(:disabled):hover,
+main button:not(:disabled):focus-visible {
+    background-color: var(--vscode-button-hoverBackground, var(--vscode-button-background));
+}
+
+main select:not(:disabled):hover,
+main select:not(:disabled):focus-visible {
+    background-color: var(--vscode-toolbar-hoverBackground, var(--vscode-editorWidget-background));
+}
+
+main option {
+    color: var(--vscode-foreground);
+    background-color: var(--vscode-editor-background);
+}
+
+main option:not(:disabled):hover,
+main option:not(:disabled):checked {
+    color: var(--vscode-list-activeSelectionForeground, var(--vscode-foreground));
+    background-color: var(--vscode-list-activeSelectionBackground, var(--vscode-editorWidget-background));
+}
+
+main option:disabled {
+    color: var(--vscode-disabledForeground, var(--vscode-foreground));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .settings-notes > summary,
+    .settings-notes > summary::before,
+    main button:not(:disabled),
+    main select:not(:disabled) {
+        transition: none;
+    }
 }
 
 @media (max-width: 640px) {

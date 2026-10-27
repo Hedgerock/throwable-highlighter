@@ -2,7 +2,7 @@
     <th scope="row">Throwable {{context}}</th>
     <td>
         <div class="setting-field">
-            <select id="source-{{context}}" data-setting="source" aria-label="Throwable {{context}} source">
+            <select id="source-{{context}}" data-setting="source" aria-label="Throwable {{context}} source" disabled>
                 {{sourceOptions}}
             </select>
             <button
@@ -38,11 +38,12 @@
                 type="text"
                 data-setting="color"
                 value="{{colorValue}}"
-                placeholder="Not set in this scope"
+                placeholder="Not set"
                 aria-label="Throwable {{context}} color"
                 autocomplete="off"
                 spellcheck="false"
                 maxlength="9"
+                disabled
             />
             <button
                 type="button"
@@ -86,8 +87,11 @@
                 </svg>
             </button>
         </div>
-        <div class="setting-value" data-value-field="color" title="{{scopedColor}}">
-            <code>{{scopedColor}}</code>
+        <div class="setting-meta">
+            <div class="setting-value" data-value-field="color" title="{{scopedColor}}">
+                <code>{{scopedColor}}</code>
+            </div>
+            <div class="setting-preview" data-color-preview>Preview: loading...</div>
         </div>
     </td>
     <td title="{{source}}">{{source}}</td>

@@ -28,7 +28,32 @@
         {"name": "--vscode-font-size", "description": "Размер шрифта интерфейса VS Code."},
         {"name": "--vscode-foreground", "description": "Основной цвет текста интерфейса VS Code."},
         {"name": "--vscode-panel-border", "description": "Цвет границы панели VS Code."},
-        {"name": "--vscode-textCodeBlock-background", "description": "Фоновый цвет блоков кода."}
+        {"name": "--vscode-textCodeBlock-background", "description": "Фоновый цвет блоков кода."},
+        {
+          "name": "--vscode-scrollbarSlider-activeBackground",
+          "description": "Цвет ползунка прокрутки во время перетаскивания."
+        },
+        {"name": "--vscode-scrollbarSlider-background", "description": "Цвет ползунка прокрутки в обычном состоянии."},
+        {
+          "name": "--vscode-scrollbarSlider-hoverBackground",
+          "description": "Цвет ползунка прокрутки при наведении указателя."
+        },
+        {
+          "name": "--vscode-toolbar-hoverBackground",
+          "description": "Фоновый цвет интерактивного элемента при наведении указателя."
+        },
+        {
+          "name": "--vscode-button-hoverBackground",
+          "description": "Фоновый цвет основных кнопок при наведении указателя."
+        },
+        {
+          "name": "--vscode-list-activeSelectionBackground",
+          "description": "Фоновый цвет выделенного пункта активного списка."
+        },
+        {
+          "name": "--vscode-list-activeSelectionForeground",
+          "description": "Цвет текста выделенного пункта активного списка."
+        }
       ]
     }
   }

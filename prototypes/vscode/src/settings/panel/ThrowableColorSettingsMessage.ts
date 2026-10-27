@@ -1,4 +1,5 @@
 import type {ThrowableColorSettingsControlState} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsControlState";
+import type {ThrowableColorSettingsPreview} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsPreview";
 import type {
     ClassColorSetting,
     ColorSetting,
@@ -29,12 +30,16 @@ type SourceMessage = ScopedMessage & {
           }
     );
 
-export type ColorSettingsDraftStateMessage = {
-    readonly type: "draftState";
-    readonly target: ColorSettingsTarget;
+export type ColorSettingsDraftState = {
     readonly isDirty: boolean;
     readonly controls: ThrowableColorSettingsControlState;
+    readonly preview: ThrowableColorSettingsPreview;
 };
+
+export type ColorSettingsDraftStateMessage = ScopedMessage &
+    ColorSettingsDraftState & {
+        readonly type: "draftState";
+    };
 
 export type ColorSettingsMessage =
     | {readonly type: "ready"}
@@ -46,10 +51,9 @@ export type ColorSettingsMessage =
 export type ColorSettingsMessageParseResult =
     {readonly kind: "valid"; readonly message: ColorSettingsMessage} | {readonly kind: "invalid"};
 
-export type ColorSettingsFieldRevertedMessage = ContextMessage & {
-    readonly type: "fieldReverted";
-    readonly field: ColorSettingChange["field"];
-    readonly value: unknown;
-    readonly isDirty: boolean;
-    readonly controls: ThrowableColorSettingsControlState;
-};
+export type ColorSettingsFieldRevertedMessage = ContextMessage &
+    ColorSettingsDraftState & {
+        readonly type: "fieldReverted";
+        readonly field: ColorSettingChange["field"];
+        readonly value: unknown;
+    };

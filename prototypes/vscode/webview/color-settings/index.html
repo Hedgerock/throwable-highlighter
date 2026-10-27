@@ -20,7 +20,7 @@
 
             <div class="settings-target">
                 <label for="settings-target">Settings scope</label>
-                <select id="settings-target">
+                <select id="settings-target" disabled>
                     <option value="user" {{userSelected}}>User</option>
                     <option value="workspace" {{workspaceSelected}} {{workspaceDisabled}}>Workspace</option>
                 </select>
@@ -28,45 +28,37 @@
 
             <h2 class="settings-table-title" id="color-settings-caption">Color configuration</h2>
 
-            <div class="settings-table-container" role="region" aria-labelledby="color-settings-caption" tabindex="0">
-                <table aria-labelledby="color-settings-caption">
-                    <colgroup>
-                        <col class="context-column" />
-                        <col class="source-column" />
-                        <col class="color-column" />
-                        <col class="effective-source-column" />
-                        <col class="effective-color-column" />
-                    </colgroup>
+            <div class="settings-table-frame">
+                <div
+                    class="settings-table-container"
+                    role="region"
+                    aria-labelledby="color-settings-caption"
+                    tabindex="0"
+                >
+                    <table aria-labelledby="color-settings-caption">
+                        <colgroup>
+                            <col class="context-column" />
+                            <col class="source-column" />
+                            <col class="color-column" />
+                            <col class="effective-source-column" />
+                            <col class="effective-color-column" />
+                        </colgroup>
 
-                    <thead>
-                        <tr>
-                            <th scope="col">Context</th>
-                            <th scope="col">Source in {{targetLabel}}</th>
-                            <th scope="col">Color in {{targetLabel}}</th>
-                            <th scope="col">Effective source</th>
-                            <th scope="col">Effective stored color</th>
-                        </tr>
-                    </thead>
+                        <thead>
+                            <tr>
+                                <th scope="col">Context</th>
+                                <th scope="col">Source in {{targetLabel}}</th>
+                                <th scope="col">Color in {{targetLabel}}</th>
+                                <th scope="col">Effective source</th>
+                                <th scope="col">Effective stored color</th>
+                            </tr>
+                        </thead>
 
-                    <tbody>
-                        {{rows}}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="settings-notes">
-                <p>
-                    Scope fields show draft values. Revert restores the saved value of one field in the selected scope.
-                </p>
-                <p>
-                    Remove clears the color setting from this scope when applied. Selecting Not set in this scope
-                    removes the source setting.
-                </p>
-                <p>
-                    Effective columns show saved configuration and include VS Code configuration priorities. A stored
-                    own color can be inactive for the selected source.
-                </p>
-                <p>Legacy rules use the existing color settings when no explicit source is configured.</p>
+                        <tbody>
+                            {{rows}}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <footer class="panel-actions">
@@ -74,6 +66,30 @@
                 <button id="discard-draft" type="button" disabled>Discard changes</button>
                 <button type="button" disabled>Apply</button>
             </footer>
+
+            <details class="settings-notes">
+                <summary aria-controls="settings-notes-content">About these settings</summary>
+                <div class="settings-notes-content" id="settings-notes-content">
+                    <p>
+                        Scope fields edit the draft for the selected scope. Revert restores the saved value of one
+                        field.
+                    </p>
+                    <p>
+                        Remove clears the color setting from this scope when applied. Selecting Not set in this scope
+                        removes the source setting.
+                    </p>
+                    <p>
+                        Effective columns show saved configuration and include VS Code configuration priorities. A
+                        stored own color can be inactive for the selected source.
+                    </p>
+                    <p>
+                        Selecting Inherit from CLASS or Native Java highlighting makes the color field read-only. The
+                        draft's own color remains visible below the field. Preview shows the result after applying this
+                        scope, including configuration priorities.
+                    </p>
+                    <p>Legacy rules use the existing color settings when no explicit source is configured.</p>
+                </div>
+            </details>
         </main>
 
         <script nonce="{{nonce}}" src="{{scriptUri}}"></script>

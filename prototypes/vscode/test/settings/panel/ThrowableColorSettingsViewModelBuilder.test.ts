@@ -134,6 +134,7 @@ function createSnapshot(
             throws: {kind: "valid", setting: {color: undefined}},
             ...overrides.effective
         },
+        defaults: createSettings(),
         user: createSettings({
             class: {source: "custom", color: "#123456"},
             ...overrides.user
