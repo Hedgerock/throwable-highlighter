@@ -198,6 +198,110 @@ test("selects Workspace when it is available and requested", () => {
     assert.doesNotMatch(html, /value="workspace"[^>]*disabled/);
 });
 
+test("offers inheritance only for derived contexts and selects the scoped source", () => {
+    const model = createModel({
+        scoped: createRawSettings({
+            class: {source: "custom", color: "#123456"},
+            catch: {source: "inherit", color: undefined}
+        })
+    });
+
+    const html = new ThrowableColorSettingsHtml().renderTemplate(model, readTemplates(), WEBVIEW_RESOURCES);
+    const classRow = html.match(/<tr data-context="class">([\s\S]*?)<\/tr>/)?.[1];
+    const catchRow = html.match(/<tr data-context="catch">([\s\S]*?)<\/tr>/)?.[1];
+
+    assert.ok(classRow);
+    assert.ok(catchRow);
+    assert.doesNotMatch(classRow, /value="inherit"/);
+    assert.match(classRow, /<option value="custom"\s+selected/);
+    assert.match(catchRow, /<option value="inherit"\s+selected/);
+});
+
+test("keeps invalid and missing scoped values visible without replacing them in controls", () => {
+    const model = createModel({
+        scoped: createRawSettings({
+            class: {source: "", color: false},
+            catch: {source: null, color: ""},
+            throws: {source: "inherit", color: "#123456"}
+        })
+    });
+
+    const html = new ThrowableColorSettingsHtml().renderTemplate(model, readTemplates(), WEBVIEW_RESOURCES);
+
+    assert.match(html, /<option value="stored"\s+selected\s+disabled/);
+    assert.ok(html.includes("<code>false</code>"));
+    assert.ok(html.includes("<code>null</code>"));
+    assert.ok(html.includes("<code>&quot;&quot;</code>"));
+    assert.match(html, /id="color-class"[\s\S]*?value=""/);
+    assert.match(html, /id="color-throws"[\s\S]*?value="#123456"/);
+});
+
+test("escapes text input values in attributes", () => {
+    const model = createModel({
+        scoped: createRawSettings({
+            class: {source: "custom", color: '"><img src=x onerror=alert(1)>'}
+        })
+    });
+
+    const html = new ThrowableColorSettingsHtml().renderTemplate(model, readTemplates(), WEBVIEW_RESOURCES);
+
+    assert.ok(html.includes('value="&quot;&gt;&lt;img src=x onerror=alert(1)&gt;"'));
+    assert.equal(html.includes("<img"), false);
+});
+
+test("preserves invalid class inheritance as a stored value in an editable error row", () => {
+    const model = createModel({
+        scoped: createRawSettings({class: {source: "inherit", color: "#123456"}}),
+        effective: createSettings({class: {kind: "invalid", reason: "class-inheritance"}})
+    });
+
+    const html = new ThrowableColorSettingsHtml().renderTemplate(model, readTemplates(), WEBVIEW_RESOURCES);
+    const row = html.match(/<tr data-context="class">([\s\S]*?)<\/tr>/)?.[1];
+
+    assert.ok(row);
+    assert.doesNotMatch(row, /<option value="inherit"/);
+    assert.match(row, /<option value="stored"\s+selected\s+disabled/);
+    assert.ok(row.includes('data-setting="source"'));
+    assert.ok(row.includes('data-setting="color"'));
+    assert.ok(row.includes("<code>&quot;inherit&quot;</code>"));
+});
+
+test("limits new color input without truncating existing long values", () => {
+    const color = "x".repeat(500);
+    const model = createModel({
+        scoped: createRawSettings({class: {source: "native", color}})
+    });
+
+    const html = new ThrowableColorSettingsHtml().renderTemplate(model, readTemplates(), WEBVIEW_RESOURCES);
+    const input = html.match(/<input\s+id="color-class"[^>]*>/)?.[0];
+
+    assert.ok(input);
+    assert.ok(input.includes('maxlength="9"'));
+    assert.ok(input.includes('value="' + color + '"'));
+    assert.ok(html.includes('title="&quot;' + color + '&quot;"'));
+});
+
+test("binds revert and remove actions to the intended fields in normal and error rows", () => {
+    const model = createModel({
+        effective: createSettings({class: {kind: "invalid", reason: "invalid-color"}})
+    });
+    const html = new ThrowableColorSettingsHtml().renderTemplate(model, readTemplates(), WEBVIEW_RESOURCES);
+
+    for (const context of ["class", "import", "catch", "throws"]) {
+        const row = html.match(new RegExp('<tr data-context="' + context + '">([\\s\\S]*?)<\\/tr>'))?.[1];
+
+        assert.ok(row);
+        assert.deepEqual(
+            [...row.matchAll(/data-revert-field="([^"]+)"/g)].map(match => match[1]),
+            ["source", "color"]
+        );
+        assert.deepEqual(
+            [...row.matchAll(/data-reset-field="([^"]+)"/g)].map(match => match[1]),
+            ["color"]
+        );
+    }
+});
+
 function renderTemplate(
     settings: ParsedThrowableColorSettings,
     overrides: Partial<ThrowableColorSettingsTemplate> = {}
@@ -236,6 +340,7 @@ function readTemplates(overrides: Partial<ThrowableColorSettingsTemplate> = {}):
         document: readFileSync(resolve(directory, "index.html"), "utf-8"),
         contextRow: readFileSync(resolve(directory, "context-row.html"), "utf-8"),
         invalidContextRow: readFileSync(resolve(directory, "invalid-context-row.html"), "utf-8"),
+        sourceOption: readFileSync(resolve(directory, "source-option.html"), "utf-8"),
         ...overrides
     };
 }

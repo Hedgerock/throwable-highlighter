@@ -14,15 +14,16 @@ export class ThrowableColorSettingsResources {
     }
 
     public async load(): Promise<ThrowableColorSettingsTemplate> {
-        const [document, contextRow, invalidContextRow] = await Promise.all([
+        const [document, contextRow, invalidContextRow, sourceOption] = await Promise.all([
             this.readText("index.html"),
             this.readText("context-row.html"),
             this.readText("invalid-context-row.html"),
+            this.readText("source-option.html"),
             vscode.workspace.fs.stat(this.stylesUri),
             vscode.workspace.fs.stat(this.scriptUri)
         ]);
 
-        return {document, contextRow, invalidContextRow};
+        return {document, contextRow, invalidContextRow, sourceOption};
     }
 
     private async readText(fileName: string): Promise<string> {

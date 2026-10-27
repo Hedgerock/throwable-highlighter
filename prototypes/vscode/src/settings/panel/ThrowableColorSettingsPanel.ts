@@ -7,7 +7,16 @@ import {ThrowableColorSettingsHtml} from "@throwable-highlighter/settings/panel/
 import {ThrowableColorSettingsMessageParser} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsMessageParser";
 import {ThrowableColorSettingsViewModelBuilder} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsViewModelBuilder";
 import {ThrowableColorConfigurationReader} from "@throwable-highlighter/settings/ThrowableColorConfigurationReader";
+import {ThrowableColorSettingsDraft} from "@throwable-highlighter/settings/ThrowableColorSettingsDraft";
+import type {
+    ColorSettingsDraftStateMessage,
+    ColorSettingsFieldRevertedMessage
+} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsMessage";
 import type {ThrowableColorSettingsResources} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsResources";
+import type {
+    RawColorSetting,
+    RawThrowableColorSettings
+} from "@throwable-highlighter/settings/ThrowableColorConfiguration";
 import type {ColorSettingsTarget} from "@throwable-highlighter/settings/ThrowableColorSettingsDraft";
 
 export const OPEN_COLOR_SETTINGS_COMMAND = "throwableHighlighter.prototype.openColorSettings";
@@ -18,6 +27,7 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
     private selectedTarget: ColorSettingsTarget = "user";
     private refreshVersion = 0;
     private isDisposed = false;
+    private readonly drafts = new Map<ColorSettingsTarget, ThrowableColorSettingsDraft>();
 
     constructor(
         private readonly resources: Pick<
@@ -88,7 +98,13 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
 
             this.selectedTarget = model.target;
 
-            panel.webview.html = this.html.renderTemplate(model, templates, {
+            if (!model.workspaceAvailable) {
+                this.drafts.delete("workspace");
+            }
+
+            const draft = this.getDraft(model.target, model.scoped);
+
+            panel.webview.html = this.html.renderTemplate({...model, scoped: draft.read()}, templates, {
                 cspSource: panel.webview.cspSource,
                 stylesUri: panel.webview.asWebviewUri(this.resources.stylesUri).toString(),
                 scriptUri: panel.webview.asWebviewUri(this.resources.scriptUri).toString(),
@@ -124,16 +140,114 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
 
         const result = this.messageParser.parse(value, this.isWorkspaceAvailable());
 
-        if (result.kind !== "valid" || result.message.type !== "selectTarget") {
+        if (result.kind !== "valid") {
             return;
         }
 
-        if (result.message.target === this.selectedTarget) {
+        const message = result.message;
+
+        if (message.type === "ready") {
+            return this.publishDraftState(panel);
+        }
+
+        if (message.type === "apply") {
             return;
         }
 
-        this.selectedTarget = result.message.target;
-        return this.refresh();
+        if (message.type === "selectTarget") {
+            if (message.target === this.selectedTarget) {
+                return;
+            }
+
+            this.selectedTarget = message.target;
+            return this.refresh();
+        }
+
+        if (message.target !== this.selectedTarget) {
+            return;
+        }
+
+        const draft = this.drafts.get(message.target);
+
+        if (draft === undefined) {
+            return;
+        }
+
+        switch (message.type) {
+            case "setSource":
+                draft.update(message.context, "source", message.source);
+                break;
+
+            case "setColor":
+                draft.update(message.context, "color", message.color);
+                break;
+
+            case "resetField":
+                draft.update(message.context, message.field, undefined);
+                break;
+
+            case "revertField":
+                return this.revertField(panel, draft, message.context, message.field);
+
+            case "discard":
+                this.drafts.delete(message.target);
+                return this.refresh();
+        }
+
+        return this.publishDraftState(panel);
+    }
+
+    private async revertField(
+        panel: vscode.WebviewPanel,
+        draft: ThrowableColorSettingsDraft,
+        context: keyof RawThrowableColorSettings,
+        field: keyof RawColorSetting
+    ): Promise<void> {
+        const configuration = vscode.workspace.getConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION);
+        const snapshot = this.configurationReader.read(configuration);
+        const value = snapshot[draft.target][context][field];
+
+        draft.revertField(context, field, value);
+
+        const message: ColorSettingsFieldRevertedMessage = {
+            type: "fieldReverted",
+            target: draft.target,
+            context,
+            field,
+            value,
+            isDirty: draft.isDirty
+        };
+
+        await panel.webview.postMessage(message);
+    }
+
+    private async publishDraftState(panel: vscode.WebviewPanel): Promise<void> {
+        const draft = this.drafts.get(this.selectedTarget);
+
+        if (draft === undefined) {
+            return;
+        }
+
+        const message: ColorSettingsDraftStateMessage = {
+            type: "draftState",
+            target: draft.target,
+            isDirty: draft.isDirty
+        };
+
+        await panel.webview.postMessage(message);
+    }
+
+    private getDraft(target: ColorSettingsTarget, settings: RawThrowableColorSettings): ThrowableColorSettingsDraft {
+        const draft = this.drafts.get(target);
+
+        if (draft !== undefined && draft.isDirty) {
+            return draft;
+        }
+
+        const current = new ThrowableColorSettingsDraft(target, settings);
+        this.drafts.set(target, current);
+
+        return current;
     }
 
     private isWorkspaceAvailable(): boolean {
@@ -147,6 +261,8 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
     private releasePanel(): void {
         ++this.refreshVersion;
         this.panel = undefined;
+        this.drafts.clear();
+
         const subscriptions = this.panelSubscriptions;
         this.panelSubscriptions = [];
 

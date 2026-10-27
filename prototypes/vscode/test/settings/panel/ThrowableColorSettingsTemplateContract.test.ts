@@ -9,7 +9,12 @@ test("matches template placeholders to their documented contract", async context
         await readFile(resolve(root, "tooling/template-variables.json"), "utf-8")
     );
 
-    assert.deepEqual(Object.keys(contracts).sort(), ["context-row.html", "index.html", "invalid-context-row.html"]);
+    assert.deepEqual(Object.keys(contracts).sort(), [
+        "context-row.html",
+        "index.html",
+        "invalid-context-row.html",
+        "source-option.html"
+    ]);
 
     for (const [fileName, descriptions] of Object.entries(contracts)) {
         await context.test(fileName, async () => {

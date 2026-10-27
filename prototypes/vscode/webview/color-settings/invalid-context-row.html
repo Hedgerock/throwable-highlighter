@@ -1,6 +1,91 @@
-<tr>
+<tr data-context="{{context}}">
     <th scope="row">Throwable {{context}}</th>
-    <td><code>{{scopedSource}}</code></td>
-    <td><code>{{scopedColor}}</code></td>
+    <td>
+        <div class="setting-field">
+            <select id="source-{{context}}" data-setting="source" aria-label="Throwable {{context}} source">
+                {{sourceOptions}}
+            </select>
+            <button
+                type="button"
+                data-revert-field="source"
+                aria-label="Revert Throwable {{context}} source to its saved value"
+                title="Revert Throwable {{context}} source to its saved value"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                    focusable="false"
+                >
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                </svg>
+            </button>
+        </div>
+        <div class="setting-value" data-value-field="source" title="{{scopedSource}}">
+            <code>{{scopedSource}}</code>
+        </div>
+    </td>
+    <td>
+        <div class="setting-field setting-field-color">
+            <input
+                id="color-{{context}}"
+                type="text"
+                data-setting="color"
+                value="{{colorValue}}"
+                placeholder="Not set in this scope"
+                aria-label="Throwable {{context}} color"
+                autocomplete="off"
+                spellcheck="false"
+                maxlength="9"
+            />
+            <button
+                type="button"
+                data-revert-field="color"
+                aria-label="Revert Throwable {{context}} color to its saved value"
+                title="Revert Throwable {{context}} color to its saved value"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                    focusable="false"
+                >
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                </svg>
+            </button>
+
+            <button
+                type="button"
+                data-reset-field="color"
+                aria-label="Remove Throwable {{context}} color from this scope"
+                title="Remove Throwable {{context}} color from this scope"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    aria-hidden="true"
+                    focusable="false"
+                >
+                    <path d="m6 6 12 12M18 6 6 18" />
+                </svg>
+            </button>
+        </div>
+        <div class="setting-value" data-value-field="color" title="{{scopedColor}}">
+            <code>{{scopedColor}}</code>
+        </div>
+    </td>
     <td colspan="2" class="error">Invalid configuration: {{reason}}</td>
 </tr>

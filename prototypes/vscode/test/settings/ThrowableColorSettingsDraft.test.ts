@@ -148,6 +148,52 @@ test("keeps User and Workspace drafts independent", () => {
     assert.deepEqual(workspaceSettings, createSettings());
 });
 
+test("reverts one field to its saved value while preserving other edits", () => {
+    const settings = createSettings({class: {source: "custom", color: "#123456"}});
+    const draft = new ThrowableColorSettingsDraft("user", settings);
+
+    draft.update("class", "color", "#ABCDEF");
+    draft.update("catch", "source", "native");
+    draft.revertField("class", "color", "#123456");
+
+    assert.deepEqual(draft.read().class, settings.class);
+    assert.deepEqual(draft.getChanges(), [{context: "catch", field: "source", value: "native"}]);
+    assert.deepEqual(settings.class, {source: "custom", color: "#123456"});
+});
+
+test("uses the latest saved field value as its baseline", () => {
+    const draft = new ThrowableColorSettingsDraft(
+        "user",
+        createSettings({class: {source: "custom", color: "#123456"}})
+    );
+
+    draft.update("class", "color", "#ABCDEF");
+    draft.revertField("class", "color", "#654321");
+
+    assert.equal(draft.isDirty, false);
+    assert.deepEqual(draft.read().class, {source: "custom", color: "#654321"});
+
+    draft.update("class", "color", "#123456");
+
+    assert.deepEqual(draft.getChanges(), [{context: "class", field: "color", value: "#123456"}]);
+
+    draft.discard();
+
+    assert.deepEqual(draft.read().class, {source: "custom", color: "#654321"});
+});
+
+test("preserves absent, null and invalid saved values when reverting a field", () => {
+    for (const value of [undefined, null, false, 42, "", {value: "unknown"}]) {
+        const draft = new ThrowableColorSettingsDraft("user", createSettings());
+
+        draft.update("catch", "source", "custom");
+        draft.revertField("catch", "source", value);
+
+        assert.equal(draft.isDirty, false);
+        assert.equal(draft.read().catch.source, value);
+    }
+});
+
 function createSettings(overrides: Partial<RawThrowableColorSettings> = {}): RawThrowableColorSettings {
     return {
         class: {source: undefined, color: undefined},

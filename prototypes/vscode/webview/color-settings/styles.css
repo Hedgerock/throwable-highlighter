@@ -24,6 +24,11 @@ main {
     margin: 0 auto;
 }
 
+#draft-status {
+    margin: 0 auto 0 0;
+    color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+}
+
 .panel-header {
     margin-bottom: 24px;
 }
@@ -80,10 +85,30 @@ main {
 
 table {
     width: 100%;
-    min-width: 900px;
+    min-width: 1000px;
     border-collapse: separate;
     border-spacing: 0;
-    table-layout: auto;
+    table-layout: fixed;
+}
+
+table .context-column {
+    width: 18%;
+}
+
+table .source-column {
+    width: 26%;
+}
+
+table .color-column {
+    width: 22%;
+}
+
+table .effective-source-column {
+    width: 17%;
+}
+
+table .effective-color-column {
+    width: 17%;
 }
 
 .settings-table-title {
@@ -105,11 +130,17 @@ td {
     text-align: left;
     vertical-align: top;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 thead th {
     font-weight: 600;
     border-bottom: 1px solid var(--vscode-contrastBorder, var(--vscode-panel-border, currentColor));
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: break-word;
 }
 
 tbody th {
@@ -163,6 +194,9 @@ code {
 
 .panel-actions {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
     justify-content: flex-end;
     margin-top: 24px;
     padding-top: 16px;
@@ -184,4 +218,117 @@ button:disabled {
     color: var(--vscode-disabledForeground, var(--vscode-foreground));
     background: var(--vscode-button-secondaryBackground, var(--vscode-editor-background));
     cursor: default;
+}
+
+.setting-field {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 32px;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+}
+
+.setting-field select,
+.setting-field input {
+    min-width: 0;
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--vscode-contrastBorder, var(--vscode-panel-border, currentColor));
+    border-radius: 2px;
+    color: var(--vscode-foreground);
+    background: var(--vscode-editor-background);
+    font: inherit;
+}
+
+.setting-field select:focus-visible,
+.setting-field input:focus-visible,
+.setting-field button:focus-visible {
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: 2px;
+}
+
+.setting-field button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-width: 32px;
+    max-width: 32px;
+    height: 32px;
+    min-height: 32px;
+    padding: 0;
+}
+
+.setting-field button svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+}
+
+.setting-value {
+    min-width: 0;
+    margin-top: 6px;
+}
+
+.setting-value code,
+tbody td > code {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.setting-field-color {
+    grid-template-columns: minmax(0, 1fr) 32px 32px;
+}
+
+tbody td:nth-child(n + 4) {
+    vertical-align: middle;
+}
+
+thead th:nth-child(4),
+tbody td:nth-child(4) {
+    border-left: 1px solid var(--vscode-contrastBorder, var(--vscode-panel-border, currentColor));
+}
+
+tbody td > code {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+@media (max-width: 640px) {
+    thead th:first-child,
+    tbody th {
+        position: static;
+        left: auto;
+        z-index: auto;
+        box-shadow: none;
+    }
+
+    .panel-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
+    }
+
+    #draft-status {
+        grid-column: 1 / -1;
+        margin: 0;
+    }
+
+    .panel-actions > button {
+        width: 100%;
+        min-width: 0;
+        min-height: 36px;
+        white-space: normal;
+        overflow-wrap: break-word;
+    }
+}
+
+@media (max-width: 360px) {
+    .panel-actions {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }

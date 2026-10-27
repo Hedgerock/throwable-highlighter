@@ -28,12 +28,25 @@ type SourceMessage = ScopedMessage & {
           }
     );
 
+export type ColorSettingsDraftStateMessage = {
+    readonly type: "draftState";
+    readonly target: ColorSettingsTarget;
+    readonly isDirty: boolean;
+};
+
 export type ColorSettingsMessage =
     | {readonly type: "ready"}
     | SourceMessage
     | (ContextMessage & {readonly type: "setColor"; readonly color: string})
-    | (ContextMessage & {readonly type: "resetField"; readonly field: ColorSettingChange["field"]})
+    | (ContextMessage & {readonly type: "resetField" | "revertField"; readonly field: ColorSettingChange["field"]})
     | (ScopedMessage & {readonly type: "selectTarget" | "discard" | "apply"});
 
 export type ColorSettingsMessageParseResult =
     {readonly kind: "valid"; readonly message: ColorSettingsMessage} | {readonly kind: "invalid"};
+
+export type ColorSettingsFieldRevertedMessage = ContextMessage & {
+    readonly type: "fieldReverted";
+    readonly field: ColorSettingChange["field"];
+    readonly value: unknown;
+    readonly isDirty: boolean;
+};

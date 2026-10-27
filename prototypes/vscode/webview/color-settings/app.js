@@ -12,6 +12,219 @@
         }
     });
 
+    const draftStatus = document.getElementById("draft-status");
+    const discard = document.getElementById("discard-draft");
+
+    window.addEventListener("message", event => {
+        const message = event.data;
+
+        if (
+            message === null ||
+            typeof message !== "object" ||
+            (message.type !== "draftState" && message.type !== "fieldReverted") ||
+            message.target !== target.value ||
+            typeof message.isDirty !== "boolean"
+        ) {
+            return;
+        }
+
+        if (message.type === "fieldReverted" && !applyRevertedField(message)) {
+            return;
+        }
+
+        if (draftStatus instanceof HTMLElement) {
+            draftStatus.textContent = message.isDirty
+                ? "Unapplied changes in this scope."
+                : "No unapplied changes in this scope.";
+        }
+
+        if (discard instanceof HTMLButtonElement) {
+            discard.disabled = !message.isDirty;
+        }
+    });
+
+    function formatScopedValue(value) {
+        if (value === undefined) {
+            return "Not set in this scope";
+        }
+
+        if (typeof value === "string") {
+            return JSON.stringify(value);
+        }
+
+        if (value === null || typeof value === "boolean" || typeof value === "number") {
+            return String(value);
+        }
+
+        return "Unsupported value";
+    }
+
+    function applyRevertedField(message) {
+        if (
+            !["class", "import", "catch", "throws"].includes(message.context) ||
+            (message.field !== "source" && message.field !== "color")
+        ) {
+            return false;
+        }
+
+        const control = document.getElementById(`${message.field}-${message.context}`);
+
+        if (message.field === "color") {
+            if (!(control instanceof HTMLInputElement)) {
+                return false;
+            }
+
+            control.value = typeof message.value === "string" ? message.value : "";
+        } else {
+            if (!(control instanceof HTMLSelectElement)) {
+                return false;
+            }
+
+            const known =
+                message.value === undefined ||
+                message.value === "custom" ||
+                message.value === "native" ||
+                (message.context !== "class" && message.value === "inherit");
+            let stored = control.querySelector('option[value="stored"]');
+
+            if (known) {
+                stored?.remove();
+                control.value = message.value === undefined ? "" : message.value;
+            } else {
+                if (stored === null) {
+                    stored = document.createElement("option");
+                    stored.value = "stored";
+                    stored.disabled = true;
+                    stored.textContent = "Stored value (see below)";
+                    control.prepend(stored);
+                }
+
+                control.value = "stored";
+            }
+        }
+
+        const display = control.closest("tr")?.querySelector(`[data-value-field="${message.field}"] code`);
+
+        if (display instanceof HTMLElement) {
+            const text = formatScopedValue(message.value);
+
+            display.textContent = text;
+            display.parentElement?.setAttribute("title", text);
+        }
+
+        return true;
+    }
+
+    if (discard instanceof HTMLButtonElement) {
+        discard.addEventListener("click", () => {
+            if (!discard.disabled && (target.value === "user" || target.value === "workspace")) {
+                vscode.postMessage({type: "discard", target: target.value});
+            }
+        });
+    }
+
+    for (const row of document.querySelectorAll("tbody tr[data-context]")) {
+        const context = row.dataset.context;
+
+        if (!["class", "import", "catch", "throws"].includes(context)) {
+            continue;
+        }
+
+        const source = row.querySelector('[data-setting="source"]');
+        const color = row.querySelector('[data-setting="color"]');
+
+        function sendChange(message) {
+            if (target.value === "user" || target.value === "workspace") {
+                vscode.postMessage({...message, target: target.value, context});
+            }
+        }
+
+        function showValue(field, value) {
+            const display = row.querySelector(`[data-value-field="${field}"] code`);
+
+            if (display instanceof HTMLElement) {
+                const text = formatScopedValue(value);
+
+                display.textContent = text;
+                display.parentElement?.setAttribute("title", text);
+            }
+
+            if (field === "source") {
+                row.querySelector('option[value="stored"]')?.remove();
+            }
+        }
+
+        if (source instanceof HTMLSelectElement) {
+            source.addEventListener("change", () => {
+                if (source.value === "") {
+                    showValue("source", undefined);
+                    sendChange({type: "resetField", field: "source"});
+
+                    return;
+                }
+
+                if (
+                    source.value === "custom" ||
+                    source.value === "native" ||
+                    (context !== "class" && source.value === "inherit")
+                ) {
+                    showValue("source", source.value);
+                    sendChange({type: "setSource", source: source.value});
+                }
+            });
+        }
+
+        if (color instanceof HTMLInputElement) {
+            color.addEventListener("input", () => {
+                showValue("color", color.value);
+                sendChange({type: "setColor", color: color.value});
+            });
+        }
+
+        for (const button of row.querySelectorAll("[data-revert-field]")) {
+            if (!(button instanceof HTMLButtonElement)) {
+                continue;
+            }
+
+            const field = button.dataset.revertField;
+
+            if (field !== "source" && field !== "color") {
+                continue;
+            }
+
+            button.addEventListener("click", () => {
+                sendChange({type: "revertField", field});
+            });
+        }
+
+        for (const button of row.querySelectorAll("[data-reset-field]")) {
+            if (!(button instanceof HTMLButtonElement)) {
+                continue;
+            }
+
+            const field = button.dataset.resetField;
+
+            if (field !== "source" && field !== "color") {
+                continue;
+            }
+
+            button.addEventListener("click", () => {
+                if (field === "source" && source instanceof HTMLSelectElement) {
+                    source.value = "";
+                }
+
+                if (field === "color" && color instanceof HTMLInputElement) {
+                    color.value = "";
+                }
+
+                showValue(field, undefined);
+                sendChange({type: "resetField", field});
+            });
+        }
+    }
+
+    vscode.postMessage({type: "ready"});
+
     const table = document.querySelector(".settings-table-container");
 
     if (!(table instanceof HTMLElement)) {

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import {resolve} from "node:path";
 import {test} from "node:test";
+import {Script} from "node:vm";
 import type {TestContext} from "node:test";
 
 import * as vscode from "vscode";
@@ -30,11 +31,14 @@ test("loads all templates as UTF-8 and checks the stylesheet", async context => 
     assert.deepEqual(templates, {
         document,
         contextRow: "<tr>context</tr>",
-        invalidContextRow: "<tr>invalid</tr>"
+        invalidContextRow: "<tr>invalid</tr>",
+        sourceOption: "<option>source</option>"
     });
     assert.deepEqual(
         fixture.readFile.mock.calls.map(call => call.arguments[0].toString()),
-        ["index.html", "context-row.html", "invalid-context-row.html"].map(fileName => fixture.root + "/" + fileName)
+        ["index.html", "context-row.html", "invalid-context-row.html", "source-option.html"].map(
+            fileName => fixture.root + "/" + fileName
+        )
     );
     assert.deepEqual(
         fixture.stat.mock.calls.map(call => call.arguments),
@@ -43,7 +47,7 @@ test("loads all templates as UTF-8 and checks the stylesheet", async context => 
 });
 
 test("propagates failures when reading any template", async context => {
-    for (const fileName of ["index.html", "context-row.html", "invalid-context-row.html"]) {
+    for (const fileName of ["index.html", "context-row.html", "invalid-context-row.html", "source-option.html"]) {
         await context.test(fileName, async current => {
             const fixture = createFixture(current);
             const error = new Error("Cannot read " + fileName);
@@ -81,11 +85,25 @@ test("can load resources again after a failed attempt", async context => {
 test("includes the templates and stylesheet in the extension resources", async () => {
     const directory = resolve(__dirname, "../../../../webview/color-settings");
 
-    for (const fileName of ["index.html", "context-row.html", "invalid-context-row.html", "styles.css", "app.js"]) {
+    for (const fileName of [
+        "index.html",
+        "context-row.html",
+        "invalid-context-row.html",
+        "source-option.html",
+        "styles.css",
+        "app.js"
+    ]) {
         const content = await readFile(resolve(directory, fileName), "utf-8");
 
         assert.notEqual(content.trim(), "", fileName + " must not be empty.");
     }
+});
+
+test("loads the webview script as a classic browser script", async () => {
+    const file = resolve(__dirname, "../../../../webview/color-settings/app.js");
+    const source = await readFile(file, "utf-8");
+
+    assert.doesNotThrow(() => new Script(source, {filename: file}));
 });
 
 function createFixture(context: TestContext) {
@@ -94,7 +112,8 @@ function createFixture(context: TestContext) {
     const files = new Map([
         [root + "/index.html", "<html>settings</html>"],
         [root + "/context-row.html", "<tr>context</tr>"],
-        [root + "/invalid-context-row.html", "<tr>invalid</tr>"]
+        [root + "/invalid-context-row.html", "<tr>invalid</tr>"],
+        [root + "/source-option.html", "<option>source</option>"]
     ]);
 
     const failures = new Map<string, Error>();

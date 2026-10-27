@@ -51,6 +51,7 @@ export class ThrowableColorSettingsMessageParser {
                 return {kind: "valid", message: {type: "setSource", target, context, source: value.source}};
 
             case "resetField":
+            case "revertField":
                 if (
                     !this.hasKeys(value, ["type", "target", "context", "field"]) ||
                     (value.field !== "source" && value.field !== "color")
@@ -58,7 +59,7 @@ export class ThrowableColorSettingsMessageParser {
                     return {kind: "invalid"};
                 }
 
-                return {kind: "valid", message: {type: "resetField", target, context, field: value.field}};
+                return {kind: "valid", message: {type: value.type, target, context, field: value.field}};
 
             default:
                 return {kind: "invalid"};

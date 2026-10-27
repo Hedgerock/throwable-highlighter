@@ -163,6 +163,25 @@ test("returns a detached target selection message", () => {
     assert.deepEqual(result.message, {type: "selectTarget", target: "user"});
 });
 
+test("preserves the revertField message type", () => {
+    assertValid({
+        type: "revertField",
+        target: "user",
+        context: "class",
+        field: "color"
+    });
+});
+
+test("rejects invalid revert requests and replacement values", () => {
+    for (const field of [undefined, null, "", "target", "__proto__", "classColor"]) {
+        assertInvalid({type: "revertField", target: "user", context: "class", field});
+    }
+
+    assertInvalid({type: "revertField", target: "workspace", context: "class", field: "color"}, false);
+    assertInvalid({type: "revertField", target: "user", context: "CLASS", field: "color"});
+    assertInvalid({type: "revertField", target: "user", context: "class", field: "color", value: "#FFFFFF"});
+});
+
 function assertValid(message: unknown, workspaceAvailable = true): void {
     const parser = new ThrowableColorSettingsMessageParser();
 

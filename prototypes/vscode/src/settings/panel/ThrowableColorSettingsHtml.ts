@@ -45,7 +45,9 @@ export class ThrowableColorSettingsHtml {
         const values = {
             context: this.escapeHtml(context),
             scopedSource: this.escapeHtml(this.formatScopedValue(scoped.source)),
-            scopedColor: this.escapeHtml(this.formatScopedValue(scoped.color))
+            scopedColor: this.escapeHtml(this.formatScopedValue(scoped.color)),
+            sourceOptions: this.renderSourceOptions(context, scoped.source, templates.sourceOption),
+            colorValue: this.escapeHtml(typeof scoped.color === "string" ? scoped.color : "")
         };
 
         if (result.kind === "invalid") {
@@ -60,6 +62,40 @@ export class ThrowableColorSettingsHtml {
             source: this.escapeHtml(SOURCE_LABELS[result.setting.source ?? "legacy"]),
             color: this.escapeHtml(result.setting.color || "Not set")
         });
+    }
+
+    private renderSourceOptions(context: (typeof CONTEXTS)[number], source: unknown, template: string): string {
+        const options = [
+            {value: "", label: "Not set in this scope"},
+            {value: "custom", label: SOURCE_LABELS.custom},
+            ...(context === "class" ? [] : [{value: "inherit", label: SOURCE_LABELS.inherit}]),
+            {value: "native", label: SOURCE_LABELS.native}
+        ];
+
+        const known =
+            source === undefined ||
+            source === "custom" ||
+            source === "native" ||
+            (context !== "class" && source === "inherit");
+
+        if (!known) {
+            options.unshift({value: "stored", label: "Stored value (see below)"});
+        }
+
+        return options
+            .map(option => {
+                const selected = known
+                    ? option.value === (source === undefined ? "" : source)
+                    : option.value === "stored";
+
+                return this.fillTemplate(template, {
+                    value: this.escapeHtml(option.value),
+                    label: this.escapeHtml(option.label),
+                    selected: selected ? "selected" : "",
+                    disabled: option.value === "stored" ? "disabled" : ""
+                });
+            })
+            .join("\n");
     }
 
     private formatScopedValue(value: unknown): string {

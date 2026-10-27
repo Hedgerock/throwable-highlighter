@@ -12,15 +12,15 @@ export type ColorSettingChange = {
 };
 
 export class ThrowableColorSettingsDraft {
-    private readonly initial: RawThrowableColorSettings;
+    private baseline: RawThrowableColorSettings;
     private current: RawThrowableColorSettings;
 
     constructor(
         public readonly target: ColorSettingsTarget,
         settings: RawThrowableColorSettings
     ) {
-        this.initial = this.copy(settings);
-        this.current = this.initial;
+        this.baseline = this.copy(settings);
+        this.current = this.baseline;
     }
 
     public get isDirty(): boolean {
@@ -29,6 +29,22 @@ export class ThrowableColorSettingsDraft {
 
     public read(): RawThrowableColorSettings {
         return this.copy(this.current);
+    }
+
+    public revertField(
+        context: keyof RawThrowableColorSettings,
+        field: keyof RawColorSetting,
+        saveValue: unknown
+    ): void {
+        this.baseline = {
+            ...this.baseline,
+            [context]: {
+                ...this.baseline[context],
+                [field]: saveValue
+            }
+        };
+
+        this.update(context, field, saveValue);
     }
 
     public update(context: keyof RawThrowableColorSettings, field: keyof RawColorSetting, value: unknown): void {
@@ -48,7 +64,7 @@ export class ThrowableColorSettingsDraft {
             for (const field of ["source", "color"] as const) {
                 const value = this.current[context][field];
 
-                if (!Object.is(value, this.initial[context][field])) {
+                if (!Object.is(value, this.baseline[context][field])) {
                     changes.push({context, field, value});
                 }
             }
@@ -58,7 +74,7 @@ export class ThrowableColorSettingsDraft {
     }
 
     public discard(): void {
-        this.current = this.initial;
+        this.current = this.baseline;
     }
 
     private copy(settings: RawThrowableColorSettings): RawThrowableColorSettings {

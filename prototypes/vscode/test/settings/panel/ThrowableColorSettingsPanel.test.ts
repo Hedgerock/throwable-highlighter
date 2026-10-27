@@ -325,6 +325,325 @@ test("returns to User when the workspace becomes unavailable", async context => 
     assert.equal(fixture.update.mock.callCount(), 0);
 });
 
+test("keeps source changes and incomplete colors in the draft without changing effective values", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+
+    await panel.receive({type: "setSource", target: "user", context: "class", source: "native"});
+
+    await fixture.settingsPanel.refresh();
+
+    assert.ok(panel.webview.html.includes("<code>&quot;native&quot;</code>"));
+    assert.ok(panel.webview.html.includes("<code>&quot;#ABCDEF&quot;</code>"));
+
+    await panel.receive({type: "setColor", target: "user", context: "class", color: " #12 "});
+
+    await fixture.settingsPanel.refresh();
+
+    assert.ok(panel.webview.html.includes("<code>&quot; #12 &quot;</code>"));
+    assert.ok(panel.webview.html.includes("<code>#123456</code>"));
+    assert.equal(fixture.values.classColor, "#123456");
+    assert.equal(fixture.userValues.classColor, "#ABCDEF");
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("resets draft fields without replacing them with effective values", async context => {
+    const fixture = createFixture(context);
+    fixture.userValues.classColorSource = "custom";
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+
+    await panel.receive({type: "resetField", target: "user", context: "class", field: "source"});
+
+    await fixture.settingsPanel.refresh();
+
+    assert.equal(panel.webview.html.includes("<code>&quot;custom&quot;</code>"), false);
+    assert.ok(panel.webview.html.includes("<code>&quot;#ABCDEF&quot;</code>"));
+
+    await panel.receive({type: "resetField", target: "user", context: "class", field: "color"});
+
+    await fixture.settingsPanel.refresh();
+
+    assert.equal(panel.webview.html.includes("<code>&quot;#ABCDEF&quot;</code>"), false);
+    assert.ok(panel.webview.html.includes("<code>#123456</code>"));
+
+    await panel.receive({type: "discard", target: "user"});
+
+    assert.ok(panel.webview.html.includes("<code>&quot;custom&quot;</code>"));
+    assert.ok(panel.webview.html.includes("<code>&quot;#ABCDEF&quot;</code>"));
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("preserves independent drafts when switching settings scopes", async context => {
+    const fixture = createFixture(context);
+    context.mock.getter(vscode.workspace, "workspaceFolders", () => []);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    await panel.receive({type: "selectTarget", target: "workspace"});
+    await panel.receive({type: "setColor", target: "workspace", context: "class", color: "#222222"});
+    await panel.receive({type: "selectTarget", target: "user"});
+
+    assert.ok(panel.webview.html.includes("<code>&quot;#111111&quot;</code>"));
+    assert.equal(panel.webview.html.includes("<code>&quot;#222222&quot;</code>"), false);
+
+    await panel.receive({type: "discard", target: "user"});
+
+    assert.ok(panel.webview.html.includes("<code>&quot;#ABCDEF&quot;</code>"));
+
+    await panel.receive({type: "selectTarget", target: "workspace"});
+
+    assert.ok(panel.webview.html.includes("<code>&quot;#222222&quot;</code>"));
+    assert.ok(panel.webview.html.includes("<code>#123456</code>"));
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("preserves a dirty draft during refresh and discards it to the latest saved values", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    fixture.userValues.classColor = "#654321";
+    fixture.values.classColor = "#654321";
+    await fixture.settingsPanel.refresh();
+
+    assert.ok(panel.webview.html.includes("<code>&quot;#111111&quot;</code>"));
+    assert.ok(panel.webview.html.includes("<code>#654321</code>"));
+
+    await panel.receive({type: "discard", target: "user"});
+
+    assert.ok(panel.webview.html.includes("<code>&quot;#654321&quot;</code>"));
+    assert.equal(panel.webview.html.includes("<code>&quot;#111111&quot;</code>"), false);
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("refreshes an unchanged draft from the latest scoped configuration", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+
+    fixture.userValues.classColor = "#654321";
+    await fixture.settingsPanel.refresh();
+
+    assert.ok(fixture.panels[0].webview.html.includes("<code>&quot;#654321&quot;</code>"));
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("drops all unapplied drafts when the panel is closed", async context => {
+    const fixture = createFixture(context);
+    context.mock.getter(vscode.workspace, "workspaceFolders", () => []);
+    await fixture.settingsPanel.show();
+    const first = fixture.panels[0];
+
+    await first.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    await first.receive({type: "selectTarget", target: "workspace"});
+    await first.receive({type: "setColor", target: "workspace", context: "class", color: "#222222"});
+    first.close();
+
+    await fixture.settingsPanel.show();
+    const second = fixture.panels[1];
+
+    await first.receive({type: "setColor", target: "workspace", context: "class", color: "#333333"});
+    assert.ok(second.webview.html.includes("<code>&quot;#FEDCBA&quot;</code>"));
+
+    await second.receive({type: "selectTarget", target: "user"});
+
+    assert.ok(second.webview.html.includes("<code>&quot;#ABCDEF&quot;</code>"));
+    assert.equal(second.webview.html.includes("<code>&quot;#111111&quot;</code>"), false);
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("ignores inactive scope edits and invalid draft messages", async context => {
+    const fixture = createFixture(context);
+    context.mock.getter(vscode.workspace, "workspaceFolders", () => []);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+    const previous = panel.webview.html;
+
+    for (const message of [
+        {type: "setColor", target: "workspace", context: "class", color: "#111111"},
+        {type: "setSource", target: "user", context: "class", source: "inherit"},
+        {type: "setColor", target: "user", context: "class", color: 42},
+        {type: "setColor", target: "user", context: "class", color: "#111111", extra: true},
+        {type: "ready"},
+        {type: "apply", target: "user"}
+    ]) {
+        await panel.receive(message);
+    }
+
+    assert.equal(panel.webview.html, previous);
+    assert.equal(fixture.getConfiguration.mock.callCount(), 1);
+
+    await panel.receive({type: "selectTarget", target: "workspace"});
+
+    assert.ok(panel.webview.html.includes("<code>&quot;#FEDCBA&quot;</code>"));
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("does not accept draft edits before the initial snapshot has loaded", async context => {
+    const fixture = createFixture(context);
+    const pending = createDeferred<ThrowableColorSettingsTemplate>();
+    fixture.load.mock.mockImplementationOnce(() => pending.promise);
+
+    const opening = fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    pending.resolve(readTemplates());
+    await opening;
+
+    assert.ok(panel.webview.html.includes("<code>&quot;#ABCDEF&quot;</code>"));
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("drops the Workspace draft when the workspace becomes unavailable", async context => {
+    const fixture = createFixture(context);
+    let folders: readonly vscode.WorkspaceFolder[] | undefined = [];
+    context.mock.getter(vscode.workspace, "workspaceFolders", () => folders);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+
+    await panel.receive({type: "selectTarget", target: "workspace"});
+    await panel.receive({type: "setColor", target: "workspace", context: "class", color: "#111111"});
+
+    folders = undefined;
+    await fixture.settingsPanel.refresh();
+    fixture.workspaceValues.classColor = "#654321";
+    folders = [];
+    await panel.receive({type: "selectTarget", target: "workspace"});
+
+    assert.ok(panel.webview.html.includes("<code>&quot;#654321&quot;</code>"));
+    assert.equal(panel.webview.html.includes("<code>&quot;#111111&quot;</code>"), false);
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("publishes the current draft state when the webview is ready", async context => {
+    const fixture = createFixture(context);
+    context.mock.getter(vscode.workspace, "workspaceFolders", () => []);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+
+    await panel.receive({type: "ready"});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls[0].arguments, [
+        {type: "draftState", target: "user", isDirty: false}
+    ]);
+
+    await panel.receive({type: "selectTarget", target: "workspace"});
+    await panel.receive({type: "ready"});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls[1].arguments, [
+        {type: "draftState", target: "workspace", isDirty: false}
+    ]);
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("publishes draft changes without reloading the document or reading configuration", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+    const previous = panel.webview.html;
+
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#ABCDEF"});
+
+    assert.deepEqual(
+        panel.webview.postMessage.mock.calls.map(call => call.arguments),
+        [[{type: "draftState", target: "user", isDirty: true}], [{type: "draftState", target: "user", isDirty: false}]]
+    );
+    assert.equal(panel.webview.html, previous);
+    assert.equal(fixture.load.mock.callCount(), 1);
+    assert.equal(fixture.getConfiguration.mock.callCount(), 1);
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("publishes a clean state after discarding changes", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    await panel.receive({type: "discard", target: "user"});
+    await panel.receive({type: "ready"});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
+        {type: "draftState", target: "user", isDirty: false}
+    ]);
+    assert.ok(panel.webview.html.includes("<code>&quot;#ABCDEF&quot;</code>"));
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("reverts a field to the latest saved scope value without reloading the panel", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+    const html = panel.webview.html;
+
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    await panel.receive({type: "setSource", target: "user", context: "catch", source: "native"});
+    fixture.userValues.classColor = "#654321";
+
+    await panel.receive({type: "revertField", target: "user", context: "class", field: "color"});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
+        {type: "fieldReverted", target: "user", context: "class", field: "color", value: "#654321", isDirty: true}
+    ]);
+    assert.equal(panel.webview.html, html);
+    assert.equal(fixture.load.mock.callCount(), 1);
+    assert.equal(fixture.update.mock.callCount(), 0);
+
+    await panel.receive({type: "revertField", target: "user", context: "catch", field: "source"});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
+        {type: "fieldReverted", target: "user", context: "catch", field: "source", value: undefined, isDirty: false}
+    ]);
+});
+
+test("reverts Workspace fields without substituting User or effective values", async context => {
+    const fixture = createFixture(context);
+    context.mock.getter(vscode.workspace, "workspaceFolders", () => []);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+
+    await panel.receive({type: "selectTarget", target: "workspace"});
+    await panel.receive({type: "setColor", target: "workspace", context: "class", color: "#111111"});
+    await panel.receive({type: "revertField", target: "workspace", context: "class", field: "color"});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
+        {type: "fieldReverted", target: "workspace", context: "class", field: "color", value: "#FEDCBA", isDirty: false}
+    ]);
+
+    await panel.receive({type: "setColor", target: "workspace", context: "catch", color: "#111111"});
+    await panel.receive({type: "revertField", target: "workspace", context: "catch", field: "color"});
+
+    assert.deepEqual(panel.webview.postMessage.mock.calls.at(-1)?.arguments, [
+        {type: "fieldReverted", target: "workspace", context: "catch", field: "color", value: undefined, isDirty: false}
+    ]);
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("ignores revert requests from inactive scopes and closed panels", async context => {
+    const fixture = createFixture(context);
+    context.mock.getter(vscode.workspace, "workspaceFolders", () => []);
+    await fixture.settingsPanel.show();
+    const first = fixture.panels[0];
+
+    await first.receive({type: "revertField", target: "workspace", context: "class", field: "color"});
+
+    assert.equal(fixture.getConfiguration.mock.callCount(), 1);
+    assert.equal(first.webview.postMessage.mock.callCount(), 0);
+
+    first.close();
+    await fixture.settingsPanel.show();
+    await first.receive({type: "revertField", target: "user", context: "class", field: "color"});
+
+    assert.equal(fixture.getConfiguration.mock.callCount(), 2);
+    assert.equal(first.webview.postMessage.mock.callCount(), 0);
+    assert.equal(fixture.update.mock.callCount(), 0);
+});
+
 function createFixture(context: TestContext) {
     const values: Record<string, unknown> = {classColor: "#123456"};
     const userValues: Record<string, unknown> = {classColor: "#ABCDEF"};
@@ -369,6 +688,8 @@ function createFixture(context: TestContext) {
         settingsPanel,
         panels,
         values,
+        userValues,
+        workspaceValues,
         createPanel,
         getConfiguration,
         update,
@@ -389,7 +710,8 @@ function readTemplates(): ThrowableColorSettingsTemplate {
     return {
         document: readFileSync(resolve(directory, "index.html"), "utf-8"),
         contextRow: readFileSync(resolve(directory, "context-row.html"), "utf-8"),
-        invalidContextRow: readFileSync(resolve(directory, "invalid-context-row.html"), "utf-8")
+        invalidContextRow: readFileSync(resolve(directory, "invalid-context-row.html"), "utf-8"),
+        sourceOption: readFileSync(resolve(directory, "source-option.html"), "utf-8")
     };
 }
 
@@ -420,6 +742,7 @@ function createPanelFixture(context: TestContext) {
                 onMessage = listener;
                 return {dispose: messageUnsubscribe};
             },
+            postMessage: context.mock.fn(async (_message: unknown) => true),
             asWebviewUri: context.mock.fn((uri: vscode.Uri) => createUri("test-webview:" + uri.toString()))
         },
         reveal: context.mock.fn(),
