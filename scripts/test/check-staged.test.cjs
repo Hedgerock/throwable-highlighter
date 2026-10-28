@@ -2,49 +2,12 @@ const assert = require("node:assert/strict");
 const childProcess = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
-const {basename, dirname, join, resolve} = require("node:path");
+const {join, resolve} = require("node:path");
 const {test} = require("node:test");
+const process = require("node:process");
 
-const {checkStaged, runProjectChecks} = require("../check-staged.cjs");
-
-function createRepository(context) {
-    const temporaryRoot = fs.realpathSync(os.tmpdir());
-    const root = fs.mkdtempSync(join(temporaryRoot, "throwable-highlighter-runner-test-"));
-
-    context.after(() => {
-        const target = resolve(root);
-        assert.equal(dirname(target), temporaryRoot);
-        assert.ok(basename(target).startsWith("throwable-highlighter-runner-test-"));
-        fs.rmSync(target, {recursive: true, force: true, maxRetries: 3});
-    });
-
-    const env = {...process.env};
-    const localVariables = childProcess.execFileSync("git", ["rev-parse", "--local-env-vars"], {encoding: "utf8"});
-    const localNames = new Set(
-        localVariables
-            .trim()
-            .split(/\r?\n/)
-            .map(name => name.toUpperCase())
-    );
-
-    for (const name of Object.keys(env)) {
-        if (localNames.has(name.toUpperCase())) {
-            delete env[name];
-        }
-    }
-
-    function git(args, commandEnv = env) {
-        return childProcess.execFileSync("git", ["-c", "core.autocrlf=false", ...args], {
-            cwd: root,
-            env: commandEnv,
-            encoding: "utf8",
-            stdio: ["ignore", "pipe", "pipe"]
-        });
-    }
-
-    git(["init", "--quiet"]);
-    return {root, env, git};
-}
+const {checkStaged} = require("../check-staged.cjs");
+const {createRepository} = require("../support/repository.cjs");
 
 test("checks staged content without changing unstaged or untracked files", context => {
     // Arrange
@@ -142,7 +105,7 @@ test("uses the inherited index and removes Git-local variables from build comman
     assert.deepEqual(fs.readFileSync(index), alternativeBefore);
 });
 
-test("removes the temporary directory when exporting the index fails", context => {
+test("removes the temporary directory when preparing the snapshot fails", context => {
     // Arrange
     const {root, env} = createRepository(context);
     const index = join(root, "invalid-index");
@@ -179,64 +142,142 @@ test("rejects an unavailable Git executable", context => {
     assert.throws(act, /Unable to start git/);
 });
 
-test("runs runner tests and both project check groups", context => {
+test("uses the frozen index after the original index changes", context => {
     // Arrange
-    const commands = [];
-    context.mock.method(childProcess, "spawnSync", (command, args, options) => {
-        commands.push({command, args, cwd: options.cwd});
-        return {status: 0, stdout: null};
-    });
-    const snapshot = resolve("snapshot with spaces");
-    const env = {...process.env};
+    const {root, env, git, write} = createRepository(context);
+    const path = "prototypes/vscode/src/value.ts";
+    const added = "src/main/java/Added.java";
+    write(path, "staged content\n");
+    git(["add", "--all"]);
+    const index = join(root, ".git", "index");
+    const copy = fs.copyFileSync;
+    let updatedIndex;
+    let snapshot;
 
-    // Act
-    runProjectChecks(snapshot, env);
-
-    // Assert
-    assert.equal(commands.length, 4);
-    assert.equal(commands[0].command, process.execPath);
-    assert.deepEqual(commands[0].args, ["--test", "scripts/test/check-staged.test.cjs"]);
-    assert.equal(commands[0].cwd, snapshot);
-    assert.equal(commands[1].cwd, snapshot);
-    assert.equal(commands[2].cwd, join(snapshot, "prototypes", "vscode"));
-    assert.equal(commands[3].cwd, join(snapshot, "prototypes", "vscode"));
-
-    if (process.platform === "win32") {
-        assert.deepEqual(commands[1].args, ["/d", "/s", "/c", "gradlew.bat test verifyPlugin buildPlugin --no-daemon"]);
-        assert.deepEqual(commands[2].args, ["/d", "/s", "/c", "npm ci"]);
-        assert.deepEqual(commands[3].args, ["/d", "/s", "/c", "npm run check"]);
-    } else {
-        assert.equal(commands[1].command, "sh");
-        assert.deepEqual(commands[1].args, ["./gradlew", "test", "verifyPlugin", "buildPlugin", "--no-daemon"]);
-        assert.equal(commands[2].command, "npm");
-        assert.deepEqual(commands[2].args, ["ci"]);
-        assert.deepEqual(commands[3].args, ["run", "check"]);
-    }
-});
-
-test("stops the checks after a failed command", context => {
-    // Arrange
-    const commands = [];
-    context.mock.method(childProcess, "spawnSync", (command, args) => {
-        commands.push({command, args});
-        return {status: commands.length === 2 ? 1 : 0, stdout: null};
+    context.mock.method(fs, "copyFileSync", (source, destination) => {
+        copy(source, destination);
+        write(path, "new working content\n");
+        write(added, "class Added {}\n");
+        git(["add", "--all"]);
+        updatedIndex = fs.readFileSync(index);
     });
 
     // Act
-    const act = () => runProjectChecks(resolve("snapshot"), {...process.env});
+    checkStaged({
+        repositoryRoot: root,
+        env,
+        check(directory, isolatedEnv, {plan, selectionFile}) {
+            snapshot = directory;
+            const selection = JSON.parse(fs.readFileSync(selectionFile, "utf8"));
+
+            assert.deepEqual(plan, {intellij: false, vscode: true, formatting: "changed"});
+            assert.deepEqual(selection, {
+                version: 1,
+                mode: "changed",
+                changes: [{status: "A", path}],
+                trackedPaths: [path]
+            });
+            assert.equal(fs.readFileSync(join(directory, path), "utf8"), "staged content\n");
+            assert.equal(fs.existsSync(join(directory, added)), false);
+            assert.equal(isolatedEnv.GIT_INDEX_FILE, undefined);
+        }
+    });
 
     // Assert
-    assert.throws(act, /exit code 1/);
-    assert.equal(commands.length, 2);
+    assert.equal(fs.existsSync(snapshot), false);
+    assert.deepEqual(fs.readFileSync(index), updatedIndex);
+    assert.equal(fs.readFileSync(join(root, path), "utf8"), "new working content\n");
 });
 
-test("rejects a command terminated by a signal", context => {
+test("selects both platforms explicitly for documentation changes", context => {
     // Arrange
-    context.mock.method(childProcess, "spawnSync", () => ({status: null, signal: "SIGTERM", stdout: null}));
+    const {root, env, git, write} = createRepository(context);
+    write("docs/example.md", "# Example\n");
+    git(["add", "--all"]);
+    let actualPlan;
 
     // Act
-    const act = () => runProjectChecks(resolve("snapshot"), {...process.env});
+    checkStaged({
+        repositoryRoot: root,
+        env,
+        full: true,
+        check(directory, isolatedEnv, {plan, selectionFile}) {
+            actualPlan = plan;
+            assert.equal(JSON.parse(fs.readFileSync(selectionFile, "utf8")).mode, "all");
+        }
+    });
 
     // Assert
-    assert.throws(act, /signal SIGTERM/);
+    assert.deepEqual(actualPlan, {intellij: true, vscode: true, formatting: "all"});
+});
+
+test("handles a missing initial index without creating the original index", context => {
+    // Arrange
+    const {root, env} = createRepository(context);
+    const index = join(root, ".git", "index");
+    assert.equal(fs.existsSync(index), false);
+    let actualPlan;
+
+    // Act
+    checkStaged({
+        repositoryRoot: root,
+        env,
+        check(directory, isolatedEnv, {plan, selectionFile}) {
+            actualPlan = plan;
+            const selection = JSON.parse(fs.readFileSync(selectionFile, "utf8"));
+
+            assert.deepEqual(selection, {
+                version: 1,
+                mode: "none",
+                changes: [],
+                trackedPaths: []
+            });
+        }
+    });
+
+    // Assert
+    assert.equal(fs.existsSync(index), false);
+    assert.deepEqual(actualPlan, {intellij: false, vscode: false, formatting: "none"});
+});
+
+test("runs against the index supplied by a real pre-commit hook", context => {
+    // Arrange
+    const {root, git, write} = createRepository(context);
+    const hooks = join(root, ".git", "test-hooks");
+    const script = join(root, ".git", "hook-check.cjs");
+    const marker = join(root, ".git", "hook-result.txt");
+    const program = [
+        'const fs = require("node:fs");',
+        'const {join} = require("node:path");',
+        "const {checkStaged} = require(" + JSON.stringify(resolve(__dirname, "../check-staged.cjs")) + ");",
+        "checkStaged({repositoryRoot:process.cwd(),check(snapshot){fs.writeFileSync(" +
+        JSON.stringify(marker) +
+        ',fs.readFileSync(join(snapshot,"value.ts")));}});'
+    ].join("\n");
+    const shellQuote = value => "'" + value.replaceAll("'", "'\"'\"'") + "'";
+
+    fs.mkdirSync(hooks);
+    fs.writeFileSync(script, program);
+
+    const hook = join(hooks, "pre-commit");
+    fs.writeFileSync(
+        hook,
+        "#!/bin/sh\nexec " +
+        shellQuote(process.execPath.replaceAll("\\", "/")) +
+        " " +
+        shellQuote(script.replaceAll("\\", "/")) +
+        "\n"
+    );
+
+    fs.chmodSync(hook, 0o755);
+    git(["config", "--local", "core.hooksPath", hooks]);
+    write("value.ts", "staged content\n");
+    git(["add", "--all"]);
+
+    // Act
+    git(["commit", "--quiet", "-m", "Test pre-commit hook"]);
+
+    // Assert
+    assert.equal(fs.readFileSync(marker, "utf8"), "staged content\n");
+    assert.equal(git(["show", "HEAD:value.ts"]), "staged content\n");
 });
