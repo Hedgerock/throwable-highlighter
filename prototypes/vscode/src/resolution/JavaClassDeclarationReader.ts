@@ -16,13 +16,25 @@ export type VsCodeTypeReference = TypeReference & {
 export class JavaClassDeclarationReader {
     private readonly classNameReader = new JavaClassNameReader();
 
+    private static readonly IDENTIFIER_PATTERN = /[\p{L}\p{Nl}\p{Sc}\p{Pc}][\p{ID_Continue}\p{Sc}\p{Cf}]*/u;
+
+    private static readonly SUPERCLASS_PATTERN = new RegExp(
+        String.raw`^\s*(?:${JavaClassDeclarationReader.IDENTIFIER_PATTERN.source}\s*\.\s*)*(${JavaClassDeclarationReader.IDENTIFIER_PATTERN.source})`,
+        "u"
+    );
+
+    private static readonly KEYWORD_PATTERNS = {
+        class: /(?<![\p{ID_Continue}\p{Sc}\p{Cf}])class(?![\p{ID_Continue}\p{Sc}\p{Cf}])/uy,
+        extends: /(?<![\p{ID_Continue}\p{Sc}\p{Cf}])extends(?![\p{ID_Continue}\p{Sc}\p{Cf}])/uy
+    };
+
     constructor(private readonly codeMask: JavaCodeMask) {}
 
     public readTypeReference(
         document: vscode.TextDocument,
         position: vscode.Position
     ): VsCodeTypeReference | undefined {
-        const range = document.getWordRangeAtPosition(position);
+        const range = document.getWordRangeAtPosition(position, JavaClassDeclarationReader.IDENTIFIER_PATTERN);
 
         if (range === undefined) {
             return undefined;
@@ -104,7 +116,7 @@ export class JavaClassDeclarationReader {
         source: string,
         offset: number
     ): VsCodeTypeReference | undefined {
-        const match = /^\s*(?:[A-Za-z_$][A-Za-z0-9_$]*\s*\.\s*)*([A-Za-z_$][A-Za-z0-9_$]*)/.exec(source.slice(offset));
+        const match = JavaClassDeclarationReader.SUPERCLASS_PATTERN.exec(source.slice(offset));
 
         if (match === null) {
             return undefined;
@@ -117,25 +129,16 @@ export class JavaClassDeclarationReader {
     }
 
     private isClassName(source: string, classOffset: number, typeNameOffset: number): boolean {
-        const beforeClass = source[classOffset - 1];
         const between = source.slice(classOffset + "class".length, typeNameOffset);
 
-        return !this.isIdentifierPart(beforeClass) && /^\s+$/.test(between);
+        return this.hasKeywordAt(source, classOffset, "class") && /^\s+$/.test(between);
     }
 
-    private hasKeywordAt(source: string, index: number, keyword: string): boolean {
-        const before = source[index - 1];
-        const after = source[index + keyword.length];
+    private hasKeywordAt(source: string, index: number, keyword: "class" | "extends"): boolean {
+        const pattern = JavaClassDeclarationReader.KEYWORD_PATTERNS[keyword];
+        pattern.lastIndex = index;
 
-        return (
-            source.slice(index, index + keyword.length) === keyword &&
-            !this.isIdentifierPart(before) &&
-            !this.isIdentifierPart(after)
-        );
-    }
-
-    private isIdentifierPart(character: string | undefined): boolean {
-        return character !== undefined && /[A-Za-z0-9_$]/.test(character);
+        return pattern.test(source);
     }
 
     private createDeclarationIdentity(document: vscode.TextDocument, range: vscode.Range): string {

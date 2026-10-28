@@ -21,9 +21,12 @@ test("assigns all four contexts within one document", () => {
     assert.deepEqual(findContexts(source), [
         ["IOException", "import"],
         ["Example", "class"],
+        ["run", "class"],
         ["IOException", "throws"],
         ["IOException", "catch"],
-        ["IOException", "class"]
+        ["error", "class"],
+        ["IOException", "class"],
+        ["copy", "class"]
     ]);
 });
 
@@ -36,7 +39,8 @@ test("excludes import qualifiers and excluded imports from class candidates", ()
     assert.deepEqual(findContexts(source), [
         ["CustomException", "import"],
         ["Example", "class"],
-        ["CustomException", "class"]
+        ["CustomException", "class"],
+        ["value", "class"]
     ]);
 });
 
@@ -47,16 +51,22 @@ test("keeps annotations and parameter names outside catch and throws contexts", 
         "IllegalArgumentException RuntimeException) { IOException copy = null; } }";
 
     assert.deepEqual(findContexts(source), [
+        ["run", "class"],
         ["Marker", "class"],
         ["IOException", "class"],
+        ["java", "class"],
+        ["io", "class"],
         ["IOException", "throws"],
         ["IllegalStateException", "throws"],
         ["Marker", "class"],
         ["RuntimeException", "class"],
+        ["java", "class"],
+        ["io", "class"],
         ["IOException", "catch"],
         ["IllegalArgumentException", "catch"],
         ["RuntimeException", "class"],
-        ["IOException", "class"]
+        ["IOException", "class"],
+        ["copy", "class"]
     ]);
 });
 
@@ -74,8 +84,12 @@ test("ignores comments and literals without removing surrounding candidates", ()
 
     assert.deepEqual(findContexts(source), [
         ["String", "class"],
+        ["message", "class"],
+        ["delimiter", "class"],
         ["String", "class"],
-        ["IOException", "class"]
+        ["block", "class"],
+        ["IOException", "class"],
+        ["value", "class"]
     ]);
 });
 
@@ -106,13 +120,72 @@ test("preserves UTF-16 positions across line endings", async context => {
                 [
                     {typeName: "IOException", context: "import", start: [0, 24], end: [0, 35]},
                     {typeName: "Sample", context: "class", start: [1, 6], end: [1, 12]},
+                    {typeName: "run", context: "class", start: [1, 20], end: [1, 23]},
                     {typeName: "IOException", context: "throws", start: [1, 33], end: [1, 44]},
                     {typeName: "IOException", context: "catch", start: [1, 61], end: [1, 72]},
-                    {typeName: "IOException", context: "class", start: [1, 82], end: [1, 93]}
+                    {typeName: "error", context: "class", start: [1, 73], end: [1, 78]},
+                    {typeName: "IOException", context: "class", start: [1, 82], end: [1, 93]},
+                    {typeName: "copy", context: "class", start: [1, 94], end: [1, 98]}
                 ]
             );
         });
     }
+});
+
+test("preserves complete Java identifiers in declarations and all four contexts", async context => {
+    const names = [
+        "customException",
+        "ОшибкаException",
+        "$CustomException",
+        "_CustomException",
+        "CaféException",
+        "E\u0301Exception",
+        "\u{10400}Exception"
+    ] as const;
+
+    for (const name of names) {
+        await context.test(name, () => {
+            assert.deepEqual(findContexts("class " + name + " extends RuntimeException {}"), [
+                [name, "class"],
+                ["RuntimeException", "class"]
+            ]);
+
+            const source =
+                "import example." +
+                name +
+                "; class Sample { " +
+                name +
+                " value; void run() throws " +
+                name +
+                " { try {} catch (" +
+                name +
+                " error) {} } }";
+            const candidates = findCandidates(source).filter(candidate => candidate.typeName === name);
+
+            assert.deepEqual(
+                candidates.map(candidate => candidate.context),
+                ["import", "class", "throws", "catch"]
+            );
+
+            for (const candidate of candidates) {
+                assert.equal(candidate.range.start.line, 0);
+                assert.equal(candidate.range.end.line, 0);
+                assert.equal(source.slice(candidate.range.start.character, candidate.range.end.character), name);
+            }
+        });
+    }
+});
+
+test("skips keywords, literals and numeric fragments", () => {
+    const source = "public class Example { int value = 0xCAFE; boolean enabled = true; Object reference = null; }";
+
+    assert.deepEqual(findContexts(source), [
+        ["Example", "class"],
+        ["value", "class"],
+        ["enabled", "class"],
+        ["Object", "class"],
+        ["reference", "class"]
+    ]);
 });
 
 function findContexts(source: string) {

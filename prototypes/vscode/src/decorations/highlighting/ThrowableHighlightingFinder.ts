@@ -17,7 +17,17 @@ export interface ThrowableHighlightingCandidate {
 }
 
 export class ThrowableHighlightingFinder {
-    private static readonly TYPE_CANDIDATE_PATTERN = /\b[A-Z][A-Za-z0-9_]*\b/g;
+    private static readonly TYPE_CANDIDATE_PATTERN =
+        /(?<![\p{ID_Continue}\p{Sc}\p{Cf}])[\p{L}\p{Nl}\p{Sc}\p{Pc}][\p{ID_Continue}\p{Sc}\p{Cf}]*/gu;
+
+    private static readonly NON_IDENTIFIER_WORDS = new Set(
+        (
+            "abstract assert boolean break byte case catch char class const continue default do double else enum " +
+            "extends final finally float for goto if implements import instanceof int interface long native new package " +
+            "private protected public return short static strictfp super switch synchronized this throw throws transient " +
+            "try void volatile while _ true false null"
+        ).split(" ")
+    );
 
     private readonly codeMask: JavaCodeMask;
 
@@ -41,7 +51,7 @@ export class ThrowableHighlightingFinder {
         for (const match of code.matchAll(ThrowableHighlightingFinder.TYPE_CANDIDATE_PATTERN)) {
             const start = match.index;
 
-            if (start === undefined) {
+            if (start === undefined || ThrowableHighlightingFinder.NON_IDENTIFIER_WORDS.has(match[0])) {
                 continue;
             }
 
