@@ -405,7 +405,10 @@ tbody td > code {
 }
 
 .setting-preview {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
     min-width: 0;
     margin: 0;
     padding: 1px 5px;
@@ -414,14 +417,126 @@ tbody td > code {
     color: var(--vscode-descriptionForeground, var(--vscode-foreground));
     background: var(--vscode-textCodeBlock-background, transparent);
     font-size: 0.85em;
-    text-align: right;
-    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .setting-preview::before {
-    margin-right: 4px;
+    flex-shrink: 0;
     content: "→";
+}
+
+.setting-preview-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.setting-color-swatch {
+    position: relative;
+    flex: 0 0 12px;
+    width: 12px;
+    height: 12px;
+    overflow: hidden;
+    border: 1px solid var(--vscode-contrastBorder, var(--vscode-panel-border, currentColor));
+    border-radius: 2px;
+    background: repeating-conic-gradient(#fff 0% 25%, #b0b0b0 0% 50%) 0 0 / 8px 8px;
+}
+
+.setting-color-swatch[hidden] {
+    display: none;
+}
+
+.setting-color-input {
+    position: relative;
+    min-width: 0;
+}
+
+.setting-color-input > input[type="text"] {
+    padding-right: 36px;
+}
+
+.setting-color-picker {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    transform: translateY(-50%);
+}
+
+.setting-color-picker input[type="color"] {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.setting-color-picker input[type="color"]:disabled {
+    opacity: 0;
+    cursor: default;
+}
+
+.setting-color-picker svg {
+    display: block;
+    width: 24px;
+    height: 24px;
+    padding: 4px;
+    border-radius: 2px;
+    color: var(--vscode-foreground);
+    pointer-events: none;
+    transition: background-color 140ms ease;
+}
+
+.setting-color-picker input:not(:disabled):hover + svg,
+.setting-color-picker input:not(:disabled):focus-visible + svg {
+    background-color: var(--vscode-toolbar-hoverBackground, var(--vscode-editorWidget-background));
+}
+
+.setting-color-picker input:disabled + svg {
+    color: var(--vscode-disabledForeground, var(--vscode-foreground));
+}
+
+.setting-color-swatch-fill {
+    position: absolute;
+    inset: 0;
+}
+
+.setting-opacity {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) 6ch;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    margin-top: 4px;
+    color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+    font-size: 0.8em;
+}
+
+.setting-opacity input[type="range"] {
+    min-width: 0;
+    width: 100%;
+    height: 16px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--vscode-button-background);
+    cursor: pointer;
+}
+
+.setting-opacity input[type="range"]:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+.setting-opacity output {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
 .setting-preview.error {
@@ -483,6 +598,7 @@ main option:disabled {
 @media (prefers-reduced-motion: reduce) {
     .settings-notes > summary,
     .settings-notes > summary::before,
+    .setting-color-picker svg,
     main button:not(:disabled),
     main select:not(:disabled) {
         transition: none;

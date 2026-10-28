@@ -177,13 +177,20 @@
                 color.title = "";
             }
 
+            updateColorControls(row, color);
+
             const display = row.querySelector("[data-color-preview]");
             const preview = currentState?.preview[context];
 
             if (display instanceof HTMLElement) {
                 const title = preview === undefined ? "Preview: loading..." : "Preview: " + formatPreview(preview);
+                const label = display.querySelector("[data-preview-label]");
 
-                display.textContent = formatCompactPreview(preview);
+                if (label instanceof HTMLElement) {
+                    label.textContent = formatCompactPreview(preview);
+                }
+
+                updateColorSwatch(display, preview);
                 display.title = title;
                 display.setAttribute("aria-label", title);
                 display.classList.toggle("error", preview?.kind === "invalid");
@@ -192,6 +199,71 @@
 
         if (currentState !== undefined) {
             applyControlState(currentState.controls);
+        }
+    }
+
+    function updateColorSwatch(display, preview) {
+        const swatch = display.querySelector("[data-color-swatch]");
+        const fill = display.querySelector("[data-color-swatch-fill]");
+
+        if (!(swatch instanceof HTMLElement) || !(fill instanceof HTMLElement)) {
+            return;
+        }
+
+        const color = preview?.kind === "color" ? parseHexColor(preview.color) : undefined;
+
+        swatch.hidden = color === undefined;
+        fill.style.backgroundColor = color === undefined ? "" : color.rgb + color.alpha;
+    }
+
+    function parseHexColor(value) {
+        const match = /^#([\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.exec(value.trim());
+
+        if (match === null) {
+            return undefined;
+        }
+
+        const digits = match[1].toLowerCase();
+        const expanded = digits.length <= 4 ? [...digits].map(digit => digit + digit).join("") : digits;
+
+        return {
+            rgb: "#" + expanded.slice(0, 6),
+            alpha: expanded.slice(6)
+        };
+    }
+
+    function updateColorControls(row, color) {
+        const picker = row.querySelector("[data-color-picker]");
+        const opacity = row.querySelector("[data-color-opacity]");
+        const output = row.querySelector("[data-opacity-value]");
+        const parsed = parseHexColor(color.value);
+        const locked = isChangingTarget || color.disabled;
+        const alpha = parsed === undefined ? undefined : Number.parseInt(parsed.alpha || "ff", 16);
+        const percentage = alpha === undefined ? undefined : Math.round((alpha * 1000) / 255) / 10;
+
+        if (picker instanceof HTMLInputElement) {
+            picker.disabled = locked;
+
+            if (!locked && parsed !== undefined && picker.value !== parsed.rgb) {
+                picker.value = parsed.rgb;
+            }
+        }
+
+        if (opacity instanceof HTMLInputElement) {
+            opacity.disabled = locked || alpha === undefined;
+
+            if (alpha !== undefined && opacity.valueAsNumber !== alpha) {
+                opacity.value = String(alpha);
+            }
+
+            opacity.setAttribute(
+                "aria-valuetext",
+                percentage === undefined ? "No complete HEX color" : percentage + "% opacity"
+            );
+        }
+
+        if (output instanceof HTMLElement) {
+            output.textContent = percentage === undefined ? "—" : percentage + "%";
         }
     }
 
@@ -480,15 +552,65 @@
 
         if (color instanceof HTMLInputElement) {
             ownColors.set(context, color.value);
-            color.addEventListener("input", () => {
-                if (color.disabled) {
+
+            function updateOwnColor(value) {
+                if (isChangingTarget || color.disabled) {
                     return;
                 }
 
-                ownColors.set(context, color.value);
-                showValue("color", color.value);
-                sendChange({type: "setColor", color: color.value});
-            });
+                if (color.value !== value) {
+                    color.value = value;
+                }
+
+                ownColors.set(context, value);
+                showValue("color", value);
+                updateColorControls(row, color);
+                sendChange({type: "setColor", color: value});
+            }
+
+            const picker = row.querySelector("[data-color-picker]");
+
+            if (picker instanceof HTMLInputElement) {
+                picker.addEventListener("input", () => {
+                    if (picker.disabled) {
+                        return;
+                    }
+
+                    const selected = parseHexColor(picker.value);
+                    const current = parseHexColor(color.value);
+
+                    if (selected !== undefined && current?.rgb !== selected.rgb) {
+                        updateOwnColor(selected.rgb + (current?.alpha ?? ""));
+                    }
+                });
+            }
+
+            const opacity = row.querySelector("[data-color-opacity]");
+
+            if (opacity instanceof HTMLInputElement) {
+                opacity.addEventListener("input", () => {
+                    if (opacity.disabled) {
+                        return;
+                    }
+
+                    const current = parseHexColor(color.value);
+                    const alpha = opacity.valueAsNumber;
+
+                    if (
+                        current === undefined ||
+                        !Number.isInteger(alpha) ||
+                        alpha < 0 ||
+                        alpha > 255 ||
+                        alpha === Number.parseInt(current.alpha || "ff", 16)
+                    ) {
+                        return;
+                    }
+
+                    updateOwnColor(current.rgb + alpha.toString(16).padStart(2, "0"));
+                });
+            }
+
+            color.addEventListener("input", () => updateOwnColor(color.value));
         }
 
         for (const button of row.querySelectorAll("[data-revert-field]")) {
@@ -534,6 +656,7 @@
                 if (field === "color" && color instanceof HTMLInputElement) {
                     ownColors.set(context, "");
                     color.value = "";
+                    updateColorControls(row, color);
                 }
 
                 showValue(field, undefined);

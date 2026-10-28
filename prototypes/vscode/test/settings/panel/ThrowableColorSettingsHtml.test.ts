@@ -281,7 +281,7 @@ test("limits new color input without truncating existing long values", () => {
     assert.ok(html.includes('title="&quot;' + color + '&quot;"'));
 });
 
-test("binds revert and remove actions to the intended fields in normal and error rows", () => {
+test("binds draft actions and visual color controls in normal and error rows", () => {
     const model = createModel({
         effective: createSettings({class: {kind: "invalid", reason: "invalid-color"}})
     });
@@ -293,6 +293,30 @@ test("binds revert and remove actions to the intended fields in normal and error
         assert.ok(row);
         assert.equal([...row.matchAll(/\bdata-color-preview(?=[\s>])/g)].length, 1);
         assert.ok(row.includes("Preview: loading..."));
+
+        const picker = row.match(/<input\b[^>]*\bdata-color-picker(?=[\s>])[^>]*>/)?.[0];
+        const opacity = row.match(/<input\b[^>]*\bdata-color-opacity(?=[\s>])[^>]*>/)?.[0];
+
+        assert.ok(picker);
+        assert.ok(opacity);
+        assert.match(picker, /\btype="color"/);
+        assert.match(opacity, /\btype="range"/);
+        assert.match(picker, /\sdisabled(?=[\s>])/);
+        assert.match(opacity, /\sdisabled(?=[\s>])/);
+
+        for (const attribute of ['min="0"', 'max="255"', 'step="1"']) {
+            assert.ok(opacity.includes(attribute));
+        }
+
+        for (const binding of [
+            "data-preview-label",
+            "data-color-swatch",
+            "data-color-swatch-fill",
+            "data-opacity-value"
+        ]) {
+            assert.equal([...row.matchAll(new RegExp("\\b" + binding + "(?=[\\s>])", "g"))].length, 1);
+        }
+
         assert.match(row, /<input\b[^>]*\sdisabled(?=[\s>])/);
         assert.deepEqual(
             [...row.matchAll(/data-revert-field="([^"]+)"/g)].map(match => match[1]),

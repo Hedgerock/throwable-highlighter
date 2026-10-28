@@ -33,18 +33,46 @@
     </td>
     <td>
         <div class="setting-field setting-field-color">
-            <input
-                id="color-{{context}}"
-                type="text"
-                data-setting="color"
-                value="{{colorValue}}"
-                placeholder="Not set"
-                aria-label="Throwable {{context}} color"
-                autocomplete="off"
-                spellcheck="false"
-                maxlength="9"
-                disabled
-            />
+            <div class="setting-color-input">
+                <input
+                    id="color-{{context}}"
+                    type="text"
+                    data-setting="color"
+                    value="{{colorValue}}"
+                    placeholder="Not set"
+                    aria-label="Throwable {{context}} color"
+                    autocomplete="off"
+                    spellcheck="false"
+                    maxlength="9"
+                    disabled
+                />
+                <span class="setting-color-picker">
+                    <input
+                        id="picker-{{context}}"
+                        type="color"
+                        data-color-picker
+                        value="#000000"
+                        aria-label="Choose Throwable {{context}} RGB color"
+                        title="Choose Throwable {{context}} RGB color"
+                        disabled
+                    />
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                        focusable="false"
+                    >
+                        <path d="M12 3a9 9 0 1 0 0 18h1a2.5 2.5 0 0 0 0-5h-1a1.5 1.5 0 0 1 0-3h3a5 5 0 0 0 0-10Z" />
+                        <circle cx="7.5" cy="10" r="1" fill="currentColor" stroke="none" />
+                        <circle cx="10" cy="6.5" r="1" fill="currentColor" stroke="none" />
+                        <circle cx="15" cy="6.5" r="1" fill="currentColor" stroke="none" />
+                    </svg>
+                </span>
+            </div>
             <button
                 type="button"
                 data-revert-field="color"
@@ -87,11 +115,31 @@
                 </svg>
             </button>
         </div>
+        <div class="setting-opacity">
+            <label for="opacity-{{context}}">Opacity</label>
+            <input
+                id="opacity-{{context}}"
+                type="range"
+                data-color-opacity
+                min="0"
+                max="255"
+                step="1"
+                value="255"
+                aria-label="Throwable {{context}} opacity"
+                disabled
+            />
+            <output for="opacity-{{context}}" data-opacity-value aria-hidden="true">—</output>
+        </div>
         <div class="setting-meta">
             <div class="setting-value" data-value-field="color" title="{{scopedColor}}">
                 <code>{{scopedColor}}</code>
             </div>
-            <div class="setting-preview" data-color-preview>Preview: loading...</div>
+            <div class="setting-preview" data-color-preview>
+                <span class="setting-color-swatch" data-color-swatch aria-hidden="true" hidden>
+                    <span class="setting-color-swatch-fill" data-color-swatch-fill></span>
+                </span>
+                <span class="setting-preview-label" data-preview-label>Preview: loading...</span>
+            </div>
         </div>
     </td>
     <td title="{{source}}">{{source}}</td>
