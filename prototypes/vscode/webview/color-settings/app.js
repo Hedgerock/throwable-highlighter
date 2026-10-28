@@ -10,25 +10,25 @@
     const ownColors = new Map();
     const editingOpacity = new WeakSet();
     let currentState;
-    let isChangingTarget = false;
+    let isRefreshing = false;
     let isApplying = false;
     let pendingEdits = 0;
+    let pendingAction;
 
     const draftStatus = document.getElementById("draft-status");
     const discard = document.getElementById("discard-draft");
     const apply = document.getElementById("apply-draft");
 
     target.addEventListener("change", () => {
-        if (target.disabled || isInteractionLocked() || pendingEdits > 0) {
-            target.value = renderedTarget;
+        const selectedTarget = target.value;
+        target.value = renderedTarget;
+
+        if (target.disabled || isInteractionLocked()) {
             return;
         }
 
-        if ((target.value === "user" || target.value === "workspace") && target.value !== renderedTarget) {
-            isChangingTarget = true;
-            disableEditingControls();
-            updateActions();
-            vscode.postMessage({type: "selectTarget", target: target.value});
+        if ((selectedTarget === "user" || selectedTarget === "workspace") && selectedTarget !== renderedTarget) {
+            requestAction({type: "selectTarget", target: selectedTarget});
         }
     });
 
@@ -36,7 +36,7 @@
         const message = event.data;
 
         if (
-            isChangingTarget ||
+            isRefreshing ||
             message === null ||
             typeof message !== "object" ||
             (message.type !== "draftState" && message.type !== "fieldReverted") ||
@@ -57,10 +57,83 @@
         isApplying = message.isApplying;
         currentState = message;
         applyPresentation();
+        dispatchPendingAction();
     });
 
+    function updateActions() {
+        const locked = isInteractionLocked();
+        const hasChanges = pendingEdits > 0 || currentState?.isDirty === true;
+        const canSubmit = !locked && hasChanges;
+        target.disabled = locked;
+
+        if (discard instanceof HTMLButtonElement) {
+            discard.disabled = !canSubmit;
+        }
+
+        if (apply instanceof HTMLButtonElement) {
+            apply.disabled = !canSubmit;
+            const text = isApplying ? "Applying..." : "Apply";
+
+            if (apply.textContent !== text) {
+                apply.textContent = text;
+            }
+        }
+
+        if (draftStatus instanceof HTMLElement) {
+            const text = isRefreshing
+                ? "Loading settings scope..."
+                : isApplying
+                  ? "Applying changes in this scope..."
+                  : currentState === undefined
+                    ? "Loading draft state..."
+                    : hasChanges
+                      ? "Unapplied changes in this scope."
+                      : "No unapplied changes in this scope.";
+
+            if (draftStatus.textContent !== text) {
+                draftStatus.textContent = text;
+            }
+        }
+    }
+
+    function requestAction(action) {
+        if (isInteractionLocked()) {
+            return;
+        }
+
+        pendingAction = action;
+        applyPresentation();
+        dispatchPendingAction();
+    }
+
+    function dispatchPendingAction() {
+        if (pendingAction === undefined || pendingEdits > 0) {
+            return;
+        }
+
+        const action = pendingAction;
+        pendingAction = undefined;
+
+        if (action.type === "apply") {
+            if (currentState?.isDirty !== true) {
+                applyPresentation();
+                return;
+            }
+
+            isApplying = true;
+            applyPresentation();
+        } else {
+            isRefreshing = true;
+            target.value = action.target;
+            disableEditingControls();
+            updateActions();
+        }
+
+        vscode.postMessage(action);
+    }
+
     function isInteractionLocked() {
-        return isChangingTarget || isApplying || currentState === undefined;
+        return isRefreshing || isApplying || pendingAction !== undefined || currentState === undefined;
     }
 
     function disableEditingControls() {
@@ -74,33 +147,6 @@
             ) {
                 control.disabled = true;
             }
-        }
-    }
-
-    function updateActions() {
-        const locked = isInteractionLocked() || pendingEdits > 0;
-        const canSubmit = !locked && currentState?.isDirty === true;
-        target.disabled = locked;
-
-        if (discard instanceof HTMLButtonElement) {
-            discard.disabled = !canSubmit;
-        }
-
-        if (apply instanceof HTMLButtonElement) {
-            apply.disabled = !canSubmit;
-            apply.textContent = isApplying ? "Applying..." : "Apply";
-        }
-
-        if (draftStatus instanceof HTMLElement) {
-            draftStatus.textContent = isChangingTarget
-                ? "Loading settings scope..."
-                : isApplying
-                  ? "Applying changes in this scope..."
-                  : currentState === undefined
-                    ? "Loading draft state..."
-                    : currentState.isDirty
-                      ? "Unapplied changes in this scope."
-                      : "No unapplied changes in this scope.";
         }
     }
 
@@ -170,7 +216,7 @@
     }
 
     function applyPresentation() {
-        if (isChangingTarget) {
+        if (isRefreshing) {
             return;
         }
 
@@ -557,27 +603,25 @@
 
     if (apply instanceof HTMLButtonElement) {
         apply.addEventListener("click", () => {
-            if (
-                apply.disabled ||
-                isInteractionLocked() ||
-                pendingEdits > 0 ||
-                !currentState?.isDirty ||
-                (target.value !== "user" && target.value !== "workspace")
-            ) {
+            if (apply.disabled || isInteractionLocked() || (target.value !== "user" && target.value !== "workspace")) {
                 return;
             }
 
-            isApplying = true;
-            applyPresentation();
-            vscode.postMessage({type: "apply", target: target.value});
+            requestAction({type: "apply", target: target.value});
         });
     }
 
     if (discard instanceof HTMLButtonElement) {
         discard.addEventListener("click", () => {
-            if (!discard.disabled && (target.value === "user" || target.value === "workspace")) {
-                vscode.postMessage({type: "discard", target: target.value});
+            if (
+                discard.disabled ||
+                isInteractionLocked() ||
+                (target.value !== "user" && target.value !== "workspace")
+            ) {
+                return;
             }
+
+            requestAction({type: "discard", target: target.value});
         });
     }
 

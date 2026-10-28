@@ -209,29 +209,133 @@ test("keeps color controls locked while switching settings scopes", () => {
     }
 });
 
-test("enables Apply only after all pending edits are acknowledged", () => {
+test("keeps actions available while edits await acknowledgement", () => {
+    // Arrange
     const fixture = createFixture();
 
-    assert.equal(fixture.apply.disabled, true);
-    assert.equal(fixture.discard.disabled, true);
+    // Act
     fixture.rows.class.color.input("#111111");
-    fixture.receiveState({isDirty: true});
-    assert.equal(fixture.apply.disabled, false);
 
-    fixture.rows.class.color.input("#222222");
-    fixture.rows.class.opacity.input("0");
-    assert.equal(fixture.apply.disabled, true);
-    assert.equal(fixture.discard.disabled, true);
-    assert.equal(fixture.target.disabled, true);
-    assert.equal(fixture.rows.class.color.disabled, false);
-
-    fixture.receiveState({isDirty: true});
-    assert.equal(fixture.apply.disabled, true);
-    fixture.receiveState({isDirty: true});
-
+    // Assert
     assert.equal(fixture.apply.disabled, false);
     assert.equal(fixture.discard.disabled, false);
     assert.equal(fixture.target.disabled, false);
+
+    // Act
+    fixture.rows.class.picker.input("#222222");
+    fixture.rows.class.opacity.input("0");
+    fixture.receiveState({isDirty: false});
+    fixture.receiveState({isDirty: true});
+
+    // Assert
+    assert.equal(fixture.apply.disabled, false);
+    assert.equal(fixture.discard.disabled, false);
+    assert.equal(fixture.target.disabled, false);
+
+    // Act
+    fixture.receiveState({isDirty: true});
+
+    // Assert
+    assert.equal(fixture.apply.disabled, false);
+    assert.equal(fixture.discard.disabled, false);
+    assert.equal(fixture.target.disabled, false);
+});
+
+test("waits for every pending edit before applying the draft", () => {
+    // Arrange
+    const fixture = createFixture();
+    fixture.rows.class.color.input("#111111");
+    fixture.rows.class.color.input("#222222");
+    const count = fixture.messages.length;
+
+    // Act
+    fixture.apply.click();
+    fixture.apply.click();
+    fixture.rows.class.picker.input("#abcdef");
+    fixture.receiveState({isDirty: true});
+
+    // Assert
+    assert.equal(fixture.messages.length, count);
+    assert.equal(fixture.apply.disabled, true);
+    assert.equal(fixture.discard.disabled, true);
+    assert.equal(fixture.target.disabled, true);
+    assert.equal(fixture.rows.class.color.disabled, true);
+
+    // Act
+    fixture.receiveState({isDirty: true});
+
+    // Assert
+    assert.equal(fixture.messages.length, count + 1);
+    assert.deepEqual(fixture.messages.at(-1), {type: "apply", target: "user"});
+    assert.equal(fixture.apply.textContent, "Applying...");
+});
+
+test("waits for pending edits before discarding the draft", () => {
+    // Arrange
+    const fixture = createFixture();
+    fixture.rows.class.color.input("#111111");
+    fixture.rows.class.opacity.input("0");
+    const count = fixture.messages.length;
+
+    // Act
+    fixture.discard.click();
+    fixture.receiveState({isDirty: true});
+
+    // Assert
+    assert.equal(fixture.messages.length, count);
+    assert.equal(fixture.rows.class.color.disabled, true);
+
+    // Act
+    fixture.receiveState({isDirty: true});
+
+    // Assert
+    assert.equal(fixture.messages.length, count + 1);
+    assert.deepEqual(fixture.messages.at(-1), {type: "discard", target: "user"});
+    assert.equal(fixture.target.disabled, true);
+});
+
+test("preserves the current scope until pending edits are acknowledged", () => {
+    // Arrange
+    const fixture = createFixture();
+    fixture.rows.class.color.input("#111111");
+    fixture.rows.class.color.input("#222222");
+    const count = fixture.messages.length;
+
+    // Act
+    fixture.target.change("workspace");
+    fixture.receiveState({isDirty: true});
+
+    // Assert
+    assert.equal(fixture.target.value, "user");
+    assert.equal(fixture.messages.length, count);
+    assert.equal(fixture.target.disabled, true);
+    assert.equal(fixture.rows.class.color.disabled, true);
+
+    // Act
+    fixture.receiveState({isDirty: true});
+
+    // Assert
+    assert.equal(fixture.messages.length, count + 1);
+    assert.deepEqual(fixture.messages.at(-1), {type: "selectTarget", target: "workspace"});
+    assert.equal(fixture.target.value, "workspace");
+});
+
+test("cancels a queued Apply when the acknowledged draft is clean", () => {
+    // Arrange
+    const fixture = createFixture();
+    fixture.rows.class.color.input("#11223380");
+    const count = fixture.messages.length;
+
+    // Act
+    fixture.apply.click();
+    fixture.receiveState({isDirty: false});
+
+    // Assert
+    assert.equal(fixture.messages.length, count);
+    assert.equal(fixture.apply.disabled, true);
+    assert.equal(fixture.discard.disabled, true);
+    assert.equal(fixture.target.disabled, false);
+    assert.equal(fixture.rows.class.color.disabled, false);
 });
 
 test("blocks a repeated Apply and editing before the extension acknowledges saving", () => {

@@ -131,15 +131,15 @@ table {
 }
 
 table .context-column {
-    width: 18%;
+    width: 16%;
 }
 
 table .source-column {
-    width: 26%;
+    width: 24%;
 }
 
 table .color-column {
-    width: 22%;
+    width: 26%;
 }
 
 table .effective-source-column {
@@ -454,6 +454,7 @@ tbody td > code {
 
 .setting-color-input > input[type="text"] {
     padding-right: 36px;
+    font-family: var(--vscode-editor-font-family, monospace);
 }
 
 .setting-color-picker {

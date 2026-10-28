@@ -36,6 +36,13 @@
           "command": "throwableHighlighter.prototype.inspectDefinition",
           "when": "editorLangId == java"
         }
+      ],
+      "extension/context": [
+        {
+          "command": "throwableHighlighter.prototype.openColorSettings",
+          "when": "extension == 'hedgerock.throwable-highlighter-vscode-prototype'",
+          "group": "2_configure@1"
+        }
       ]
     },
     "configuration": {
