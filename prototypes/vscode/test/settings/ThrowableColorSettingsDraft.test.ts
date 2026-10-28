@@ -194,6 +194,119 @@ test("preserves absent, null and invalid saved values when reverting a field", (
     }
 });
 
+test("uses saved settings as the clean baseline after a successful apply", () => {
+    const draft = new ThrowableColorSettingsDraft(
+        "user",
+        createSettings({class: {source: "custom", color: "#111111"}})
+    );
+    draft.update("class", "color", "#222222");
+    const saved = createSettings({class: {source: "custom", color: "#222222"}});
+
+    draft.rebase(saved, []);
+
+    assert.equal(draft.isDirty, false);
+    assert.deepEqual(draft.getChanges(), []);
+    assert.deepEqual(draft.read(), saved);
+
+    draft.update("class", "color", "#333333");
+    draft.discard();
+
+    assert.deepEqual(draft.read(), saved);
+});
+
+test("retains only unapplied changes over the latest saved settings", () => {
+    const draft = new ThrowableColorSettingsDraft(
+        "user",
+        createSettings({
+            class: {source: "custom", color: "#111111"},
+            catch: {source: "custom", color: "#111111"}
+        })
+    );
+    draft.update("class", "color", "#222222");
+    draft.update("catch", "color", "#333333");
+    const saved = createSettings({
+        class: {source: "custom", color: "#444444"},
+        import: {source: "native", color: "#666666"},
+        catch: {source: "custom", color: "#555555"}
+    });
+    const retained = [{context: "catch", field: "color", value: "#333333"}] as const;
+
+    draft.rebase(saved, retained);
+
+    assert.equal(draft.isDirty, true);
+    assert.deepEqual(draft.getChanges(), retained);
+    assert.deepEqual(draft.read(), {...saved, catch: {source: "custom", color: "#333333"}});
+
+    draft.discard();
+
+    assert.equal(draft.isDirty, false);
+    assert.deepEqual(draft.read(), saved);
+});
+
+test("preserves incomplete text, removals and empty strings when rebasing", () => {
+    const draft = new ThrowableColorSettingsDraft("workspace", createSettings());
+    const saved = createSettings({
+        class: {source: "custom", color: "#111111"},
+        import: {source: "custom", color: "#222222"},
+        catch: {source: null, color: "#333333"},
+        throws: {source: "native", color: "#444444"}
+    });
+    const retained = [
+        {context: "class", field: "color", value: " #12 "},
+        {context: "import", field: "color", value: undefined},
+        {context: "catch", field: "color", value: ""},
+        {context: "throws", field: "source", value: undefined}
+    ] as const;
+
+    draft.rebase(saved, retained);
+
+    assert.equal(draft.target, "workspace");
+    assert.deepEqual(draft.getChanges(), retained);
+    assert.deepEqual(draft.read(), {
+        class: {source: "custom", color: " #12 "},
+        import: {source: "custom", color: undefined},
+        catch: {source: null, color: ""},
+        throws: {source: undefined, color: "#444444"}
+    });
+
+    draft.discard();
+
+    assert.deepEqual(draft.read(), saved);
+});
+
+test("does not keep changes that already match the new baseline", () => {
+    const draft = new ThrowableColorSettingsDraft("user", createSettings());
+    const saved = createSettings({catch: {source: "custom", color: "#333333"}});
+
+    draft.rebase(saved, [{context: "catch", field: "color", value: "#333333"}]);
+
+    assert.equal(draft.isDirty, false);
+    assert.deepEqual(draft.getChanges(), []);
+    assert.deepEqual(draft.read(), saved);
+});
+
+test("copies rebase inputs without sharing their setting containers", () => {
+    const draft = new ThrowableColorSettingsDraft("user", createSettings());
+    const saved = {...createSettings(), class: {source: "custom", color: "#111111"}};
+    const retained = [{context: "catch", field: "color", value: "#333333"}] as const;
+
+    draft.rebase(saved, retained);
+
+    saved.class.color = "#222222";
+    Object.assign(retained[0], {value: "#444444"});
+    const current = draft.read();
+    Object.assign(current.class, {color: "#555555"});
+    Object.assign(current.catch, {color: "#666666"});
+
+    assert.deepEqual(draft.read().class, {source: "custom", color: "#111111"});
+    assert.deepEqual(draft.read().catch, {source: undefined, color: "#333333"});
+
+    draft.discard();
+
+    assert.deepEqual(draft.read().class, {source: "custom", color: "#111111"});
+    assert.deepEqual(draft.read().catch, {source: undefined, color: undefined});
+});
+
 function createSettings(overrides: Partial<RawThrowableColorSettings> = {}): RawThrowableColorSettings {
     return {
         class: {source: undefined, color: undefined},

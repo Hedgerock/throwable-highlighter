@@ -32,6 +32,7 @@ type SourceMessage = ScopedMessage & {
 
 export type ColorSettingsDraftState = {
     readonly isDirty: boolean;
+    readonly isApplying: boolean;
     readonly controls: ThrowableColorSettingsControlState;
     readonly preview: ThrowableColorSettingsPreview;
 };

@@ -128,7 +128,7 @@ function createRow(context: ColorContext, values: RowValues = {}) {
     const color = new TestInput(values.color ?? "#11223380");
     const picker = new TestInput("#000000");
     const opacity = new TestInput("255");
-    const output = new TestElement();
+    const percent = new TestInput("");
     const preview = new TestElement();
     const swatch = new TestElement();
     const fill = new TestElement();
@@ -143,7 +143,7 @@ function createRow(context: ColorContext, values: RowValues = {}) {
     colorValue.parentElement = new TestElement();
     swatch.hidden = true;
 
-    for (const control of [source, color, picker, opacity]) {
+    for (const control of [source, color, picker, opacity, percent]) {
         control.row = element;
     }
 
@@ -152,7 +152,7 @@ function createRow(context: ColorContext, values: RowValues = {}) {
         '[data-setting="color"]': color,
         "[data-color-picker]": picker,
         "[data-color-opacity]": opacity,
-        "[data-opacity-value]": output,
+        "[data-opacity-percent]": percent,
         "[data-color-preview]": preview,
         '[data-value-field="source"] code': sourceValue,
         '[data-value-field="color"] code': colorValue
@@ -166,10 +166,27 @@ function createRow(context: ColorContext, values: RowValues = {}) {
     element.groups.set("[data-revert-field]", [revertSource, revertColor]);
     element.groups.set("[data-reset-field]", [removeColor]);
 
-    return {element, source, color, picker, opacity, output, preview, swatch, fill, label, removeColor};
+    return {
+        element,
+        source,
+        color,
+        picker,
+        opacity,
+        percent,
+        preview,
+        swatch,
+        fill,
+        label,
+        removeColor,
+        revertSource,
+        revertColor
+    };
 }
 
-export function createThrowableColorSettingsWebviewFixture(values: Partial<Record<ColorContext, RowValues>> = {}) {
+export function createThrowableColorSettingsWebviewFixture(
+    values: Partial<Record<ColorContext, RowValues>> = {},
+    options: {readonly ready?: boolean} = {}
+) {
     const rows = {
         class: createRow("class", values.class),
         import: createRow("import", values.import),
@@ -185,7 +202,8 @@ export function createThrowableColorSettingsWebviewFixture(values: Partial<Recor
     const ids = new Map<string, TestElement>([
         ["settings-target", target],
         ["draft-status", status],
-        ["discard-draft", discard]
+        ["discard-draft", discard],
+        ["apply-draft", apply]
     ]);
 
     for (const [context, row] of Object.entries(rows)) {
@@ -199,6 +217,7 @@ export function createThrowableColorSettingsWebviewFixture(values: Partial<Recor
         row.color,
         row.picker,
         row.opacity,
+        row.percent,
         ...row.element.querySelectorAll("[data-revert-field]"),
         row.removeColor
     ]);
@@ -230,6 +249,7 @@ export function createThrowableColorSettingsWebviewFixture(values: Partial<Recor
     let state: ColorSettingsDraftStateMessage = {
         type: "draftState",
         target: "user",
+        isApplying: false,
         isDirty: false,
         controls: Object.fromEntries(
             CONTEXTS.map(context => [
@@ -245,9 +265,14 @@ export function createThrowableColorSettingsWebviewFixture(values: Partial<Recor
         ) as ColorSettingsDraftStateMessage["preview"]
     };
 
-    function receiveState(changes: Partial<ColorSettingsDraftStateMessage> = {}): void {
+    function receiveMessage(message: unknown): void {
+        browserWindow.emit("message", {data: message});
+    }
+
+    function receiveState(changes: Partial<ColorSettingsDraftStateMessage> = {}): ColorSettingsDraftStateMessage {
         state = {...state, ...changes};
-        browserWindow.emit("message", {data: state});
+        receiveMessage(state);
+        return state;
     }
 
     function receivePreview(changes: Partial<ColorSettingsDraftStateMessage["preview"]>): void {
@@ -256,10 +281,23 @@ export function createThrowableColorSettingsWebviewFixture(values: Partial<Recor
 
     function receiveReverted(context: ColorContext, field: "source" | "color", value: unknown): void {
         const message: ColorSettingsFieldRevertedMessage = {...state, type: "fieldReverted", context, field, value};
-        browserWindow.emit("message", {data: message});
+        receiveMessage(message);
     }
 
-    receiveState();
+    if (options.ready !== false) {
+        receiveState();
+    }
 
-    return {rows, target, messages, receiveState, receivePreview, receiveReverted};
+    return {
+        rows,
+        target,
+        status,
+        discard,
+        apply,
+        messages,
+        receiveMessage,
+        receiveState,
+        receivePreview,
+        receiveReverted
+    };
 }

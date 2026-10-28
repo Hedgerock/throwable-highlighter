@@ -37,7 +37,7 @@ test("renders all contexts with explicit and legacy source labels", () => {
 
     assert.ok(html.includes("<code>#ABCDEF</code>"));
     assert.ok(html.includes("<code>red</code>"));
-    assert.ok(html.includes(`type="button" disabled>Apply</button>`));
+    assert.ok(html.includes(`id="apply-draft" type="button" disabled>Apply</button>`));
 });
 
 test("escapes configured strings instead of inserting markup or CSS", () => {
@@ -297,6 +297,14 @@ test("binds draft actions and visual color controls in normal and error rows", (
         const picker = row.match(/<input\b[^>]*\bdata-color-picker(?=[\s>])[^>]*>/)?.[0];
         const opacity = row.match(/<input\b[^>]*\bdata-color-opacity(?=[\s>])[^>]*>/)?.[0];
 
+        const percent = row.match(/<input\b[^>]*\bdata-opacity-percent(?=[\s>])[^>]*>/)?.[0];
+
+        assert.ok(percent);
+        assert.match(percent, /\btype="text"/);
+        assert.match(percent, /\binputmode="decimal"/);
+        assert.match(percent, /\bmaxlength="5"/);
+        assert.match(percent, /\sdisabled(?=[\s>])/);
+
         assert.ok(picker);
         assert.ok(opacity);
         assert.match(picker, /\btype="color"/);
@@ -312,7 +320,7 @@ test("binds draft actions and visual color controls in normal and error rows", (
             "data-preview-label",
             "data-color-swatch",
             "data-color-swatch-fill",
-            "data-opacity-value"
+            "data-opacity-percent"
         ]) {
             assert.equal([...row.matchAll(new RegExp("\\b" + binding + "(?=[\\s>])", "g"))].length, 1);
         }

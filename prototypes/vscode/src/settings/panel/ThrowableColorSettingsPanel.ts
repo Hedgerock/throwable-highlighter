@@ -9,6 +9,7 @@ import {ThrowableColorSettingsMessageParser} from "@throwable-highlighter/settin
 import {ThrowableColorSettingsPreviewBuilder} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsPreviewBuilder";
 import {ThrowableColorSettingsViewModelBuilder} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsViewModelBuilder";
 import {ThrowableColorConfigurationReader} from "@throwable-highlighter/settings/ThrowableColorConfigurationReader";
+import {ThrowableColorSettingsApplier} from "@throwable-highlighter/settings/ThrowableColorSettingsApplier";
 import {ThrowableColorSettingsDraft} from "@throwable-highlighter/settings/ThrowableColorSettingsDraft";
 import {ThrowableColorSettingsDraftConfigurationBuilder} from "@throwable-highlighter/settings/ThrowableColorSettingsDraftConfigurationBuilder";
 import type {
@@ -22,6 +23,8 @@ import type {
     RawThrowableColorSettings,
     ThrowableColorConfigurationSnapshot
 } from "@throwable-highlighter/settings/ThrowableColorConfiguration";
+import type {ColorSettingsWriteResult} from "@throwable-highlighter/settings/ThrowableColorConfigurationWriter";
+import type {ColorSettingsApplyResult} from "@throwable-highlighter/settings/ThrowableColorSettingsApplier";
 import type {ColorSettingsTarget} from "@throwable-highlighter/settings/ThrowableColorSettingsDraft";
 
 export const OPEN_COLOR_SETTINGS_COMMAND = "throwableHighlighter.prototype.openColorSettings";
@@ -31,6 +34,7 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
     private panelSubscriptions: readonly vscode.Disposable[] = [];
     private selectedTarget: ColorSettingsTarget = "user";
     private refreshVersion = 0;
+    private applyOperation: object | undefined;
     private isDisposed = false;
     private readonly drafts = new Map<ColorSettingsTarget, ThrowableColorSettingsDraft>();
     private configurationSnapshot: ThrowableColorConfigurationSnapshot | undefined;
@@ -38,7 +42,7 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
     constructor(
         private readonly resources: Pick<
             ThrowableColorSettingsResources,
-            "rootUri" | "stylesUri" | "scriptUri" | "load"
+            "rootUri" | "stylesUri" | "scriptUri" | "iconPath" | "load"
         >,
         private readonly configurationReader = new ThrowableColorConfigurationReader(),
         private readonly html = new ThrowableColorSettingsHtml(),
@@ -46,7 +50,8 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
         private readonly messageParser = new ThrowableColorSettingsMessageParser(),
         private readonly controlsStateBuilder = new ThrowableColorSettingsControlStateBuilder(),
         private readonly draftConfigurationBuilder = new ThrowableColorSettingsDraftConfigurationBuilder(),
-        private readonly previewBuilder = new ThrowableColorSettingsPreviewBuilder()
+        private readonly previewBuilder = new ThrowableColorSettingsPreviewBuilder(),
+        private readonly applier = new ThrowableColorSettingsApplier()
     ) {}
 
     public async show(): Promise<void> {
@@ -71,6 +76,7 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
             }
         );
 
+        panel.iconPath = this.resources.iconPath;
         this.panel = panel;
         this.panelSubscriptions = [
             panel.onDidDispose(() => {
@@ -87,7 +93,7 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
     public async refresh(): Promise<void> {
         const panel = this.panel;
 
-        if (panel === undefined) {
+        if (panel === undefined || this.applyOperation !== undefined) {
             return;
         }
 
@@ -158,7 +164,7 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
             return this.publishDraftState(panel);
         }
 
-        if (message.type === "apply") {
+        if (this.applyOperation !== undefined) {
             return;
         }
 
@@ -194,6 +200,9 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
                 draft.update(message.context, message.field, undefined);
                 break;
 
+            case "apply":
+                return this.applyDraft(panel, draft);
+
             case "revertField":
                 return this.revertField(panel, draft, message.context, message.field);
 
@@ -203,6 +212,112 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
         }
 
         return this.publishDraftState(panel);
+    }
+
+    private async applyDraft(panel: vscode.WebviewPanel, draft: ThrowableColorSettingsDraft): Promise<void> {
+        if (!draft.isDirty || this.applyOperation !== undefined) {
+            return;
+        }
+
+        const operation = {};
+        const changes = draft.getChanges();
+        this.applyOperation = operation;
+        ++this.refreshVersion;
+
+        try {
+            await this.publishDraftState(panel);
+
+            const result = await this.applier.apply(
+                () => vscode.workspace.getConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION),
+                draft.target,
+                changes
+            );
+
+            if (this.panel !== panel || this.applyOperation !== operation) {
+                return;
+            }
+
+            if (result.kind !== "read-failed") {
+                this.configurationSnapshot = result.snapshot;
+                const retained =
+                    result.kind === "success"
+                        ? []
+                        : result.kind === "invalid"
+                          ? changes
+                          : [result.writeResult.failed, ...result.writeResult.pending];
+
+                draft.rebase(result.snapshot[draft.target], retained);
+            }
+
+            if (result.kind !== "success") {
+                void vscode.window.showErrorMessage("Throwable Highlighter: " + this.formatApplyError(result));
+            }
+        } catch (error) {
+            if (this.panel === panel && this.applyOperation === operation) {
+                void vscode.window.showErrorMessage(
+                    "Throwable Highlighter: Unable to apply color settings " + this.describeError(error)
+                );
+            }
+        } finally {
+            if (this.applyOperation === operation) {
+                this.applyOperation = undefined;
+
+                try {
+                    if (this.panel === panel) {
+                        await this.publishDraftState(panel);
+                    }
+                } catch (error) {
+                    if (this.panel === panel) {
+                        void vscode.window.showErrorMessage(
+                            "Throwable Highlighter: Unable to update the settings panel: " + this.describeError(error)
+                        );
+                    }
+                }
+
+                await this.refresh();
+            }
+        }
+    }
+
+    private formatApplyError(result: Exclude<ColorSettingsApplyResult, {kind: "success"}>): string {
+        if (result.kind === "invalid") {
+            const reasons = {
+                "invalid-source": "Choose a valid color source.",
+                "invalid-color": "Enter a complete HEX color or choose a different source.",
+                "class-inheritance": "CLASS cannot inherit from itself."
+            };
+
+            return (
+                "Unable to apply color settings. " +
+                result.issues.map(issue => issue.context.toUpperCase() + ": " + reasons[issue.reason]).join(" ")
+            );
+        }
+
+        if (result.kind === "write-failed") {
+            return this.formatWriteError(result.writeResult);
+        }
+
+        if (result.stage === "before-write") {
+            return "Unable to read color settings before applying changes: " + this.describeError(result.error);
+        }
+
+        const written =
+            result.writeResult.kind === "success"
+                ? "Settings were written."
+                : this.formatWriteError(result.writeResult);
+
+        return `${written} Unable to read saved color settings: ${this.describeError(result.error)}`;
+    }
+
+    private formatWriteError(result: Extract<ColorSettingsWriteResult, {kind: "failed"}>): string {
+        const field = result.failed.field === "source" ? "color source" : "color";
+        const partial = result.written.length > 0 ? " Some changes have already been saved." : "";
+
+        return `Unable to save ${result.failed.context.toUpperCase()} ${field}: ${this.describeError(result.error)}${partial}`;
+    }
+
+    private describeError(error: unknown): string {
+        return error instanceof Error ? error.message : String(error);
     }
 
     private async revertField(
@@ -266,6 +381,7 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
 
         return {
             isDirty: draft.isDirty,
+            isApplying: this.applyOperation !== undefined,
             controls: this.controlsStateBuilder.build(draft.read(), snapshot[draft.target]),
             preview: this.previewBuilder.build(settings)
         };

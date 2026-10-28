@@ -509,8 +509,7 @@ tbody td > code {
 }
 
 .setting-opacity {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) 6ch;
+    display: flex;
     align-items: center;
     gap: 6px;
     min-width: 0;
@@ -519,14 +518,45 @@ tbody td > code {
     font-size: 0.8em;
 }
 
+.setting-opacity > label {
+    flex: 0 0 auto;
+}
+
 .setting-opacity input[type="range"] {
+    flex: 1 1 72px;
     min-width: 0;
-    width: 100%;
+    width: 72px;
+    max-width: 84px;
     height: 16px;
     margin: 0;
     padding: 0;
-    accent-color: var(--vscode-button-background);
+    border: 0;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
     cursor: pointer;
+}
+
+.setting-opacity input[type="range"]::-webkit-slider-runnable-track {
+    height: 3px;
+    border-radius: 999px;
+    background: var(--vscode-panel-border, var(--vscode-descriptionForeground));
+}
+
+.setting-opacity input[type="range"]::-webkit-slider-thumb {
+    width: 10px;
+    height: 10px;
+    margin-top: -3.5px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--vscode-button-background);
+    -webkit-appearance: none;
+    appearance: none;
+    transition: background-color 140ms ease;
+}
+
+.setting-opacity input[type="range"]:not(:disabled):hover::-webkit-slider-thumb {
+    background: var(--vscode-button-hoverBackground, var(--vscode-button-background));
 }
 
 .setting-opacity input[type="range"]:disabled {
@@ -534,9 +564,45 @@ tbody td > code {
     opacity: 0.5;
 }
 
-.setting-opacity output {
-    text-align: right;
+.setting-opacity input[type="range"]:disabled::-webkit-slider-thumb {
+    background: var(--vscode-disabledForeground, var(--vscode-descriptionForeground));
+}
+
+.setting-opacity-value {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
     font-variant-numeric: tabular-nums;
+}
+
+.setting-opacity-value input {
+    min-width: 0;
+    width: calc(5ch + 10px);
+    min-height: 20px;
+    padding: 1px 4px;
+    border: 1px solid var(--vscode-contrastBorder, var(--vscode-panel-border, currentColor));
+    border-radius: 2px;
+    color: var(--vscode-foreground);
+    background: var(--vscode-editor-background);
+    font: inherit;
+    line-height: 1.2;
+    text-align: right;
+    transition: background-color 140ms ease;
+}
+
+.setting-opacity-value input:not(:disabled):hover {
+    background: var(--vscode-toolbar-hoverBackground, var(--vscode-editorWidget-background));
+}
+
+.setting-opacity-value input:disabled {
+    color: var(--vscode-disabledForeground, var(--vscode-foreground));
+    cursor: default;
+}
+
+.setting-opacity-value input[aria-invalid="true"] {
+    border-color: var(--vscode-errorForeground);
 }
 
 .setting-preview.error {

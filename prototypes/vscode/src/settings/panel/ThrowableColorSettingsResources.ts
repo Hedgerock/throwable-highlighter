@@ -6,11 +6,16 @@ export class ThrowableColorSettingsResources {
     public readonly rootUri: vscode.Uri;
     public readonly stylesUri: vscode.Uri;
     public readonly scriptUri: vscode.Uri;
+    public readonly iconPath: {readonly light: vscode.Uri; readonly dark: vscode.Uri};
 
     constructor(extensionUri: vscode.Uri) {
         this.rootUri = vscode.Uri.joinPath(extensionUri, "webview", "color-settings");
         this.stylesUri = vscode.Uri.joinPath(this.rootUri, "styles.css");
         this.scriptUri = vscode.Uri.joinPath(this.rootUri, "app.js");
+        this.iconPath = {
+            light: vscode.Uri.joinPath(this.rootUri, "icon-light.svg"),
+            dark: vscode.Uri.joinPath(this.rootUri, "icon-dark.svg")
+        };
     }
 
     public async load(): Promise<ThrowableColorSettingsTemplate> {

@@ -116,7 +116,7 @@
             </button>
         </div>
         <div class="setting-opacity">
-            <label for="opacity-{{context}}">Opacity</label>
+            <label for="opacity-percent-{{context}}">Opacity</label>
             <input
                 id="opacity-{{context}}"
                 type="range"
@@ -128,7 +128,19 @@
                 aria-label="Throwable {{context}} opacity"
                 disabled
             />
-            <output for="opacity-{{context}}" data-opacity-value aria-hidden="true">—</output>
+            <span class="setting-opacity-value">
+                <input
+                    id="opacity-percent-{{context}}"
+                    type="text"
+                    inputmode="decimal"
+                    data-opacity-percent
+                    maxlength="5"
+                    placeholder="—"
+                    aria-label="Throwable {{context}} opacity percentage"
+                    disabled
+                />
+                <span aria-hidden="true">%</span>
+            </span>
         </div>
         <div class="setting-meta">
             <div class="setting-value" data-value-field="color" title="{{scopedColor}}">

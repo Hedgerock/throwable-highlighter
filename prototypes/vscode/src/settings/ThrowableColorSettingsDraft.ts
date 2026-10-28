@@ -73,6 +73,15 @@ export class ThrowableColorSettingsDraft {
         return changes;
     }
 
+    public rebase(settings: RawThrowableColorSettings, retainedChanges: readonly ColorSettingChange[]): void {
+        this.baseline = this.copy(settings);
+        this.current = this.baseline;
+
+        for (const {context, field, value} of retainedChanges) {
+            this.update(context, field, value);
+        }
+    }
+
     public discard(): void {
         this.current = this.baseline;
     }

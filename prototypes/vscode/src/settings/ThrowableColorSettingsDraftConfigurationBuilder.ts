@@ -18,12 +18,29 @@ export class ThrowableColorSettingsDraftConfigurationBuilder {
         target: ColorSettingsTarget,
         changes: readonly ColorSettingChange[]
     ): ParsedThrowableColorSettings {
+        return this.buildConfiguration(snapshot, target, changes, true);
+    }
+
+    public buildForTarget(
+        snapshot: ThrowableColorConfigurationSnapshot,
+        target: ColorSettingsTarget,
+        changes: readonly ColorSettingChange[]
+    ): ParsedThrowableColorSettings {
+        return this.buildConfiguration(snapshot, target, changes, target === "workspace");
+    }
+
+    private buildConfiguration(
+        snapshot: ThrowableColorConfigurationSnapshot,
+        target: ColorSettingsTarget,
+        changes: readonly ColorSettingChange[],
+        includesWorkspace: boolean
+    ): ParsedThrowableColorSettings {
         const scoped = this.applyChanges(snapshot[target], changes);
         const user = target === "user" ? scoped : snapshot.user;
         const workspace = target === "workspace" ? scoped : snapshot.workspace;
-        const settings = this.merge(this.merge(snapshot.defaults, user), workspace);
+        const settings = this.merge(snapshot.defaults, user);
 
-        return this.parser.parse(settings);
+        return this.parser.parse(includesWorkspace ? this.merge(settings, workspace) : settings);
     }
 
     private applyChanges(

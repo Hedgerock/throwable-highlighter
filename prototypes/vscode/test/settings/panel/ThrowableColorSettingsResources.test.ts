@@ -19,6 +19,8 @@ test("resolves resource paths relative to the supplied extension URI", context =
     assert.deepEqual(fixture.joinPath.mock.calls[0].arguments, [fixture.extensionUri, "webview", "color-settings"]);
     assert.deepEqual(fixture.joinPath.mock.calls[1].arguments, [fixture.resources.rootUri, "styles.css"]);
     assert.deepEqual(fixture.joinPath.mock.calls[2].arguments, [fixture.resources.rootUri, "app.js"]);
+    assert.equal(fixture.resources.iconPath.light.toString(), fixture.root + "/icon-light.svg");
+    assert.equal(fixture.resources.iconPath.dark.toString(), fixture.root + "/icon-dark.svg");
 });
 
 test("loads all templates as UTF-8 and checks the stylesheet", async context => {
@@ -91,7 +93,9 @@ test("includes the templates and stylesheet in the extension resources", async (
         "invalid-context-row.html",
         "source-option.html",
         "styles.css",
-        "app.js"
+        "app.js",
+        "icon-light.svg",
+        "icon-dark.svg"
     ]) {
         const content = await readFile(resolve(directory, fileName), "utf-8");
 

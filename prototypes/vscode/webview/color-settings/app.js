@@ -8,34 +8,29 @@
 
     const renderedTarget = target.value;
     const ownColors = new Map();
+    const editingOpacity = new WeakSet();
     let currentState;
     let isChangingTarget = false;
-
-    target.addEventListener("change", () => {
-        if (
-            (target.value === "user" || target.value === "workspace") &&
-            (isChangingTarget || target.value !== renderedTarget)
-        ) {
-            isChangingTarget = true;
-
-            for (const control of document.querySelectorAll(
-                "tbody select, tbody input, tbody button, .panel-actions button"
-            )) {
-                if (
-                    control instanceof HTMLInputElement ||
-                    control instanceof HTMLSelectElement ||
-                    control instanceof HTMLButtonElement
-                ) {
-                    control.disabled = true;
-                }
-            }
-
-            vscode.postMessage({type: "selectTarget", target: target.value});
-        }
-    });
+    let isApplying = false;
+    let pendingEdits = 0;
 
     const draftStatus = document.getElementById("draft-status");
     const discard = document.getElementById("discard-draft");
+    const apply = document.getElementById("apply-draft");
+
+    target.addEventListener("change", () => {
+        if (target.disabled || isInteractionLocked() || pendingEdits > 0) {
+            target.value = renderedTarget;
+            return;
+        }
+
+        if ((target.value === "user" || target.value === "workspace") && target.value !== renderedTarget) {
+            isChangingTarget = true;
+            disableEditingControls();
+            updateActions();
+            vscode.postMessage({type: "selectTarget", target: target.value});
+        }
+    });
 
     window.addEventListener("message", event => {
         const message = event.data;
@@ -47,6 +42,7 @@
             (message.type !== "draftState" && message.type !== "fieldReverted") ||
             message.target !== target.value ||
             typeof message.isDirty !== "boolean" ||
+            typeof message.isApplying !== "boolean" ||
             !isControlState(message.controls) ||
             !isPreview(message.preview)
         ) {
@@ -57,19 +53,56 @@
             return;
         }
 
+        pendingEdits = Math.max(0, pendingEdits - 1);
+        isApplying = message.isApplying;
         currentState = message;
         applyPresentation();
+    });
 
-        if (draftStatus instanceof HTMLElement) {
-            draftStatus.textContent = message.isDirty
-                ? "Unapplied changes in this scope."
-                : "No unapplied changes in this scope.";
+    function isInteractionLocked() {
+        return isChangingTarget || isApplying || currentState === undefined;
+    }
+
+    function disableEditingControls() {
+        for (const control of document.querySelectorAll(
+            "tbody select, tbody input, tbody button, .panel-actions button"
+        )) {
+            if (
+                control instanceof HTMLInputElement ||
+                control instanceof HTMLSelectElement ||
+                control instanceof HTMLButtonElement
+            ) {
+                control.disabled = true;
+            }
         }
+    }
+
+    function updateActions() {
+        const locked = isInteractionLocked() || pendingEdits > 0;
+        const canSubmit = !locked && currentState?.isDirty === true;
+        target.disabled = locked;
 
         if (discard instanceof HTMLButtonElement) {
-            discard.disabled = !message.isDirty;
+            discard.disabled = !canSubmit;
         }
-    });
+
+        if (apply instanceof HTMLButtonElement) {
+            apply.disabled = !canSubmit;
+            apply.textContent = isApplying ? "Applying..." : "Apply";
+        }
+
+        if (draftStatus instanceof HTMLElement) {
+            draftStatus.textContent = isChangingTarget
+                ? "Loading settings scope..."
+                : isApplying
+                  ? "Applying changes in this scope..."
+                  : currentState === undefined
+                    ? "Loading draft state..."
+                    : currentState.isDirty
+                      ? "Unapplied changes in this scope."
+                      : "No unapplied changes in this scope.";
+        }
+    }
 
     function isColorPreview(preview) {
         if (preview === null || typeof preview !== "object") {
@@ -154,6 +187,8 @@
                 continue;
             }
 
+            source.disabled = false;
+
             const wasDisabled = color.disabled;
             color.disabled = isColorLocked(context, source.value);
 
@@ -200,6 +235,12 @@
         if (currentState !== undefined) {
             applyControlState(currentState.controls);
         }
+
+        if (isInteractionLocked()) {
+            disableEditingControls();
+        }
+
+        updateActions();
     }
 
     function updateColorSwatch(display, preview) {
@@ -232,12 +273,24 @@
         };
     }
 
+    function parseOpacityPercentage(value) {
+        const normalized = value.trim().replace(",", ".");
+
+        if (!/^(?:\d{1,3}(?:\.\d)?|\.\d)$/.test(normalized)) {
+            return undefined;
+        }
+
+        const percentage = Number(normalized);
+
+        return percentage <= 100 ? percentage : undefined;
+    }
+
     function updateColorControls(row, color) {
         const picker = row.querySelector("[data-color-picker]");
         const opacity = row.querySelector("[data-color-opacity]");
-        const output = row.querySelector("[data-opacity-value]");
+        const percent = row.querySelector("[data-opacity-percent]");
         const parsed = parseHexColor(color.value);
-        const locked = isChangingTarget || color.disabled;
+        const locked = isInteractionLocked() || color.disabled;
         const alpha = parsed === undefined ? undefined : Number.parseInt(parsed.alpha || "ff", 16);
         const percentage = alpha === undefined ? undefined : Math.round((alpha * 1000) / 255) / 10;
 
@@ -262,8 +315,23 @@
             );
         }
 
-        if (output instanceof HTMLElement) {
-            output.textContent = percentage === undefined ? "—" : percentage + "%";
+        if (percent instanceof HTMLInputElement) {
+            percent.disabled = locked || alpha === undefined;
+
+            if (percent.disabled) {
+                editingOpacity.delete(percent);
+            }
+
+            if (!editingOpacity.has(percent)) {
+                const value = percentage === undefined ? "" : String(percentage);
+
+                if (percent.value !== value) {
+                    percent.value = value;
+                }
+
+                percent.setAttribute("aria-invalid", "false");
+                percent.title = percentage === undefined ? "No complete HEX color" : "Opacity percentage from 0 to 100";
+            }
         }
     }
 
@@ -487,6 +555,24 @@
         return true;
     }
 
+    if (apply instanceof HTMLButtonElement) {
+        apply.addEventListener("click", () => {
+            if (
+                apply.disabled ||
+                isInteractionLocked() ||
+                pendingEdits > 0 ||
+                !currentState?.isDirty ||
+                (target.value !== "user" && target.value !== "workspace")
+            ) {
+                return;
+            }
+
+            isApplying = true;
+            applyPresentation();
+            vscode.postMessage({type: "apply", target: target.value});
+        });
+    }
+
     if (discard instanceof HTMLButtonElement) {
         discard.addEventListener("click", () => {
             if (!discard.disabled && (target.value === "user" || target.value === "workspace")) {
@@ -506,7 +592,9 @@
         const color = row.querySelector('[data-setting="color"]');
 
         function sendChange(message) {
-            if (!isChangingTarget && (target.value === "user" || target.value === "workspace")) {
+            if (!isInteractionLocked() && (target.value === "user" || target.value === "workspace")) {
+                pendingEdits++;
+                updateActions();
                 vscode.postMessage({...message, target: target.value, context});
             }
         }
@@ -530,6 +618,10 @@
             source.disabled = false;
 
             source.addEventListener("change", () => {
+                if (source.disabled || isInteractionLocked()) {
+                    return;
+                }
+
                 if (source.value === "") {
                     showValue("source", undefined);
                     applyPresentation();
@@ -554,7 +646,7 @@
             ownColors.set(context, color.value);
 
             function updateOwnColor(value) {
-                if (isChangingTarget || color.disabled) {
+                if (isInteractionLocked() || color.disabled) {
                     return;
                 }
 
@@ -610,6 +702,53 @@
                 });
             }
 
+            const percent = row.querySelector("[data-opacity-percent]");
+
+            if (percent instanceof HTMLInputElement) {
+                const synchronize = () => {
+                    editingOpacity.delete(percent);
+                    updateColorControls(row, color);
+                };
+
+                percent.addEventListener("input", () => {
+                    if (percent.disabled || isInteractionLocked()) {
+                        return;
+                    }
+
+                    const current = parseHexColor(color.value);
+
+                    if (current === undefined) {
+                        return;
+                    }
+
+                    editingOpacity.add(percent);
+                    const percentage = parseOpacityPercentage(percent.value);
+                    percent.setAttribute("aria-invalid", String(percentage === undefined));
+                    percent.title =
+                        percentage === undefined
+                            ? "Enter a percentage from 0 to 100, with at most one decimal place."
+                            : "Opacity percentage from 0 to 100";
+
+                    if (percentage === undefined) {
+                        return;
+                    }
+
+                    const alpha = Math.round((percentage * 255) / 100);
+
+                    if (alpha !== Number.parseInt(current.alpha || "ff", 16)) {
+                        updateOwnColor(current.rgb + alpha.toString(16).padStart(2, "0"));
+                    }
+                });
+
+                percent.addEventListener("blur", synchronize);
+                percent.addEventListener("keydown", event => {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        synchronize();
+                    }
+                });
+            }
+
             color.addEventListener("input", () => updateOwnColor(color.value));
         }
 
@@ -625,7 +764,7 @@
             }
 
             button.addEventListener("click", () => {
-                if (button.disabled) {
+                if (button.disabled || isInteractionLocked()) {
                     return;
                 }
 
@@ -645,7 +784,7 @@
             }
 
             button.addEventListener("click", () => {
-                if (button.disabled) {
+                if (button.disabled || isInteractionLocked()) {
                     return;
                 }
 
@@ -667,7 +806,6 @@
 
     initializeSettingsNotes();
     applyPresentation();
-    target.disabled = false;
     vscode.postMessage({type: "ready"});
 
     const table = document.querySelector(".settings-table-container");

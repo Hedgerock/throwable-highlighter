@@ -7,14 +7,18 @@ import type {TestContext} from "node:test";
 import * as vscode from "vscode";
 
 import {ThrowableColorSettingsPanel} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsPanel";
+import {ThrowableColorConfigurationReader} from "@throwable-highlighter/settings/ThrowableColorConfigurationReader";
+import {ThrowableColorSettingsApplier} from "@throwable-highlighter/settings/ThrowableColorSettingsApplier";
 import type {ThrowableColorSettingsControlState} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsControlState";
+import type {ColorSettingsDraftStateMessage} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsMessage";
 import type {
     ColorSettingPreview,
     ThrowableColorSettingsPreview
 } from "@throwable-highlighter/settings/panel/ThrowableColorSettingsPreview";
 import type {ThrowableColorSettingsTemplate} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsTemplate";
+import type {ColorSettingsApplyResult} from "@throwable-highlighter/settings/ThrowableColorSettingsApplier";
 
-test("opens a read-only panel with restricted resource access", async context => {
+test("opens the draft settings panel with restricted resource access", async context => {
     const fixture = createFixture(context);
 
     await fixture.settingsPanel.show();
@@ -28,6 +32,7 @@ test("opens a read-only panel with restricted resource access", async context =>
     assert.equal(fixture.getConfiguration.mock.calls[0].arguments[0], "throwableHighlighter.prototype");
     assert.ok(fixture.panels[0].webview.html.includes("<code>#123456</code>"));
     assert.deepEqual(fixture.panels[0].webview.asWebviewUri.mock.calls[0].arguments, [fixture.stylesUri]);
+    assert.deepEqual(fixture.panels[0].iconPath, fixture.iconPath);
 });
 
 test("reveals and refreshes the existing panel instead of opening a duplicate", async context => {
@@ -280,7 +285,7 @@ test("switches scoped values between Workspace and User without writing settings
     assert.equal(fixture.update.mock.callCount(), 0);
 });
 
-test("ignores unavailable targets, extra payloads and unsupported operations", async context => {
+test("ignores unavailable targets, extra payloads and an unchanged Apply request", async context => {
     const fixture = createFixture(context);
     await fixture.settingsPanel.show();
     const panel = fixture.panels[0];
@@ -536,6 +541,7 @@ test("publishes the current draft state when the webview is ready", async contex
         {
             type: "draftState",
             target: "user",
+            isApplying: false,
             isDirty: false,
             controls: createControlState(),
             preview: createPreview("#FEDCBA")
@@ -549,6 +555,7 @@ test("publishes the current draft state when the webview is ready", async contex
         {
             type: "draftState",
             target: "workspace",
+            isApplying: false,
             isDirty: false,
             controls: createControlState(),
             preview: createPreview("#FEDCBA")
@@ -573,6 +580,7 @@ test("publishes draft changes without reloading the document or reading configur
                 {
                     type: "draftState",
                     target: "user",
+                    isApplying: false,
                     isDirty: true,
                     controls: createControlState({
                         class: {
@@ -586,6 +594,7 @@ test("publishes draft changes without reloading the document or reading configur
                 {
                     type: "draftState",
                     target: "user",
+                    isApplying: false,
                     isDirty: false,
                     controls: createControlState(),
                     preview: createPreview("#ABCDEF")
@@ -613,6 +622,7 @@ test("publishes a clean state after discarding changes", async context => {
             type: "draftState",
             target: "user",
             isDirty: false,
+            isApplying: false,
             controls: createControlState(),
             preview: createPreview("#ABCDEF")
         }
@@ -645,6 +655,7 @@ test("reverts a field to the latest saved scope value without reloading the pane
             context: "class",
             field: "color",
             value: "#654321",
+            isApplying: false,
             isDirty: true,
             controls: createControlState({
                 catch: {
@@ -672,6 +683,7 @@ test("reverts a field to the latest saved scope value without reloading the pane
             context: "catch",
             field: "source",
             value: undefined,
+            isApplying: false,
             isDirty: false,
             controls: createControlState(),
             preview: createPreview("#654321")
@@ -696,6 +708,7 @@ test("reverts Workspace fields without substituting User or effective values", a
             context: "class",
             field: "color",
             value: "#FEDCBA",
+            isApplying: false,
             isDirty: false,
             controls: createControlState(),
             preview: createPreview("#FEDCBA")
@@ -712,6 +725,7 @@ test("reverts Workspace fields without substituting User or effective values", a
             context: "catch",
             field: "color",
             value: undefined,
+            isApplying: false,
             isDirty: false,
             controls: createControlState(),
             preview: createPreview("#FEDCBA")
@@ -758,6 +772,7 @@ test("updates color action states for empty input, removal and reverting", async
             type: "draftState",
             target: "user",
             isDirty: true,
+            isApplying: false,
             controls: createControlState({
                 class: {color: {canRevert: true, canRemove: true}}
             }),
@@ -777,6 +792,7 @@ test("updates color action states for empty input, removal and reverting", async
             type: "draftState",
             target: "user",
             isDirty: true,
+            isApplying: false,
             controls: createControlState({
                 class: {color: {canRevert: true, canRemove: false}}
             }),
@@ -796,6 +812,7 @@ test("updates color action states for empty input, removal and reverting", async
             field: "color",
             value: "#ABCDEF",
             isDirty: false,
+            isApplying: false,
             controls: createControlState(),
             preview: createPreview("#ABCDEF")
         }
@@ -819,6 +836,7 @@ test("publishes action states for values in the selected scope", async context =
             type: "draftState",
             target: "user",
             isDirty: false,
+            isApplying: false,
             controls: createControlState({
                 class: {color: {canRevert: false, canRemove: false}}
             }),
@@ -834,6 +852,7 @@ test("publishes action states for values in the selected scope", async context =
             type: "draftState",
             target: "workspace",
             isDirty: false,
+            isApplying: false,
             controls: createControlState(),
             preview: createPreview("#FEDCBA")
         }
@@ -862,6 +881,7 @@ test("refreshes saved values for action states while preserving other draft chan
             type: "draftState",
             target: "user",
             isDirty: true,
+            isApplying: false,
             controls: createControlState({
                 class: {color: {canRevert: true, canRemove: true}},
                 catch: {color: {canRevert: true, canRemove: false}}
@@ -882,6 +902,7 @@ test("refreshes saved values for action states while preserving other draft chan
             field: "color",
             value: "#FEDCBA",
             isDirty: true,
+            isApplying: false,
             controls: createControlState({
                 class: {color: {canRevert: true, canRemove: true}},
                 catch: {color: {canRevert: false, canRemove: true}}
@@ -897,6 +918,7 @@ test("refreshes saved values for action states while preserving other draft chan
             type: "draftState",
             target: "user",
             isDirty: true,
+            isApplying: false,
             controls: createControlState({
                 class: {color: {canRevert: true, canRemove: true}},
                 catch: {color: {canRevert: false, canRemove: true}}
@@ -924,6 +946,7 @@ test("previews Workspace draft changes without replacing saved values", async co
             type: "draftState",
             target: "workspace",
             isDirty: true,
+            isApplying: false,
             controls: createControlState({
                 class: {color: {canRevert: true, canRemove: true}}
             }),
@@ -950,6 +973,7 @@ test("keeps Workspace priority when previewing User draft changes", async contex
             type: "draftState",
             target: "user",
             isDirty: true,
+            isApplying: false,
             controls: createControlState({
                 class: {color: {canRevert: true, canRemove: true}}
             }),
@@ -959,6 +983,259 @@ test("keeps Workspace priority when previewing User draft changes", async contex
     assert.equal(fixture.userValues.classColor, "#ABCDEF");
     assert.equal(fixture.getConfiguration.mock.callCount(), 1);
     assert.equal(fixture.update.mock.callCount(), 0);
+});
+
+test("applies a draft and publishes the running and idle states", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    fixture.userValues.classColor = "#111111";
+    fixture.values.classColor = "#111111";
+    const snapshot = new ThrowableColorConfigurationReader().read(fixture.getConfiguration());
+    const changes = [{context: "class", field: "color", value: "#111111"}] as const;
+    const apply = context.mock.method(ThrowableColorSettingsApplier.prototype, "apply", async () => ({
+        kind: "success" as const,
+        snapshot,
+        written: changes
+    }));
+    panel.webview.postMessage.mock.resetCalls();
+
+    await panel.receive({type: "apply", target: "user"});
+
+    assert.equal(apply.mock.callCount(), 1);
+    assert.equal(apply.mock.calls[0].arguments[1], "user");
+    assert.deepEqual(apply.mock.calls[0].arguments[2], changes);
+    const states = panel.webview.postMessage.mock.calls.map(call => call.arguments[0]);
+    assert.equal((states[0] as ColorSettingsDraftStateMessage).isApplying, true);
+    assert.equal((states[1] as ColorSettingsDraftStateMessage).isApplying, false);
+    assert.equal((states[1] as ColorSettingsDraftStateMessage).isDirty, false);
+    assert.ok(panel.webview.html.includes('value="#111111"'));
+    assert.equal(fixture.showErrorMessage.mock.callCount(), 0);
+});
+
+test("blocks edits, scope changes, repeated Apply and refresh while saving", async context => {
+    const fixture = createFixture(context);
+    context.mock.getter(vscode.workspace, "workspaceFolders", () => []);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    const started = createDeferred<void>();
+    const pending = createDeferred<ColorSettingsApplyResult>();
+    const apply = context.mock.method(ThrowableColorSettingsApplier.prototype, "apply", () => {
+        started.resolve(undefined);
+        return pending.promise;
+    });
+    const applying = panel.receive({type: "apply", target: "user"});
+    await started.promise;
+    const loads = fixture.load.mock.callCount();
+    const reads = fixture.getConfiguration.mock.callCount();
+
+    for (const message of [
+        {type: "setColor", target: "user", context: "class", color: "#222222"},
+        {type: "setSource", target: "user", context: "class", source: "native"},
+        {type: "resetField", target: "user", context: "class", field: "color"},
+        {type: "revertField", target: "user", context: "class", field: "color"},
+        {type: "discard", target: "user"},
+        {type: "selectTarget", target: "workspace"},
+        {type: "apply", target: "user"}
+    ]) {
+        await panel.receive(message);
+    }
+    await fixture.settingsPanel.refresh();
+
+    assert.equal(apply.mock.callCount(), 1);
+    assert.equal(fixture.load.mock.callCount(), loads);
+    assert.equal(fixture.getConfiguration.mock.callCount(), reads);
+    fixture.userValues.classColor = "#111111";
+    const snapshot = new ThrowableColorConfigurationReader().read(fixture.getConfiguration());
+    pending.resolve({kind: "success", snapshot, written: [{context: "class", field: "color", value: "#111111"}]});
+    await applying;
+
+    assert.equal(fixture.load.mock.callCount(), loads + 1);
+    assert.ok(panel.webview.html.includes("Source in User"));
+});
+
+test("keeps only unapplied fields after a partial write failure", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    await panel.receive({type: "setColor", target: "user", context: "catch", color: "#222222"});
+    fixture.userValues.classColor = "#111111";
+    fixture.userValues.catchColor = "#555555";
+    const snapshot = new ThrowableColorConfigurationReader().read(fixture.getConfiguration());
+    context.mock.method(ThrowableColorSettingsApplier.prototype, "apply", async () => ({
+        kind: "write-failed" as const,
+        snapshot,
+        writeResult: {
+            kind: "failed" as const,
+            written: [{context: "class" as const, field: "color" as const, value: "#111111"}],
+            failed: {context: "catch" as const, field: "color" as const, value: "#222222"},
+            pending: [],
+            error: new Error("Write failed.")
+        }
+    }));
+
+    await panel.receive({type: "apply", target: "user"});
+    await panel.receive({type: "ready"});
+
+    const state = panel.webview.postMessage.mock.calls.at(-1)?.arguments[0] as ColorSettingsDraftStateMessage;
+    assert.equal(state.isApplying, false);
+    assert.equal(state.isDirty, true);
+    assert.equal(state.controls.class.color.canRevert, false);
+    assert.equal(state.controls.catch.color.canRevert, true);
+    assert.ok(panel.webview.html.includes('value="#222222"'));
+    assert.equal(fixture.showErrorMessage.mock.callCount(), 1);
+
+    await panel.receive({type: "discard", target: "user"});
+
+    assert.ok(panel.webview.html.includes('value="#555555"'));
+});
+
+test("keeps invalid input over a refreshed baseline after validation fails", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#12"});
+    fixture.userValues.classColor = "#666666";
+    const snapshot = new ThrowableColorConfigurationReader().read(fixture.getConfiguration());
+    context.mock.method(ThrowableColorSettingsApplier.prototype, "apply", async () => ({
+        kind: "invalid" as const,
+        snapshot,
+        issues: [{context: "class" as const, field: "color" as const, reason: "invalid-color" as const}]
+    }));
+
+    await panel.receive({type: "apply", target: "user"});
+
+    assert.ok(panel.webview.html.includes('value="#12"'));
+    assert.equal(fixture.showErrorMessage.mock.callCount(), 1);
+    await panel.receive({type: "discard", target: "user"});
+    assert.ok(panel.webview.html.includes('value="#666666"'));
+});
+
+test("keeps a draft when saved settings cannot be read", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    context.mock.method(ThrowableColorSettingsApplier.prototype, "apply", async () => ({
+        kind: "read-failed" as const,
+        stage: "after-write" as const,
+        writeResult: {
+            kind: "success" as const,
+            written: [{context: "class" as const, field: "color" as const, value: "#111111"}]
+        },
+        error: new Error("Read failed.")
+    }));
+
+    await panel.receive({type: "apply", target: "user"});
+    await panel.receive({type: "ready"});
+
+    const state = panel.webview.postMessage.mock.calls.at(-1)?.arguments[0] as ColorSettingsDraftStateMessage;
+    assert.equal(state.isDirty, true);
+    assert.equal(state.isApplying, false);
+    assert.ok(panel.webview.html.includes('value="#111111"'));
+    assert.match(fixture.showErrorMessage.mock.calls[0].arguments[0] ?? "", /Settings were written\./);
+});
+
+test("ignores the result of an Apply operation from a closed panel", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const first = fixture.panels[0];
+    await first.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    const started = createDeferred<void>();
+    const pending = createDeferred<ColorSettingsApplyResult>();
+    context.mock.method(ThrowableColorSettingsApplier.prototype, "apply", () => {
+        started.resolve(undefined);
+        return pending.promise;
+    });
+    const applying = first.receive({type: "apply", target: "user"});
+    await started.promise;
+    first.close();
+    await fixture.settingsPanel.show();
+    const second = fixture.panels[1];
+    pending.resolve({kind: "read-failed", stage: "before-write", error: new Error("Old request failed.")});
+    await applying;
+    await second.receive({type: "ready"});
+
+    assert.equal(fixture.showErrorMessage.mock.callCount(), 0);
+    assert.equal(second.webview.html.includes('value="#111111"'), false);
+    const state = second.webview.postMessage.mock.calls.at(-1)?.arguments[0] as ColorSettingsDraftStateMessage;
+    assert.equal(state.isDirty, false);
+    assert.equal(state.isApplying, false);
+});
+
+test("unlocks Apply after an unexpected operation failure", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    const apply = context.mock.method(ThrowableColorSettingsApplier.prototype, "apply", async () => {
+        throw new Error("Unexpected failure.");
+    });
+
+    await panel.receive({type: "apply", target: "user"});
+    await panel.receive({type: "apply", target: "user"});
+
+    assert.equal(apply.mock.callCount(), 2);
+    const state = panel.webview.postMessage.mock.calls.at(-1)?.arguments[0] as ColorSettingsDraftStateMessage;
+    assert.equal(state.isApplying, false);
+    assert.equal(state.isDirty, true);
+});
+
+test("publishes an idle state even when rendering after Apply fails", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    const snapshot = new ThrowableColorConfigurationReader().read(fixture.getConfiguration());
+    context.mock.method(ThrowableColorSettingsApplier.prototype, "apply", async () => ({
+        kind: "success" as const,
+        snapshot,
+        written: []
+    }));
+    fixture.load.mock.mockImplementationOnce(async () => {
+        throw new Error("Unable to load resources.");
+    });
+
+    await panel.receive({type: "apply", target: "user"});
+
+    const state = panel.webview.postMessage.mock.calls.at(-1)?.arguments[0] as ColorSettingsDraftStateMessage;
+    assert.equal(state.isApplying, false);
+    assert.equal(fixture.showErrorMessage.mock.callCount(), 1);
+});
+
+test("does not let a refresh started before Apply replace the active draft", async context => {
+    const fixture = createFixture(context);
+    await fixture.settingsPanel.show();
+    const panel = fixture.panels[0];
+    await panel.receive({type: "setColor", target: "user", context: "class", color: "#111111"});
+    const previousHtml = panel.webview.html;
+    const templates = createDeferred<ThrowableColorSettingsTemplate>();
+    fixture.load.mock.mockImplementationOnce(() => templates.promise);
+    const refreshing = fixture.settingsPanel.refresh();
+    const started = createDeferred<void>();
+    const pending = createDeferred<ColorSettingsApplyResult>();
+    context.mock.method(ThrowableColorSettingsApplier.prototype, "apply", () => {
+        started.resolve(undefined);
+        return pending.promise;
+    });
+    const applying = panel.receive({type: "apply", target: "user"});
+    await started.promise;
+
+    templates.resolve(readTemplates());
+    await refreshing;
+
+    assert.equal(panel.webview.html, previousHtml);
+    const snapshot = new ThrowableColorConfigurationReader().read(fixture.getConfiguration());
+    pending.resolve({
+        kind: "invalid",
+        snapshot,
+        issues: [{context: "class", field: "color", reason: "invalid-color"}]
+    });
+    await applying;
+    assert.ok(panel.webview.html.includes('value="#111111"'));
 });
 
 function createFixture(context: TestContext) {
@@ -995,10 +1272,14 @@ function createFixture(context: TestContext) {
     const rootUri = createUri("test-extension:/webview/color-settings");
     const stylesUri = createUri(rootUri.toString() + "/styles.css");
     const scriptUri = createUri(rootUri.toString() + "/app.js");
+    const iconPath = {
+        light: createUri(rootUri.toString() + "/icon-light.svg"),
+        dark: createUri(rootUri.toString() + "/icon-dark.svg")
+    };
     const load = context.mock.fn(async () => readTemplates());
     const showErrorMessage = context.mock.method(vscode.window, "showErrorMessage", async () => undefined);
 
-    const settingsPanel = new ThrowableColorSettingsPanel({rootUri, stylesUri, scriptUri, load});
+    const settingsPanel = new ThrowableColorSettingsPanel({rootUri, stylesUri, scriptUri, load, iconPath});
 
     context.after(() => settingsPanel.dispose());
 
@@ -1014,7 +1295,8 @@ function createFixture(context: TestContext) {
         rootUri,
         stylesUri,
         load,
-        showErrorMessage
+        showErrorMessage,
+        iconPath
     };
 }
 
@@ -1096,6 +1378,7 @@ function createPanelFixture(context: TestContext) {
             postMessage: context.mock.fn(async (_message: unknown) => true),
             asWebviewUri: context.mock.fn((uri: vscode.Uri) => createUri("test-webview:" + uri.toString()))
         },
+        iconPath: undefined as vscode.WebviewPanel["iconPath"],
         reveal: context.mock.fn(),
         dispose: context.mock.fn(close),
         onDidDispose(listener: () => void) {

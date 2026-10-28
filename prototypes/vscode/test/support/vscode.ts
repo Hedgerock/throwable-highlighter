@@ -14,6 +14,11 @@ export const FileType = {
     File: 1
 } satisfies Pick<typeof vscode.FileType, "File">;
 
+export const ConfigurationTarget = {
+    Global: 1,
+    Workspace: 2
+} satisfies Pick<typeof vscode.ConfigurationTarget, "Global" | "Workspace">;
+
 export const Uri = {
     joinPath(_base: vscode.Uri, ..._pathSegments: string[]): vscode.Uri {
         throw new Error("Unexpected URI join request.");
@@ -83,6 +88,7 @@ export const window = {
 export default {
     SymbolKind,
     FileType,
+    ConfigurationTarget,
     Uri,
     ViewColumn,
     Location,
