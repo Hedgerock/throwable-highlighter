@@ -131,6 +131,7 @@ NNNN-краткое-название.md
 - [ADR-0016: Локальная проверка подготовленного коммита](0016-local-pre-commit-checks.md)
 - [ADR-0017: Выборочная очистка результатов сборки прототипа VS Code](0017-selective-vscode-build-cleanup.md)
 - [ADR-0018: Выбор локальных проверок по изменённым файлам](0018-selective-local-checks.md)
+- [ADR-0019: Браузерные проверки панели настройки цветов VS Code](0019-browser-color-settings-tests.md)
 
 ---
 
