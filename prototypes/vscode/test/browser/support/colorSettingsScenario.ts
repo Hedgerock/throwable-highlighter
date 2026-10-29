@@ -5,6 +5,7 @@ import {ThrowableColorSettingsParser} from "@throwable-highlighter/settings/Thro
 import type {ColorSettingsDraftStateMessage} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsMessage";
 import type {ThrowableColorSettingsViewModel} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsViewModel";
 import type {RawThrowableColorSettings} from "@throwable-highlighter/settings/ThrowableColorConfiguration";
+import type {ColorSettingChange} from "@throwable-highlighter/settings/ThrowableColorSettingsDraft";
 
 export type ColorSettingsScenario = {
     readonly model: ThrowableColorSettingsViewModel;
@@ -39,9 +40,15 @@ export function createColorSettingsScenario(): ColorSettingsScenario {
     };
 }
 
-export function createClassColorState(scenario: ColorSettingsScenario, color: string): ColorSettingsDraftStateMessage {
+export function createColorSettingsState(
+    scenario: ColorSettingsScenario,
+    changes: readonly ColorSettingChange[]
+): ColorSettingsDraftStateMessage {
     const draft = new ThrowableColorSettingsDraft(scenario.model.target, scenario.model.scoped);
-    draft.update("class", "color", color);
+
+    for (const {context, field, value} of changes) {
+        draft.update(context, field, value);
+    }
 
     const current = draft.read();
     const effective = new ThrowableColorSettingsParser().parse(current);
@@ -52,4 +59,8 @@ export function createClassColorState(scenario: ColorSettingsScenario, color: st
         controls: new ThrowableColorSettingsControlStateBuilder().build(current, scenario.model.scoped),
         preview: new ThrowableColorSettingsPreviewBuilder().build(effective)
     };
+}
+
+export function createClassColorState(scenario: ColorSettingsScenario, color: string): ColorSettingsDraftStateMessage {
+    return createColorSettingsState(scenario, [{context: "class", field: "color", value: color}]);
 }
