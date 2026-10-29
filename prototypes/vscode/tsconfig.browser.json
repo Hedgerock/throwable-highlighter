@@ -6,6 +6,6 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["playwright.config.ts", "test/browser/**/*.ts"],
+  "include": ["playwright*.config.ts", "test/browser/**/*.ts"],
   "exclude": ["node_modules", "out", "out-test"]
 }

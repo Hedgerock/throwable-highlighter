@@ -1,0 +1,32 @@
+name: throwable-highlighter-vscode
+
+services:
+    visual:
+        image: mcr.microsoft.com/playwright:v1.64.1-noble
+        platform: linux/amd64
+        init: true
+        ipc: host
+        working_dir: /workspace/prototypes/vscode
+        volumes:
+            - type: bind
+              source: ../..
+              target: /workspace
+              bind:
+                  create_host_path: false
+            - type: volume
+              target: /workspace/prototypes/vscode/node_modules
+              volume:
+                  nocopy: true
+        command:
+            - sh
+            - -lc
+            - npm ci && npm run test:browser && npm run test:browser:visual
+
+    visual-update:
+        extends:
+            service: visual
+        profiles: ["update"]
+        command:
+            - sh
+            - -lc
+            - npm ci && npm run test:browser:visual:update && npm run test:browser:visual

@@ -33,8 +33,12 @@ type ColorSettingsPanelFixture = {
     readonly send: (message: ColorSettingsDraftStateMessage | ColorSettingsFieldRevertedMessage) => Promise<void>;
 };
 
-export const test = base.extend<{colorSettingsPanel: ColorSettingsPanelFixture}>({
-    colorSettingsPanel: async ({page}, use) => {
+export const test = base.extend<{
+    colorSettingsTheme: "dark" | "light";
+    colorSettingsPanel: ColorSettingsPanelFixture;
+}>({
+    colorSettingsTheme: ["dark", {option: true}],
+    colorSettingsPanel: async ({page, colorSettingsTheme}, use) => {
         const messages: unknown[] = [];
         const errors: string[] = [];
         const directory = resolve(__dirname, "../../../webview/color-settings");
@@ -46,12 +50,12 @@ export const test = base.extend<{colorSettingsPanel: ColorSettingsPanelFixture}>
             readResource("source-option.html"),
             readResource("styles.css"),
             readResource("app.js"),
-            readFile(resolve(__dirname, "themes/dark.css"), "utf8")
+            readFile(resolve(__dirname, "themes", colorSettingsTheme + ".css"), "utf8")
         ]);
         const templates = {
             document: document
                 .replace("</head>", '<link rel="stylesheet" href="' + ORIGIN + '/theme.css" /></head>')
-                .replace("<body>", '<body class="vscode-dark">'),
+                .replace("<body>", `<body class="vscode-${colorSettingsTheme}">`),
             contextRow,
             invalidContextRow,
             sourceOption

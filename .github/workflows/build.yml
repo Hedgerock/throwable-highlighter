@@ -66,3 +66,30 @@ jobs:
 
       - name: Check formatting, compile, and test
         run: npm run check
+
+  vscode-browser:
+    name: VS Code browser checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: prototypes/vscode
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Run browser and visual checks
+        run: docker compose run --rm -e CI=true visual
+
+      - name: Upload browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-browser-diagnostics
+          path: |
+            prototypes/vscode/playwright-report/
+            prototypes/vscode/test-results/
+          if-no-files-found: warn
+          retention-days: 14

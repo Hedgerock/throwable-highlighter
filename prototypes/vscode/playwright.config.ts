@@ -3,6 +3,7 @@ import {defineConfig} from "@playwright/test";
 export default defineConfig({
     testDir: "./test/browser",
     testMatch: "**/*.spec.ts",
+    testIgnore: "**/*.visual.spec.ts",
     tsconfig: "./tsconfig.browser.json",
     fullyParallel: false,
     forbidOnly: Boolean(process.env.CI),

@@ -1,0 +1,26 @@
+:root {
+    color-scheme: light;
+    --vscode-font-family: Arial, sans-serif;
+    --vscode-editor-font-family: monospace;
+    --vscode-font-size: 14px;
+    --vscode-foreground: #333333;
+    --vscode-editor-background: #ffffff;
+    --vscode-descriptionForeground: #616161;
+    --vscode-disabledForeground: #767676;
+    --vscode-panel-border: #d4d4d4;
+    --vscode-editorWidget-background: #f3f3f3;
+    --vscode-editorWidget-foreground: #333333;
+    --vscode-button-background: #007acc;
+    --vscode-button-hoverBackground: #005a9e;
+    --vscode-button-foreground: #ffffff;
+    --vscode-button-secondaryBackground: #e5e5e5;
+    --vscode-focusBorder: #0090f1;
+    --vscode-errorForeground: #a1260d;
+    --vscode-textCodeBlock-background: #f2f2f2;
+    --vscode-toolbar-hoverBackground: #b8b8b850;
+    --vscode-scrollbarSlider-background: #64646466;
+    --vscode-scrollbarSlider-hoverBackground: #646464b3;
+    --vscode-scrollbarSlider-activeBackground: #00000099;
+    --vscode-list-activeSelectionBackground: #0060c0;
+    --vscode-list-activeSelectionForeground: #ffffff;
+}

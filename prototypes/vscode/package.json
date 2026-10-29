@@ -145,7 +145,9 @@
     "format:check:tracked": "node ../../scripts/check-format.cjs --all",
     "check:browser:types": "tsc --project tsconfig.browser.json",
     "test:browser": "npm run check:browser:types && playwright test",
-    "test:browser:report": "playwright show-report"
+    "test:browser:report": "playwright show-report",
+    "test:browser:visual": "npm run check:browser:types && playwright test --config playwright.visual.config.ts",
+    "test:browser:visual:update": "npm run test:browser:visual -- --update-snapshots=all"
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "4.7.1",
