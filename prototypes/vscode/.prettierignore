@@ -5,3 +5,5 @@ out-test/
 *.vsix
 package-lock.json
 **/*.md
+test-results/
+playwright-report/

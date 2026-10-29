@@ -142,10 +142,14 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "format:check:changed": "node ../../scripts/check-format.cjs --changed",
-    "format:check:tracked": "node ../../scripts/check-format.cjs --all"
+    "format:check:tracked": "node ../../scripts/check-format.cjs --all",
+    "check:browser:types": "tsc --project tsconfig.browser.json",
+    "test:browser": "npm run check:browser:types && playwright test",
+    "test:browser:report": "playwright show-report"
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "4.7.1",
+    "@playwright/test": "1.64.1",
     "@types/node": "^22.0.0",
     "@types/vscode": "1.85.0",
     "prettier": "3.9.10",

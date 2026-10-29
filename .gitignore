@@ -21,6 +21,8 @@ prototypes/vscode/node_modules/
 prototypes/vscode/.vscode-test/
 prototypes/vscode/*.vsix
 prototypes/vscode/out-test/
+prototypes/vscode/test-results/
+prototypes/vscode/playwright-report/
 !prototypes/vscode/tooling/build/
 
 ### OS ###
