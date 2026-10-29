@@ -12,6 +12,31 @@ public final class ThrowableColorSettingsPageTest extends TestCase {
     private final ThrowableColorSettingsPage page =
             new ThrowableColorSettingsPage();
 
+    public void testShouldMapTagToThrowableJavadocHighlighting() {
+        Map<String, TextAttributesKey> highlighting = page.getAdditionalHighlightingTagToDescriptorMap();
+
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_JAVADOC,
+                highlighting.get("throwableJavadoc")
+        );
+    }
+
+    public void testShouldContainBothJavadocExceptionTagsInDemoText() {
+        String demoText = page.getDemoText();
+
+        assertTrue(
+                demoText.contains(
+                        "@throws <throwableJavadoc>ApplicationException</throwableJavadoc>"
+                )
+        );
+
+        assertTrue(
+                demoText.contains(
+                        "@exception java.lang.<throwableJavadoc>IllegalStateException</throwableJavadoc>"
+                )
+        );
+    }
+
     public void testShouldUseJavaSyntaxHighlighting() {
         assertTrue(
                 page.getHighlighter()
@@ -65,7 +90,7 @@ public final class ThrowableColorSettingsPageTest extends TestCase {
         AttributesDescriptor[] descriptors =
                 page.getAttributeDescriptors();
 
-        assertEquals(4, descriptors.length);
+        assertEquals(5, descriptors.length);
         assertEquals(
                 ThrowableHighlighting.THROWABLE_CLASS,
                 descriptors[0].getKey()
@@ -81,6 +106,10 @@ public final class ThrowableColorSettingsPageTest extends TestCase {
         assertEquals(
                 ThrowableHighlighting.THROWABLE_THROWS,
                 descriptors[3].getKey()
+        );
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_JAVADOC,
+                descriptors[4].getKey()
         );
     }
 

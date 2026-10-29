@@ -21,6 +21,10 @@ enum ThrowableHighlightingContext {
     THROWS(
             HighlightSeverity.INFORMATION,
             ThrowableHighlighting.THROWABLE_THROWS
+    ),
+    JAVADOC(
+            HighlightSeverity.INFORMATION,
+            ThrowableHighlighting.THROWABLE_JAVADOC
     );
 
     private final HighlightSeverity severity;

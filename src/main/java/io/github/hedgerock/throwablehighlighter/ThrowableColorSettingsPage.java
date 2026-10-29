@@ -32,6 +32,10 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
             new AttributesDescriptor(
                     "Throwable throws",
                     ThrowableHighlighting.THROWABLE_THROWS
+            ),
+            new AttributesDescriptor(
+                    "Throwable Javadoc",
+                    ThrowableHighlighting.THROWABLE_JAVADOC
             )
     };
 
@@ -58,6 +62,12 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
 
                 private <throwable>ApplicationException</throwable> exception;
 
+                /**
+                 * Executes the operation.
+                 *
+                 * @throws <throwableJavadoc>ApplicationException</throwableJavadoc> if execution fails
+                 * @exception java.lang.<throwableJavadoc>IllegalStateException</throwableJavadoc> if the state is invalid
+                 */
                 public void execute() throws <throwableThrows>ApplicationException</throwableThrows> {
                     try {
                         throw new <throwable>ApplicationException</throwable>();
@@ -75,7 +85,8 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
                 "throwable", ThrowableHighlighting.THROWABLE_CLASS,
                 "throwableImport", ThrowableHighlighting.THROWABLE_IMPORT,
                 "throwableCatch", ThrowableHighlighting.THROWABLE_CATCH,
-                "throwableThrows", ThrowableHighlighting.THROWABLE_THROWS
+                "throwableThrows", ThrowableHighlighting.THROWABLE_THROWS,
+                "throwableJavadoc", ThrowableHighlighting.THROWABLE_JAVADOC
         );
     }
 

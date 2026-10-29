@@ -29,6 +29,12 @@ public final class ThrowableHighlighting {
                     THROWABLE_CLASS
             );
 
+    public static final TextAttributesKey THROWABLE_JAVADOC =
+            TextAttributesKey.createTextAttributesKey(
+                    "THROWABLE_JAVADOC",
+                    THROWABLE_CLASS
+            );
+
     private ThrowableHighlighting() {
 
     }

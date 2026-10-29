@@ -11,6 +11,10 @@ import com.intellij.psi.PsiJavaCodeReferenceElement;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiParameter;
 import com.intellij.psi.PsiTypeElement;
+import com.intellij.psi.javadoc.PsiDocComment;
+import com.intellij.psi.javadoc.PsiDocReferenceHolder;
+import com.intellij.psi.javadoc.PsiDocTag;
+import com.intellij.psi.javadoc.PsiInlineDocTag;
 import com.intellij.psi.util.InheritanceUtil;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.jetbrains.annotations.NotNull;
@@ -27,11 +31,16 @@ public final class ThrowableAnnotator implements Annotator {
             return;
         }
 
+        if (psiElement instanceof PsiDocTag docTag) {
+            annotateJavadocTag(docTag, annotationHolder);
+            return;
+        }
+
         if (psiElement instanceof PsiJavaCodeReferenceElement referenceElement) {
             if (PsiTreeUtil.getParentOfType(
                     referenceElement,
                     PsiImportStatement.class,
-                    false
+                    PsiDocComment.class
             ) != null) {
                 return;
             }
@@ -115,6 +124,59 @@ public final class ThrowableAnnotator implements Annotator {
                 psiClass,
                 referenceElement,
                 context,
+                annotationHolder
+        );
+    }
+
+    private void annotateJavadocTag(
+            PsiDocTag docTag,
+            AnnotationHolder annotationHolder
+    ) {
+        if (docTag instanceof PsiInlineDocTag ||
+                !(docTag.getContainingComment().getOwner() instanceof PsiMethod)) {
+            return;
+        }
+
+        String tagName = docTag.getName();
+
+        if (!"throws".equals(tagName) && !"exception".equals(tagName)) {
+            return;
+        }
+
+        PsiDocReferenceHolder referenceHolder = PsiTreeUtil.getChildOfType(
+                docTag.getValueElement(),
+                PsiDocReferenceHolder.class
+        );
+
+        if (referenceHolder == null) {
+            return;
+        }
+
+        PsiJavaCodeReferenceElement referenceElement = PsiTreeUtil.getChildOfType(
+                referenceHolder,
+                PsiJavaCodeReferenceElement.class
+        );
+
+        if (referenceElement == null) {
+            return;
+        }
+
+        PsiElement className = referenceElement.getReferenceNameElement();
+
+        if (className == null) {
+            return;
+        }
+
+        PsiElement resolved = referenceElement.resolve();
+
+        if (!(resolved instanceof PsiClass psiClass)) {
+            return;
+        }
+
+        annotateThrowableType(
+                psiClass,
+                className,
+                ThrowableHighlightingContext.JAVADOC,
                 annotationHolder
         );
     }

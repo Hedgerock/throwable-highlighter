@@ -1,9 +1,12 @@
 package io.github.hedgerock.throwablehighlighter;
 
+import com.intellij.codeInsight.daemon.impl.HighlightInfo;
 import com.intellij.lang.annotation.HighlightSeverity;
+import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.testFramework.LightProjectDescriptor;
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public final class ThrowableAnnotatorTest
         extends LightJavaCodeInsightFixtureTestCase {
@@ -11,6 +14,484 @@ public final class ThrowableAnnotatorTest
     @Override
     protected @NotNull LightProjectDescriptor getProjectDescriptor() {
         return JAVA_21;
+    }
+
+    public void testShouldUseJavadocContextForThrowableItself() {
+        configureJava("""
+        class Example {
+            /**
+             * @throws Throwable if execution fails
+             */
+            void execute() throws Throwable {
+            }
+        }
+        """);
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_JAVADOC,
+                        "Throwable"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_THROWS,
+                        "Throwable"
+                )
+        );
+
+        assertEquals(
+                0,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "Throwable"
+                )
+        );
+    }
+
+    public void testShouldHighlightOnlyNestedClassNameInJavadoc() {
+        configureJava("""
+        class OuterException extends RuntimeException {
+            static class NestedException extends RuntimeException {
+            }
+        }
+
+        class Example {
+            /**
+             * @throws OuterException.NestedException if execution fails
+             */
+            void execute() {
+            }
+        }
+        """);
+
+        assertEquals(
+                1,
+                countHighlights(ThrowableHighlighting.THROWABLE_JAVADOC)
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "OuterException"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "NestedException"
+                )
+        );
+
+        HighlightInfo javadocHighlight = myFixture.doHighlighting().stream()
+                .filter(highlightInfo ->
+                        ThrowableHighlighting.THROWABLE_JAVADOC.equals(
+                                highlightInfo.forcedTextAttributesKey
+                        )
+                )
+                .findFirst()
+                .orElseThrow();
+
+        String text = myFixture.getFile().getText();
+
+        int expectedStartOffset =
+                text.indexOf("OuterException.NestedException")
+                        + "OuterException.".length();
+
+        assertEquals(
+                expectedStartOffset,
+                javadocHighlight.getStartOffset()
+        );
+
+        assertEquals(
+                expectedStartOffset + "NestedException".length(),
+                javadocHighlight.getEndOffset()
+        );
+    }
+
+    public void testShouldKeepHighlightingContextsIndependentWithJavadoc() {
+        configureJava("""
+        import java.io.IOException;
+
+        class Example {
+            private IOException exception;
+
+            /**
+             * @exception IOException if execution fails
+             */
+            void execute() throws IOException {
+                try {
+                    throw new IOException();
+                } catch (IOException caught) {
+                    IOException copy = caught;
+                }
+            }
+        }
+        """);
+
+        assertEquals(
+                3,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "IOException"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_IMPORT,
+                        "IOException"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_JAVADOC,
+                        "IOException",
+                        HighlightSeverity.INFORMATION
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_THROWS,
+                        "IOException"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CATCH,
+                        "IOException"
+                )
+        );
+    }
+
+    public void testShouldNotHighlightNonThrowableJavadocType() {
+        myFixture.configureByText(
+                "Example.java",
+                """
+                class Example {
+                    /**
+                     * @throws String if execution fails
+                     */
+                    void execute() {
+                    }
+                }
+                """
+        );
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_JAVADOC)
+        );
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_CLASS)
+        );
+    }
+
+    public void testShouldNotHighlightUnresolvedJavadocType() {
+        myFixture.configureByText(
+                "Example.java",
+                """
+                class Example {
+                    /**
+                     * @exception MissingException if execution fails
+                     */
+                    void execute() {
+                    }
+                }
+                """
+        );
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_JAVADOC)
+        );
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_CLASS)
+        );
+    }
+
+    public void testShouldNotHighlightEmptyOrIncompleteJavadocExceptionTags() {
+        myFixture.configureByText(
+                "Example.java",
+                """
+                class Example {
+                    /**
+                     * @throws
+                     * @exception
+                     * @throws java.lang.
+                     */
+                    void execute() {
+                    }
+                }
+                """
+        );
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_JAVADOC)
+        );
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_CLASS)
+        );
+    }
+
+    public void testShouldNotHighlightExceptionTagsOnClassesAndFields() {
+        myFixture.configureByText(
+                "Example.java",
+                """
+                /**
+                 * @throws RuntimeException if initialization fails
+                 */
+                class Example {
+                    /**
+                     * @exception IllegalStateException if the value is invalid
+                     */
+                    private int value;
+                }
+                """
+        );
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_JAVADOC)
+        );
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_CLASS)
+        );
+    }
+
+    public void testShouldNotHighlightInlineExceptionTags() {
+        myFixture.configureByText(
+                "Example.java",
+                """
+                class Example {
+                    /**
+                     * Uses {@throws RuntimeException}
+                     * and {@exception IllegalStateException}.
+                     */
+                    void execute() {
+                    }
+                }
+                """
+        );
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_JAVADOC)
+        );
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_CLASS)
+        );
+    }
+
+    public void testShouldKeepOtherJavadocReferencesOutsidePluginHighlighting() {
+        configureJava("""
+        class Example {
+            /**
+             * Uses {@link RuntimeException}
+             * and {@linkplain IllegalStateException}.
+             *
+             * @param exception a {@link RuntimeException}
+             * @return a {@link RuntimeException}
+             * @see RuntimeException
+             */
+            RuntimeException execute(RuntimeException exception) {
+                return exception;
+            }
+        }
+        """);
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_JAVADOC)
+        );
+
+        assertEquals(
+                2,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "RuntimeException"
+                )
+        );
+
+        assertEquals(
+                0,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "IllegalStateException"
+                )
+        );
+    }
+
+    public void testShouldUseJavadocContextForEveryExceptionTag() {
+        configureJava("""
+        class Example {
+            /**
+             * @throws RuntimeException if execution fails
+             * @throws IllegalArgumentException if an argument is invalid
+             * @exception IllegalStateException if the state is invalid
+             */
+            void execute() {
+            }
+        }
+        """);
+
+        assertEquals(
+                3,
+                countHighlights(ThrowableHighlighting.THROWABLE_JAVADOC)
+        );
+
+        assertEquals(
+                1,
+                countHighlights(ThrowableHighlighting.THROWABLE_JAVADOC, "RuntimeException")
+        );
+
+        assertEquals(
+                1,
+                countHighlights(ThrowableHighlighting.THROWABLE_JAVADOC, "IllegalArgumentException")
+        );
+
+        assertEquals(
+                1,
+                countHighlights(ThrowableHighlighting.THROWABLE_JAVADOC, "IllegalStateException")
+        );
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_CLASS)
+        );
+    }
+
+    public void testShouldUseJavadocContextForTransitiveThrowableType() {
+        configureJava("""
+        class BaseException extends RuntimeException {
+        }
+
+        class CustomException extends BaseException {
+        }
+
+        class Example {
+            /**
+             * @exception CustomException if execution fails
+             */
+            void execute() {
+            }
+        }
+        """);
+
+        assertEquals(
+                1,
+                countHighlights(ThrowableHighlighting.THROWABLE_JAVADOC, "CustomException")
+        );
+
+        assertEquals(
+                1,
+                countHighlights(ThrowableHighlighting.THROWABLE_CLASS, "CustomException")
+        );
+    }
+
+    public void testShouldUseJavadocContextForCustomThrowableType() {
+        configureJava("""
+        class CustomException extends RuntimeException {
+        }
+
+        class Example {
+            /**
+             * @throws CustomException if execution fails
+             */
+            void execute() {
+            }
+        }
+        """);
+
+        assertEquals(
+                1,
+                countHighlights(ThrowableHighlighting.THROWABLE_JAVADOC, "CustomException")
+        );
+
+        assertEquals(
+                1,
+                countHighlights(ThrowableHighlighting.THROWABLE_CLASS, "CustomException")
+        );
+    }
+
+    public void testShouldUseJavadocContextForThrowableThrowsTag() {
+        configureJava("""
+        class Example {
+            /**
+             * @throws RuntimeException if execution fails
+             */
+            void execute() {
+            }
+        }
+        """);
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_JAVADOC,
+                        "RuntimeException"
+                )
+        );
+
+        assertEquals(
+                0,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "RuntimeException"
+                )
+        );
+    }
+
+    public void testShouldHighlightOnlyClassNameInQualifiedConstructorExceptionTag() {
+        configureJava("""
+        class Example {
+            /**
+             * @exception java.lang.RuntimeException if initialization fails
+             */
+            Example() {
+            }
+        }
+        """);
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_JAVADOC,
+                        "RuntimeException"
+                )
+        );
+
+        assertEquals(
+                0,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "RuntimeException"
+                )
+        );
     }
 
     public void testShouldNotHighlightNonThrowableThrowsType() {
@@ -27,12 +508,18 @@ public final class ThrowableAnnotatorTest
 
         assertEquals(
                 0,
-                countThrowsHighlights("String")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_THROWS,
+                        "String"
+                )
         );
 
         assertEquals(
                 0,
-                countThrowableHighlights("String")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "String"
+                )
         );
     }
 
@@ -49,22 +536,34 @@ public final class ThrowableAnnotatorTest
 
         assertEquals(
                 1,
-                countThrowsHighlights("IOException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_THROWS,
+                        "IOException"
+                )
         );
 
         assertEquals(
                 1,
-                countThrowsHighlights("IllegalArgumentException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_THROWS,
+                        "IllegalArgumentException"
+                )
         );
 
         assertEquals(
                 0,
-                countThrowableHighlights("IOException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "IOException"
+                )
         );
 
         assertEquals(
                 0,
-                countThrowableHighlights("IllegalArgumentException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "IllegalArgumentException"
+                )
         );
     }
 
@@ -81,12 +580,18 @@ public final class ThrowableAnnotatorTest
 
         assertEquals(
                 1,
-                countThrowsHighlights("IOException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_THROWS,
+                        "IOException"
+                )
         );
 
         assertEquals(
                 0,
-                countThrowableHighlights("IOException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "IOException"
+                )
         );
     }
 
@@ -102,12 +607,18 @@ public final class ThrowableAnnotatorTest
 
         assertEquals(
                 1,
-                countThrowsHighlights("RuntimeException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_THROWS,
+                        "RuntimeException"
+                )
         );
 
         assertEquals(
                 1,
-                countThrowableHighlights("RuntimeException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "RuntimeException"
+                )
         );
     }
 
@@ -128,22 +639,34 @@ public final class ThrowableAnnotatorTest
 
         assertEquals(
                 1,
-                countCatchHighlights("IllegalArgumentException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CATCH,
+                        "IllegalArgumentException"
+                )
         );
 
         assertEquals(
                 1,
-                countCatchHighlights("IllegalStateException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CATCH,
+                        "IllegalStateException"
+                )
         );
 
         assertEquals(
                 0,
-                countThrowableHighlights("IllegalArgumentException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "IllegalArgumentException"
+                )
         );
 
         assertEquals(
                 0,
-                countThrowableHighlights("IllegalStateException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "IllegalStateException"
+                )
         );
     }
 
@@ -162,11 +685,17 @@ public final class ThrowableAnnotatorTest
 
         assertEquals(
                 1,
-                countCatchHighlights("RuntimeException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CATCH,
+                        "RuntimeException"
+                )
         );
         assertEquals(
                 1,
-                countThrowableHighlights("RuntimeException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "RuntimeException"
+                )
         );
     }
 
@@ -181,7 +710,9 @@ public final class ThrowableAnnotatorTest
                         """
         );
 
-        assertEquals(0, countImportHighlights());
+        assertEquals(0, countHighlights(
+                ThrowableHighlighting.THROWABLE_IMPORT
+        ));
     }
 
     public void testShouldHighlightExplicitThrowableImport() {
@@ -195,10 +726,11 @@ public final class ThrowableAnnotatorTest
                         """
         );
 
-        assertEquals(1, countImportHighlights());
+        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_IMPORT));
         assertEquals(
                 1,
-                countImportHighlights(
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_IMPORT,
                         "Throwable",
                         HighlightSeverity.TEXT_ATTRIBUTES
                 )
@@ -216,14 +748,7 @@ public final class ThrowableAnnotatorTest
                         """
         );
 
-        long count = myFixture.doHighlighting().stream()
-                .filter(highlight ->
-                        ThrowableHighlighting.THROWABLE_IMPORT.equals(
-                                highlight.forcedTextAttributesKey
-                        ))
-                .count();
-
-        assertEquals(0, count);
+        assertEquals(0, countHighlights(ThrowableHighlighting.THROWABLE_IMPORT));
     }
 
     public void testShouldHighlightExplicitThrowableSubclassImport() {
@@ -237,10 +762,13 @@ public final class ThrowableAnnotatorTest
                 """
         );
 
-        assertEquals(1, countImportHighlights());
+        assertEquals(1, countHighlights(
+                ThrowableHighlighting.THROWABLE_IMPORT
+        ));
         assertEquals(
                 1,
-                countImportHighlights(
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_IMPORT,
                         "IOException",
                         HighlightSeverity.TEXT_ATTRIBUTES
                 )
@@ -266,7 +794,10 @@ public final class ThrowableAnnotatorTest
 
         assertEquals(
                 2,
-                countThrowableHighlights("CustomException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "CustomException"
+                )
         );
     }
 
@@ -279,7 +810,10 @@ public final class ThrowableAnnotatorTest
 
         assertEquals(
                 1,
-                countThrowableHighlights("RuntimeException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "RuntimeException"
+                )
         );
     }
 
@@ -292,7 +826,10 @@ public final class ThrowableAnnotatorTest
 
         assertEquals(
                 1,
-                countThrowableHighlights("Throwable")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "Throwable"
+                )
         );
     }
 
@@ -305,7 +842,7 @@ public final class ThrowableAnnotatorTest
 
         assertEquals(
                 0,
-                countThrowableHighlights("String")
+                countHighlights(ThrowableHighlighting.THROWABLE_CLASS, "String")
         );
     }
 
@@ -331,17 +868,26 @@ public final class ThrowableAnnotatorTest
 
         assertEquals(
                 5,
-                countThrowableHighlights("CustomException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "CustomException"
+                )
         );
 
         assertEquals(
                 1,
-                countThrowsHighlights("CustomException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CATCH,
+                        "CustomException"
+                )
         );
 
         assertEquals(
                 1,
-                countCatchHighlights("CustomException")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_THROWS,
+                        "CustomException"
+                )
         );
     }
 
@@ -362,11 +908,18 @@ public final class ThrowableAnnotatorTest
 
         assertEquals(
                 0,
-                countCatchHighlights("String")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CATCH,
+                        "String"
+                )
         );
+
         assertEquals(
                 0,
-                countThrowableHighlights("String")
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "String"
+                )
         );
     }
 
@@ -379,61 +932,26 @@ public final class ThrowableAnnotatorTest
         myFixture.checkHighlighting();
     }
 
-    private long countThrowableHighlights(String text) {
-        return myFixture.doHighlighting().stream()
-                .filter(highlight ->
-                        text.equals(highlight.getText())
-                                && ThrowableHighlighting.THROWABLE_CLASS.equals(
-                                highlight.forcedTextAttributesKey
-                        )
-                )
-                .count();
+    private long countHighlights(TextAttributesKey key) {
+        return countHighlights(key, null, null);
     }
 
-    private long countImportHighlights() {
-        return myFixture.doHighlighting().stream()
-                .filter(highlightInfo ->
-                        ThrowableHighlighting.THROWABLE_IMPORT.equals(
-                                highlightInfo.forcedTextAttributesKey
-                        )
-                )
-                .count();
+    private long countHighlights(
+            TextAttributesKey key,
+            String text
+    ) {
+        return countHighlights(key, text, null);
     }
 
-    private long countCatchHighlights(String text) {
-        return myFixture.doHighlighting().stream()
-                .filter(highlightInfo ->
-                        text.equals(highlightInfo.getText())
-                        && ThrowableHighlighting.THROWABLE_CATCH.equals(
-                                highlightInfo.forcedTextAttributesKey
-                        )
-                )
-                .count();
-    }
-
-    private long countImportHighlights(
-            String text,
-            HighlightSeverity severity
+    private long countHighlights(
+            TextAttributesKey key,
+            @Nullable String text,
+            @Nullable HighlightSeverity severity
     ) {
         return myFixture.doHighlighting().stream()
-                .filter(highlightInfo ->
-                        text.equals(highlightInfo.getText())
-                        && severity.equals(highlightInfo.getSeverity())
-                        && ThrowableHighlighting.THROWABLE_IMPORT.equals(
-                                highlightInfo.forcedTextAttributesKey
-                        )
-                )
-                .count();
-    }
-
-    private long countThrowsHighlights(String text) {
-        return myFixture.doHighlighting().stream()
-                .filter(highlightInfo ->
-                        text.equals(highlightInfo.getText())
-                        && ThrowableHighlighting.THROWABLE_THROWS.equals(
-                                highlightInfo.forcedTextAttributesKey
-                        )
-                )
+                .filter(highlightInfo -> key.equals(highlightInfo.forcedTextAttributesKey))
+                .filter(highlightInfo -> text == null || text.equals(highlightInfo.getText()))
+                .filter(highlightInfo -> severity == null || severity.equals(highlightInfo.getSeverity()))
                 .count();
     }
 }
