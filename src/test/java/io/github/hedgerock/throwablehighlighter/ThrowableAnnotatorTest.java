@@ -1053,6 +1053,144 @@ public final class ThrowableAnnotatorTest
         );
     }
 
+    public void testShouldKeepQualifiedClassReferencesOutsideCatchAndThrows() {
+        configureJava("""
+        class Example<T extends java.lang.RuntimeException> {
+            private java.lang.RuntimeException field;
+
+            java.lang.RuntimeException execute(
+                    java.lang.RuntimeException exception
+            ) throws java.lang.IllegalStateException {
+                try {
+                } catch (java.lang.IllegalArgumentException caught) {
+                    return caught;
+                }
+
+                return exception;
+            }
+        }
+        """);
+
+        assertEquals(
+                4,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "java.lang.RuntimeException"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CATCH,
+                        "java.lang.IllegalArgumentException"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_THROWS,
+                        "java.lang.IllegalStateException"
+                )
+        );
+
+        assertEquals(
+                0,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "java.lang.IllegalArgumentException"
+                )
+        );
+
+        assertEquals(
+                0,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "java.lang.IllegalStateException"
+                )
+        );
+    }
+
+    public void testShouldKeepHighlightingContextsInsideLocalClassInCatch() {
+        configureJava("""
+        class Example {
+            void execute() {
+                try {
+                } catch (IllegalArgumentException outer) {
+                    class Local {
+                        /**
+                         * @throws IllegalStateException if creation fails
+                         */
+                        Local() throws IllegalStateException {
+                        }
+
+                        void nested() throws UnsupportedOperationException {
+                            try {
+                            } catch (SecurityException inner) {
+                                RuntimeException copy = inner;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """);
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CATCH,
+                        "IllegalArgumentException"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CATCH,
+                        "SecurityException"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_THROWS,
+                        "IllegalStateException"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_THROWS,
+                        "UnsupportedOperationException"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_JAVADOC,
+                        "IllegalStateException"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(ThrowableHighlighting.THROWABLE_CLASS)
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "RuntimeException"
+                )
+        );
+    }
+
     private void configureJava(String text) {
         myFixture.configureByText(
                 "Example.java",

@@ -13,6 +13,10 @@ The project follows Semantic Versioning.
 - A catch highlighting source selector with `Throwable catch` and `Java highlighting` options.
 - Application-wide source settings under `Settings | Tools | Throwable Highlighter`.
 
+### Changed
+
+- Reduced unnecessary PSI ancestor traversal when determining highlighting contexts.
+
 ## [1.3.0] - 2026-10-15
 
 ### Added

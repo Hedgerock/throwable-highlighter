@@ -4,6 +4,7 @@ import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
 import com.intellij.psi.PsiCatchSection;
 import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiCodeBlock;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiIdentifier;
 import com.intellij.psi.PsiImportStatement;
@@ -37,11 +38,16 @@ public final class ThrowableAnnotator implements Annotator {
         }
 
         if (psiElement instanceof PsiJavaCodeReferenceElement referenceElement) {
-            if (PsiTreeUtil.getParentOfType(
+            PsiElement parent = PsiTreeUtil.getParentOfType(
                     referenceElement,
                     PsiImportStatement.class,
-                    PsiDocComment.class
-            ) != null) {
+                    PsiDocComment.class,
+                    PsiCodeBlock.class,
+                    PsiMethod.class,
+                    PsiClass.class
+            );
+
+            if (parent instanceof PsiImportStatement || parent instanceof PsiDocComment) {
                 return;
             }
 
@@ -198,7 +204,10 @@ public final class ThrowableAnnotator implements Annotator {
     ) {
         PsiMethod method = PsiTreeUtil.getParentOfType(
                 referenceElement,
-                PsiMethod.class
+                PsiMethod.class,
+                true,
+                PsiCodeBlock.class,
+                PsiClass.class
         );
 
         return method != null
@@ -214,7 +223,11 @@ public final class ThrowableAnnotator implements Annotator {
     ) {
         PsiCatchSection catchSection = PsiTreeUtil.getParentOfType(
                 referenceElement,
-                PsiCatchSection.class
+                PsiCatchSection.class,
+                true,
+                PsiCodeBlock.class,
+                PsiMethod.class,
+                PsiClass.class
         );
 
         if (catchSection == null) {
@@ -230,7 +243,7 @@ public final class ThrowableAnnotator implements Annotator {
         PsiTypeElement typeElement = parameter.getTypeElement();
 
         return PsiTreeUtil.isAncestor(
-                        typeElement,
+                typeElement,
                 referenceElement,
                 false
         );
