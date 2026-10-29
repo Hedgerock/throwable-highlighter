@@ -59,7 +59,8 @@ Throwable Highlighter поддерживает Java-код и выделяет `
 
 - реализацию подсветки Javadoc `@throws` и `@exception` согласно
   [ADR-0020](decisions/0020-intellij-javadoc-throwable-highlighting.md);
-- подготовку отдельного решения о переключаемом источнике цвета для `THROWABLE_CATCH`;
+- реализацию выбора источника подсветки `CATCH` согласно
+  [ADR-0021](decisions/0021-intellij-catch-highlighting-source.md);
 - ревизию производительности аннотатора и регрессионные проверки оптимизаций.
 
 Каждый новый контекст требует отдельного ADR, цветового ключа при необходимости,
