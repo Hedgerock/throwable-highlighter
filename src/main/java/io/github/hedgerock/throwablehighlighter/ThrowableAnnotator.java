@@ -242,11 +242,18 @@ public final class ThrowableAnnotator implements Annotator {
             ThrowableHighlightingContext context,
             AnnotationHolder annotationHolder
     ) {
-        if (!isThrowableType(psiClass)) {
+        if (!shouldApplyHighlighting(context) || !isThrowableType(psiClass)) {
             return;
         }
 
         applyHighlight(range, context, annotationHolder);
+    }
+
+    private boolean shouldApplyHighlighting(ThrowableHighlightingContext context) {
+        return context != ThrowableHighlightingContext.CATCH
+                || ThrowableHighlightingSettings
+                    .getInstance()
+                    .getCatchHighlightingSource() == CatchHighlightingSource.THROWABLE_CATCH;
     }
 
     private void applyHighlight(

@@ -80,5 +80,11 @@
 
         <colorSettingsPage
                 implementation="io.github.hedgerock.throwablehighlighter.ThrowableColorSettingsPage"/>
+
+        <applicationConfigurable
+                parentId="tools"
+                id="io.github.hedgerock.throwablehighlighter.settings"
+                instance="io.github.hedgerock.throwablehighlighter.ThrowableHighlightingSettingsConfigurable"
+                displayName="Throwable Highlighter"/>
     </extensions>
 </idea-plugin>

@@ -7,6 +7,8 @@ import com.intellij.testFramework.LightProjectDescriptor;
 import com.intellij.testFramework.fixtures.LightJavaCodeInsightFixtureTestCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
+import com.intellij.openapi.util.Disposer;
 
 public final class ThrowableAnnotatorTest
         extends LightJavaCodeInsightFixtureTestCase {
@@ -14,6 +16,151 @@ public final class ThrowableAnnotatorTest
     @Override
     protected @NotNull LightProjectDescriptor getProjectDescriptor() {
         return JAVA_21;
+    }
+
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+
+        ThrowableHighlightingSettings settings =
+                ThrowableHighlightingSettings.getInstance();
+
+        CatchHighlightingSource originalSource =
+                settings.getCatchHighlightingSource();
+
+        Disposer.register(
+                getTestRootDisposable(),
+                () -> ThrowableHighlightingSettings.getInstance()
+                        .setCatchSource(originalSource)
+        );
+
+        settings.setCatchSource(CatchHighlightingSource.THROWABLE_CATCH);
+    }
+
+    public void testShouldKeepCatchBodyHighlightingWithJavaSource() {
+        ThrowableHighlightingSettings.getInstance()
+                .setCatchSource(CatchHighlightingSource.JAVA);
+
+        configureJava("""
+        class Example {
+            void execute() {
+                try {
+                } catch (RuntimeException exception) {
+                    RuntimeException copy = exception;
+                }
+            }
+        }
+        """);
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_CATCH)
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "RuntimeException"
+                )
+        );
+    }
+
+    public void testShouldUseJavaSourceForEveryTypeInMultiCatch() {
+        ThrowableHighlightingSettings.getInstance()
+                .setCatchSource(CatchHighlightingSource.JAVA);
+
+        configureJava("""
+        class Example {
+            void execute() {
+                try {
+                } catch (
+                        IllegalArgumentException
+                        | IllegalStateException exception
+                ) {
+                }
+            }
+        }
+        """);
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_CATCH)
+        );
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_CLASS)
+        );
+    }
+
+    public void testShouldRestoreCatchHighlightingWithoutChangingOtherContexts() {
+        ThrowableHighlightingSettings settings =
+                ThrowableHighlightingSettings.getInstance();
+
+        settings.setCatchSource(CatchHighlightingSource.JAVA);
+
+        configureIOExceptionContexts();
+
+        assertEquals(
+                0,
+                countHighlights(ThrowableHighlighting.THROWABLE_CATCH)
+        );
+
+        assertEquals(
+                3,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "IOException"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_IMPORT,
+                        "IOException"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_JAVADOC,
+                        "IOException"
+                )
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_THROWS,
+                        "IOException"
+                )
+        );
+
+        settings.setCatchSource(CatchHighlightingSource.THROWABLE_CATCH);
+
+        DaemonCodeAnalyzer.getInstance(getProject()).restart(
+                myFixture.getFile(),
+                "Throwable Highlighter: catch highlighting source changed"
+        );
+
+        assertEquals(
+                1,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CATCH,
+                        "IOException"
+                )
+        );
+
+        assertEquals(
+                3,
+                countHighlights(
+                        ThrowableHighlighting.THROWABLE_CLASS,
+                        "IOException"
+                )
+        );
     }
 
     public void testShouldUseJavadocContextForThrowableItself() {
@@ -116,24 +263,7 @@ public final class ThrowableAnnotatorTest
     }
 
     public void testShouldKeepHighlightingContextsIndependentWithJavadoc() {
-        configureJava("""
-        import java.io.IOException;
-
-        class Example {
-            private IOException exception;
-
-            /**
-             * @exception IOException if execution fails
-             */
-            void execute() throws IOException {
-                try {
-                    throw new IOException();
-                } catch (IOException caught) {
-                    IOException copy = caught;
-                }
-            }
-        }
-        """);
+        configureIOExceptionContexts();
 
         assertEquals(
                 3,
@@ -953,5 +1083,26 @@ public final class ThrowableAnnotatorTest
                 .filter(highlightInfo -> text == null || text.equals(highlightInfo.getText()))
                 .filter(highlightInfo -> severity == null || severity.equals(highlightInfo.getSeverity()))
                 .count();
+    }
+
+    private void configureIOExceptionContexts() {
+        configureJava("""
+        import java.io.IOException;
+
+        class Example {
+            private IOException exception;
+
+            /**
+             * @exception IOException if execution fails
+             */
+            void execute() throws IOException {
+                try {
+                    throw new IOException();
+                } catch (IOException caught) {
+                    IOException copy = caught;
+                }
+            }
+        }
+        """);
     }
 }
