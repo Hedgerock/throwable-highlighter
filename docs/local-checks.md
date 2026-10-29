@@ -61,16 +61,16 @@ Hook запускает `scripts/check-staged.cjs`.
 
 План проверок строится по следующим правилам:
 
-| Пути | Проверки платформ |
-|------|-------------------|
-| `README.md`, `CHANGELOG.md`, `prototypes/vscode/README.md` | Не выполняются |
-| Markdown-файлы в `docs`, кроме `docs/specification/fixtures` | Не выполняются |
-| `src/**`, `gradle/**` | IntelliJ-плагин |
-| `build.gradle.kts`, `settings.gradle.kts`, `gradle.properties` | IntelliJ-плагин |
-| `gradlew`, `gradlew.bat` | IntelliJ-плагин |
-| Остальные файлы в `prototypes/vscode/**` | Прототип VS Code |
-| `docs/specification/fixtures/**`, `.githooks/**`, `scripts/**`, `.github/workflows/**` | Обе платформы |
-| Путь без отдельного правила | Обе платформы |
+| Пути                                                                                   | Проверки платформ |
+|----------------------------------------------------------------------------------------|-------------------|
+| `README.md`, `CHANGELOG.md`, `prototypes/vscode/README.md`                             | Не выполняются    |
+| Markdown-файлы в `docs`, кроме `docs/specification/fixtures`                           | Не выполняются    |
+| `src/**`, `gradle/**`                                                                  | IntelliJ-плагин   |
+| `build.gradle.kts`, `settings.gradle.kts`, `gradle.properties`                         | IntelliJ-плагин   |
+| `gradlew`, `gradlew.bat`                                                               | IntelliJ-плагин   |
+| Остальные файлы в `prototypes/vscode/**`                                               | Прототип VS Code  |
+| `docs/specification/fixtures/**`, `.githooks/**`, `scripts/**`, `.github/workflows/**` | Обе платформы     |
+| Путь без отдельного правила                                                            | Обе платформы     |
 
 Для смешанного набора изменений группы проверок объединяются.
 
@@ -85,9 +85,12 @@ Hook запускает `scripts/check-staged.cjs`.
 1. Установка зависимостей через `npm ci`.
 2. Проверка форматирования по подготовленной выборке.
 3. Компиляция через `npm run compile`.
-4. Автоматические тесты через `npm test`.
+4. Автоматические тесты на Node.js через `npm test`.
 
-Для выбранной платформы компиляция, тесты и проверки сборки выполняются полностью.
+Для выбранной платформы перечисленные проверки выполняются полностью.
+
+Браузерные проверки панели запускаются отдельно командой `npm run test:browser` из каталога прототипа.
+Они не входят в pre-commit согласно [ADR-0019](decisions/0019-browser-color-settings-tests.md).
 
 Ошибка этапа прерывает выполнение последующих команд.
 
