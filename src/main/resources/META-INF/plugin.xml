@@ -15,6 +15,13 @@
     </p>
 
     <p>
+        Highlights class names in Javadoc <code>@throws</code> and
+        <code>@exception</code> tags on methods and constructors.
+        The <code>Throwable Javadoc</code> color inherits
+        <code>Throwable class</code> by default.
+    </p>
+
+    <p>
         Highlights class declarations and references, including uses in fields,
         local variables, constructor calls, and inheritance declarations.
     </p>

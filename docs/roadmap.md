@@ -12,10 +12,13 @@ Throwable Highlighter поддерживает Java-код и выделяет `
 - явные импорты классов;
 - типы `Throwable` и его наследников в параметрах `catch`;
 - типы `Throwable` и его наследников в списках `throws` методов и конструкторов;
+- типы `Throwable` и его наследников в блочных Javadoc-тегах `@throws` и `@exception`
+  методов и конструкторов.
 
-Для настройки подсветки используются ключи `THROWABLE_CLASS`, `THROWABLE_IMPORT`, `THROWABLE_CATCH` и `THROWABLE_THROWS`.
+Для настройки подсветки используются ключи `THROWABLE_CLASS`, `THROWABLE_IMPORT`, `THROWABLE_CATCH`, `THROWABLE_THROWS` и
+`THROWABLE_JAVADOC`.
 
-`THROWABLE_IMPORT`, `THROWABLE_CATCH` и `THROWABLE_THROWS` наследуют цвет от `THROWABLE_CLASS`, пока для соответствующего контекста
+`THROWABLE_IMPORT`, `THROWABLE_CATCH`, `THROWABLE_THROWS` и `THROWABLE_JAVADOC` наследуют цвет от `THROWABLE_CLASS`, пока для соответствующего контекста
 не задан отдельный цвет.
 
 ---
@@ -37,8 +40,8 @@ Throwable Highlighter поддерживает Java-код и выделяет `
 
 ## Реализованные контексты подсветки
 
-Плагин поддерживает отдельную подсветку типов `Throwable` и его наследников в
-параметре `catch` и списках `throws`.
+Плагин поддерживает отдельную подсветку типов `Throwable` и его наследников в параметрах `catch`, списках `throws`
+и блочных Javadoc-тегах `@throws` и `@exception`.
 
 Контекст `CATCH` использует ключ `THROWABLE_CATCH` и наследует цвет от
 `THROWABLE_CLASS`.
@@ -51,14 +54,22 @@ Throwable Highlighter поддерживает Java-код и выделяет `
 Реализация контекста `THROWS` соответствует
 [ADR-0009: Отдельная подсветка типов Throwable в throws](decisions/0009-throwable-throws-highlighting.md).
 
+Контекст `JAVADOC` использует ключ `THROWABLE_JAVADOC` и наследует атрибуты `THROWABLE_CLASS`.
+
+Подсвечиваются имена классов в блочных Javadoc-тегах `@throws` и `@exception` методов и конструкторов.
+
+Реализация соответствует
+[ADR-0020](decisions/0020-intellij-javadoc-throwable-highlighting.md).
+
+Поведение покрыто автоматическими тестами и проверено вручную
+в sandbox IntelliJ Platform.
+
 ---
 
 ## Последующее развитие Java-подсветки
 
 Следующая итерация плагина IntelliJ Platform включает:
 
-- реализацию подсветки Javadoc `@throws` и `@exception` согласно
-  [ADR-0020](decisions/0020-intellij-javadoc-throwable-highlighting.md);
 - реализацию выбора источника подсветки `CATCH` согласно
   [ADR-0021](decisions/0021-intellij-catch-highlighting-source.md);
 - ревизию производительности аннотатора и регрессионные проверки оптимизаций.
@@ -81,8 +92,9 @@ VS Code является первой платформой для техниче
 
 ### Очередность платформенных итераций
 
-Текущий фокус — развитие плагина IntelliJ Platform: подсветка Javadoc `@throws` и `@exception`,
-выбор источника цвета для `CATCH` и проверка производительности аннотатора.
+Подсветка Javadoc `@throws` и `@exception` реализована в плагине IntelliJ Platform.
+
+Текущий фокус — выбор источника подсветки `CATCH` и проверка производительности аннотатора.
 
 Подготовка публичного выпуска VS Code временно отложена.
 

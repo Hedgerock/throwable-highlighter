@@ -14,12 +14,14 @@ Highlights Throwable and Java classes that inherit from it.
 - Highlights Throwable types in `catch` clauses with a separate configurable color.
 - Highlights Throwable types in `throws` clauses with a separate configurable color.
 - Highlights declarations and references to Throwable and its subclasses.
+- Highlights class names in Javadoc `@throws` and `@exception` tags with a separate configurable color.
 - Supports custom exception classes and transitive inheritance.
 - Highlights the class name in explicit imports of Throwable and its subclasses.
 - Does not highlight package names or wildcard imports.
 - Provides configurable highlighting through the IDE color scheme.
 - Uses the standard Java class color as the default for `Throwable class`.
-- Uses the `Throwable class` color as the default for `Throwable import`, `Throwable catch` and `Throwable throws`.
+- Uses the `Throwable class` color as the default for `Throwable import`, `Throwable catch`, `Throwable throws`
+  and `Throwable Javadoc`.
 
 ## Configuration
 
@@ -27,15 +29,16 @@ Configure highlighting under:
 
 `Settings | Editor | Color Scheme | Throwable Highlighter`
 
-The color scheme provides four keys:
+The color scheme provides five keys:
 
 - `Throwable class` for class declarations and references;
 - `Throwable import` for class names in explicit imports;
 - `Throwable catch` for Throwable types in `catch` clauses;
 - `Throwable throws` for Throwable types in `throws` clauses;
+- `Throwable Javadoc` for class names in Javadoc `@throws` and `@exception` tags on methods and constructors.
 
-`Throwable import`, `Throwable catch` and `Throwable throws` inherit the `Throwable class` color until they receive
-explicit color settings.
+`Throwable import`, `Throwable catch`, `Throwable throws` and `Throwable Javadoc` inherit
+the `Throwable class` color until they receive explicit color settings.
 
 See the [configuration guide](docs/configuration.md) for details. The guide is
 available in Russian.

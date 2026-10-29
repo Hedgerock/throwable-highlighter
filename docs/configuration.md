@@ -8,12 +8,13 @@
 Settings | Editor | Color Scheme | Throwable Highlighter
 ```
 
-Раздел содержит четыре цветовых ключа:
+Раздел содержит пять цветовых ключей:
 
 - `Throwable class`;
 - `Throwable import`;
 - `Throwable catch`;
-- `Throwable throws`.
+- `Throwable throws`;
+- `Throwable Javadoc`.
 
 ### `Throwable class`
 
@@ -68,23 +69,44 @@ void execute() throws IOException {
 }
 ```
 
+### `Throwable Javadoc`
+
+Ключ `Throwable Javadoc` соответствует `THROWABLE_JAVADOC`.
+
+Он применяется к имени класса `Throwable` или его наследника в блочных
+Javadoc-тегах `@throws` и `@exception` методов и конструкторов.
+
+```java
+/**
+ * @throws java.io.IOException if execution fails
+ */
+void execute() throws java.io.IOException {
+}
+```
+
+В квалифицированной ссылке подсвечивается только имя класса.
+Имя пакета, квалификаторы, имя тега и описание исключения сохраняют
+стандартное оформление Javadoc.
+
+Оба тега используют одну настройку. Другие Javadoc-теги и inline-ссылки
+сохраняют стандартную подсветку IDE.
+
+Неразрешённые ссылки и типы, не относящиеся к Throwable, не подсвечиваются.
+
 ---
 
 ## Наследование цвета
 
-По умолчанию `Throwable import`, `Throwable catch` и `Throwable throws` наследуют цвет от `Throwable class`.
+По умолчанию `Throwable import`, `Throwable catch`, `Throwable throws`
+и `Throwable Javadoc` наследуют цвет от `Throwable class`.
 
-Изменение цвета `Throwable class` применяется к импортам, типам в `catch` и типам в `throws`, если для соответствующего ключа
-не задано отдельное значение.
+Изменение цвета `Throwable class` применяется к этим контекстам,
+пока для соответствующего ключа не задано отдельное значение.
 
-Отдельная настройка `Throwable import` влияет только на явные импорты `Throwable` и его наследников.
+Отдельная настройка ключа влияет только на соответствующий контекст.
 
-Отдельная настройка `Throwable catch` влияет только на типы `Throwable` и его наследников в параметрах `catch`.
-
-Отдельная настройка `Throwable throws` влияет только на типы `Throwable` и его наследников в списках `throws`.
-
-Чтобы вернуть наследование, необходимо сбросить явно заданные атрибуты для `Throwable import`, `Throwable catch` или
-`Throwable throws` в настройках цветовой схемы.
+Чтобы вернуть наследование, необходимо сбросить явно заданные атрибуты
+соответствующего ключа в настройках цветовой схемы.
 
 ![Наследование цвета Throwable import](images/throwable-import-inheritance.png)
 
