@@ -10,6 +10,8 @@ The project follows Semantic Versioning.
 
 - Configurable highlighting for Throwable class names in Javadoc `@throws` and `@exception` tags on methods and constructors.
 - The `Throwable Javadoc` color key, which inherits the `Throwable class` color by default.
+- A catch highlighting source selector with `Throwable catch` and `Java highlighting` options.
+- Application-wide source settings under `Settings | Tools | Throwable Highlighter`.
 
 ## [1.3.0] - 2026-10-15
 

@@ -33,6 +33,15 @@
     </p>
 
     <p>
+        Choose the catch highlighting source under
+        <b>Tools | Throwable Highlighter</b>.
+        The default <code>Throwable catch</code> source uses the configured
+        color scheme attributes. <code>Java highlighting</code> preserves
+        standard Java highlighting in catch parameters.
+        Switching sources preserves the configured attributes.
+    </p>
+
+    <p>
         Configure colors under
         <b>Editor | Color Scheme | Throwable Highlighter</b>.
     </p>
