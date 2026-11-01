@@ -42,10 +42,35 @@ export class Range {
 export const commands = {
     async executeCommand<T = unknown>(command: string, ..._args: unknown[]): Promise<T> {
         throw new Error("Unexpected VS Code command: " + command);
+    },
+    registerCommand(
+        _command: string,
+        _callback: (...args: unknown[]) => unknown,
+        _thisArg?: unknown
+    ): vscode.Disposable {
+        throw new Error("Unexpected command registration.");
     }
-} satisfies Pick<typeof vscode.commands, "executeCommand">;
+} satisfies Pick<typeof vscode.commands, "executeCommand" | "registerCommand">;
+
+export const extensions = {
+    getExtension<T = unknown>(_extensionId: string): vscode.Extension<T> | undefined {
+        throw new Error("Unexpected extension lookup.");
+    }
+} satisfies Pick<typeof vscode.extensions, "getExtension">;
+
+function unexpectedEvent<T>(name: string): vscode.Event<T> {
+    return () => {
+        throw new Error("Unexpected event subscription: " + name);
+    };
+}
 
 export const workspace = {
+    onDidChangeTextDocument: unexpectedEvent<vscode.TextDocumentChangeEvent>("onDidChangeTextDocument"),
+    onDidCreateFiles: unexpectedEvent<vscode.FileCreateEvent>("onDidCreateFiles"),
+    onDidDeleteFiles: unexpectedEvent<vscode.FileDeleteEvent>("onDidDeleteFiles"),
+    onDidRenameFiles: unexpectedEvent<vscode.FileRenameEvent>("onDidRenameFiles"),
+    onDidChangeWorkspaceFolders: unexpectedEvent<vscode.WorkspaceFoldersChangeEvent>("onDidChangeWorkspaceFolders"),
+    onDidChangeConfiguration: unexpectedEvent<vscode.ConfigurationChangeEvent>("onDidChangeConfiguration"),
     async openTextDocument(uri: vscode.Uri): Promise<vscode.TextDocument> {
         throw new Error("Unexpected document request: " + uri.toString());
     },
@@ -66,6 +91,11 @@ export const workspace = {
 };
 
 export const window = {
+    onDidChangeActiveTextEditor: unexpectedEvent<vscode.TextEditor | undefined>("onDidChangeActiveTextEditor"),
+    onDidChangeVisibleTextEditors: unexpectedEvent<readonly vscode.TextEditor[]>("onDidChangeVisibleTextEditors"),
+    createOutputChannel(_name: string): vscode.OutputChannel {
+        throw new Error("Unexpected output channel request.");
+    },
     get visibleTextEditors(): readonly vscode.TextEditor[] {
         return [];
     },
@@ -94,6 +124,7 @@ export default {
     Location,
     Range,
     commands,
+    extensions,
     workspace,
     window
 };
