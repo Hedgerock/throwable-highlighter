@@ -134,6 +134,7 @@ NNNN-краткое-название.md
 - [ADR-0019: Браузерные проверки панели настройки цветов VS Code](0019-browser-color-settings-tests.md)
 - [ADR-0020: Отдельная подсветка типов Throwable в Javadoc](0020-intellij-javadoc-throwable-highlighting.md)
 - [ADR-0021: Выбор источника подсветки Throwable catch в IntelliJ Platform](0021-intellij-catch-highlighting-source.md)
+- [ADR-0022: Восстановление подсветки после запуска Java-поддержки VS Code](0022-vscode-java-readiness.md)
 
 ---
 
