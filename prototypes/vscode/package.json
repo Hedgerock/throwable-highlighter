@@ -156,6 +156,7 @@
     "@types/vscode": "1.85.0",
     "prettier": "3.9.10",
     "tsc-alias": "1.9.7",
+    "tsx": "4.23.15",
     "typescript": "^5.7.3"
   }
 }

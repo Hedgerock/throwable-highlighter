@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+    <configuration default="true" type="NodeJsTestRunner">
+        <node-interpreter value="project" />
+        <working-dir value="$PROJECT_DIR$/prototypes/vscode" />
+        <language value="TYPE_SCRIPT" />
+        <typescript-loader value="TSX" />
+        <envs>
+            <env name="TSX_TSCONFIG_PATH"
+                 value="$PROJECT_DIR$/prototypes/vscode/tsconfig.test.json" />
+        </envs>
+        <method v="2" />
+    </configuration>
+</component>
