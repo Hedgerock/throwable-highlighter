@@ -43,7 +43,8 @@ test("applies only confirmed candidates", async context => {
                 return true;
             });
 
-            await refresh(fixture.controller);
+            fixture.controller.refresh();
+            await fixture.flush();
 
             assertHighlights(
                 fixture,
@@ -61,13 +62,15 @@ test("clears previous highlights after a negative resolution", async context => 
     const candidate = createCandidate("class", 0);
     const fixture = createFixture(context, [candidate]);
 
-    await refresh(fixture.controller);
+    fixture.controller.refresh();
+    await fixture.flush();
     assertHighlights(fixture, [[candidate.range], [], [], []]);
 
     fixture.setDecorations.mock.resetCalls();
     fixture.resolve.mock.mockImplementation(async () => false);
 
-    await refresh(fixture.controller);
+    fixture.controller.refresh();
+    await fixture.flush();
     assertHighlights(fixture, [[], [], [], []]);
 });
 
@@ -124,7 +127,8 @@ test("clears unsupported documents without resolving candidates", async context 
             fixture.documentState.languageId = scenario.languageId;
             fixture.documentState.uri.scheme = scenario.scheme;
 
-            await refresh(fixture.controller);
+            fixture.controller.refresh();
+            await fixture.flush();
 
             assertHighlights(fixture, [[], [], [], []]);
 
@@ -175,7 +179,7 @@ test("ignores obsolete refresh results regardless of completion order", async co
 
                 try {
                     fixture.controller.refresh();
-                    await flushRefreshes();
+                    await fixture.flush();
 
                     assert.equal(fixture.resolve.mock.callCount(), 1);
                     assert.equal(fixture.setDecorations.mock.callCount(), 0);
@@ -184,26 +188,26 @@ test("ignores obsolete refresh results regardless of completion order", async co
 
                     fixture.resolve.mock.mockImplementation(() => active.promise);
                     fixture.controller.refresh();
-                    await flushRefreshes();
+                    await fixture.flush();
 
                     assert.equal(fixture.resolve.mock.callCount(), 2);
                     assert.equal(fixture.setDecorations.mock.callCount(), 0);
 
                     if (obsoleteFinishesFirst) {
                         obsolete.resolve(true);
-                        await flushRefreshes();
+                        await fixture.flush();
 
                         assert.equal(fixture.setDecorations.mock.callCount(), 0);
                         active.resolve(false);
                     } else {
                         active.resolve(false);
-                        await flushRefreshes();
+                        await fixture.flush();
                         assertHighlights(fixture, [[], [], [], []]);
 
                         obsolete.resolve(true);
                     }
 
-                    await flushRefreshes();
+                    await fixture.flush();
                     assertHighlights(fixture, [[], [], [], []]);
 
                     assert.deepEqual(
@@ -216,7 +220,7 @@ test("ignores obsolete refresh results regardless of completion order", async co
                 } finally {
                     obsolete.resolve(true);
                     active.resolve(false);
-                    await flushRefreshes();
+                    await fixture.flush();
                 }
             }
         );
@@ -268,19 +272,19 @@ test("ignores a pending result after its target becomes stale", async context =>
 
             try {
                 fixture.controller.refresh();
-                await flushRefreshes();
+                await fixture.flush();
 
                 assert.equal(fixture.resolve.mock.callCount(), 1);
                 assert.equal(fixture.setDecorations.mock.callCount(), 0);
 
                 scenario.invalidate(fixture);
                 pending.resolve(true);
-                await flushRefreshes();
+                await fixture.flush();
 
                 assert.equal(fixture.setDecorations.mock.callCount(), 0);
             } finally {
                 pending.resolve(true);
-                await flushRefreshes();
+                await fixture.flush();
             }
         });
     }
@@ -295,7 +299,7 @@ test("recreates decoration types and invalidates pending results when configurat
 
     try {
         fixture.controller.refresh();
-        await flushRefreshes();
+        await fixture.flush();
         assert.equal(fixture.resolve.mock.callCount(), 1);
 
         assert.equal(fixture.setDecorations.mock.callCount(), 0);
@@ -303,7 +307,7 @@ test("recreates decoration types and invalidates pending results when configurat
         colors.classColor = "#55FF55";
         fixture.resolve.mock.mockImplementation(async () => false);
         fixture.controller.refreshConfiguration();
-        await flushRefreshes();
+        await fixture.flush();
 
         assert.equal(fixture.decorationTypes.length, 8);
         assert.equal(fixture.resolve.mock.callCount(), 2);
@@ -325,7 +329,7 @@ test("recreates decoration types and invalidates pending results when configurat
         );
 
         pending.resolve(true);
-        await flushRefreshes();
+        await fixture.flush();
 
         assert.deepEqual(
             fixture.setDecorations.mock.calls.map(call => call.arguments),
@@ -333,7 +337,7 @@ test("recreates decoration types and invalidates pending results when configurat
         );
     } finally {
         pending.resolve(true);
-        await flushRefreshes();
+        await fixture.flush();
     }
 });
 
@@ -471,11 +475,38 @@ test("updates color sources without changing stored colors", context => {
     }
 });
 
+test("invalidates a running refresh before a deferred refresh starts", async context => {
+    const pending = createDeferred<boolean>();
+    const fixture = createFixture(context, [createCandidate("class", 0)]);
+    fixture.resolve.mock.mockImplementationOnce(() => pending.promise);
+
+    fixture.controller.refresh();
+    await fixture.flush();
+
+    assert.equal(fixture.resolve.mock.callCount(), 1);
+
+    fixture.controller.refresh("deferred");
+    pending.resolve(true);
+    await fixture.flush();
+
+    assert.equal(fixture.resolve.mock.callCount(), 1);
+
+    assert.equal(fixture.setDecorations.mock.callCount(), 0);
+
+    context.mock.timers.tick(150);
+    await fixture.flush();
+
+    assert.equal(fixture.resolve.mock.callCount(), 2);
+    assert.equal(fixture.setDecorations.mock.callCount(), 4);
+});
+
 function createFixture(
     context: TestContext,
     candidates: ThrowableHighlightingCandidate[] = [],
     colors: ColorSettings = {}
 ) {
+    context.mock.timers.enable({apis: ["setTimeout"]});
+
     const documentState = {languageId: "java", uri: {scheme: "file"}, version: 1};
     const document = documentState as vscode.TextDocument;
     const setDecorations = context.mock.fn<vscode.TextEditor["setDecorations"]>();
@@ -548,7 +579,11 @@ function createFixture(
         decorationTypes,
         createDecorationType,
         findCandidates,
-        resolve
+        resolve,
+        async flush(): Promise<void> {
+            context.mock.timers.tick(0);
+            await new Promise<void>(resolve => setImmediate(resolve));
+        }
     };
 }
 
@@ -574,15 +609,6 @@ function createCandidate(
             {line: 0, character: start + typeName.length} as vscode.Position
         )
     };
-}
-
-async function refresh(controller: ThrowableDecorationController): Promise<void> {
-    controller.refresh();
-    await flushRefreshes();
-}
-
-async function flushRefreshes(): Promise<void> {
-    await new Promise<void>(resolve => setImmediate(resolve));
 }
 
 function assertHighlights(

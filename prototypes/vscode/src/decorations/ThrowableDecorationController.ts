@@ -9,6 +9,7 @@ import {
     ThrowableHighlightingCandidate,
     ThrowableHighlightingFinder
 } from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingFinder";
+import {ThrowableRefreshScheduler} from "@throwable-highlighter/decorations/scheduling/ThrowableRefreshScheduler";
 import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
 import {ThrowableColorConfigurationReader} from "@throwable-highlighter/settings/ThrowableColorConfigurationReader";
 import {ThrowableColorResolver} from "@throwable-highlighter/settings/ThrowableColorResolver";
@@ -17,6 +18,7 @@ export class ThrowableDecorationController implements vscode.Disposable {
     private decorationTypes: DecorationTypes;
     private isDisposed = false;
     private refreshGeneration = 0;
+    private readonly scheduler: ThrowableRefreshScheduler;
 
     constructor(
         private readonly throwableHighlightingFinder: ThrowableHighlightingFinder,
@@ -26,14 +28,25 @@ export class ThrowableDecorationController implements vscode.Disposable {
         private readonly colorResolver = new ThrowableColorResolver()
     ) {
         this.decorationTypes = this.createDecorationTypes();
+        this.scheduler = new ThrowableRefreshScheduler(() => this.runRefresh(), {
+            debounceMs: 150,
+            maximumWaitMs: 500
+        });
     }
 
-    public refresh(): void {
-        const refreshGeneration = ++this.refreshGeneration;
-
-        for (const editor of vscode.window.visibleTextEditors) {
-            void this.apply(editor, refreshGeneration);
+    public refresh(mode: "urgent" | "deferred" = "urgent"): void {
+        if (this.isDisposed) {
+            return;
         }
+
+        this.refreshGeneration++;
+
+        if (mode === "deferred") {
+            this.scheduler.request();
+            return;
+        }
+
+        this.scheduler.requestUrgent();
     }
 
     public refreshConfiguration(): void {
@@ -53,6 +66,7 @@ export class ThrowableDecorationController implements vscode.Disposable {
         }
 
         this.isDisposed = true;
+        this.scheduler.dispose();
         this.disposeDecorationTypes();
     }
 
@@ -150,6 +164,14 @@ export class ThrowableDecorationController implements vscode.Disposable {
     private disposeDecorationTypes(): void {
         for (const context of ThrowableHighlightingContext.HIGHLIGHT_CONTEXTS) {
             this.decorationTypes[context].dispose();
+        }
+    }
+
+    private runRefresh(): void {
+        const refreshGeneration = this.refreshGeneration;
+
+        for (const editor of vscode.window.visibleTextEditors) {
+            void this.apply(editor, refreshGeneration);
         }
     }
 }

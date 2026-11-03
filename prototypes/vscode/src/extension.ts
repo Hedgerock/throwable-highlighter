@@ -46,12 +46,15 @@ export function activate(context: vscode.ExtensionContext): void {
 
     const invalidateTypeResolutionCache = (): void => {
         definitionResolver.clearCache();
-        controller.refresh();
+        controller.refresh("deferred");
     };
 
     const javaSupportReadiness = new JavaSupportReadiness(
         () => vscode.extensions.getExtension<unknown>("redhat.java"),
-        invalidateTypeResolutionCache,
+        () => {
+            definitionResolver.clearCache();
+            controller.refresh();
+        },
         outputChannel
     );
 

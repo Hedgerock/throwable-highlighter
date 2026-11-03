@@ -219,7 +219,7 @@ export async function measureRefresh(options: RefreshBenchmarkOptions): Promise<
 
                 lastRequestedAt = performance.now();
                 issuedRefreshes++;
-                currentController.refresh();
+                currentController.refresh(options.refreshCount > 1 ? "deferred" : "urgent");
             }
         };
 
