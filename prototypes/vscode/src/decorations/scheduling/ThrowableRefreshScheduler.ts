@@ -3,14 +3,16 @@ export type RefreshSchedulerOptions = {
     readonly maximumWaitMs: number;
 };
 
+export type RefreshMode = "deferred" | "urgent";
+
 export class ThrowableRefreshScheduler {
     private executionTimer: ReturnType<typeof setTimeout> | undefined;
     private maximumWaitTimer: ReturnType<typeof setTimeout> | undefined;
-    private pendingKind: "deferred" | "urgent" | undefined;
+    private pendingKind: RefreshMode | undefined;
     private isDisposed = false;
 
     constructor(
-        private readonly onRefresh: () => void,
+        private readonly onRefresh: (mode: RefreshMode) => void,
         private readonly options: RefreshSchedulerOptions
     ) {}
 
@@ -52,8 +54,9 @@ export class ThrowableRefreshScheduler {
             return;
         }
 
+        const mode = this.pendingKind;
         this.clearPending();
-        this.onRefresh();
+        this.onRefresh(mode);
     }
 
     private clearPending(): void {

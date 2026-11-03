@@ -45,6 +45,26 @@ test("does not refresh after extension subscriptions are disposed", async contex
     assert.deepEqual(fixture.operations, ["refresh"]);
 });
 
+test("refreshes after content edits and ignores Output and dirty-state events", context => {
+    const fixture = createFixture(context);
+    activate(fixture.extensionContext);
+
+    const [onChange] = fixture.onDidChangeTextDocument.mock.calls[0].arguments;
+    const position = {line: 0, character: 0} as vscode.Position;
+    const contentChanges = [{range: new vscode.Range(position, position), rangeOffset: 0, rangeLength: 0, text: "x"}];
+    const output = {uri: {scheme: "output"}} as vscode.TextDocument;
+    const file = {uri: {scheme: "file"}} as vscode.TextDocument;
+
+    onChange({document: output, contentChanges, reason: undefined});
+    assert.deepEqual(fixture.operations, ["refresh"]);
+
+    onChange({document: file, contentChanges: [], reason: undefined});
+    assert.deepEqual(fixture.operations, ["refresh"]);
+
+    onChange({document: file, contentChanges, reason: undefined});
+    assert.deepEqual(fixture.operations, ["refresh", "clearCache", "refresh"]);
+});
+
 function createFixture(context: TestContext) {
     const operations: string[] = [];
     const ready = createDeferred<boolean>();
@@ -87,10 +107,14 @@ function createFixture(context: TestContext) {
     }));
 
     const subscribe = (_listener: unknown): vscode.Disposable => ({dispose: context.mock.fn()});
+    const onDidChangeTextDocument = context.mock.method(
+        vscode.workspace,
+        "onDidChangeTextDocument",
+        (listener: (event: vscode.TextDocumentChangeEvent) => unknown) => subscribe(listener)
+    );
 
     context.mock.method(vscode.window, "onDidChangeActiveTextEditor", subscribe);
     context.mock.method(vscode.window, "onDidChangeVisibleTextEditors", subscribe);
-    context.mock.method(vscode.workspace, "onDidChangeTextDocument", subscribe);
     context.mock.method(vscode.workspace, "onDidCreateFiles", subscribe);
     context.mock.method(vscode.workspace, "onDidDeleteFiles", subscribe);
     context.mock.method(vscode.workspace, "onDidRenameFiles", subscribe);
@@ -106,7 +130,7 @@ function createFixture(context: TestContext) {
 
     context.after(dispose);
 
-    return {extensionContext, ready, operations, getExtension, dispose};
+    return {extensionContext, ready, operations, getExtension, dispose, onDidChangeTextDocument};
 }
 
 function createDeferred<T>() {

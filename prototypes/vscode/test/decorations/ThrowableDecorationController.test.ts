@@ -15,6 +15,7 @@ import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
 import type {HighlightingContext} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingContext";
 import type {ThrowableHighlightingCandidate} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingFinder";
+import type {RefreshMeasurement} from "@throwable-highlighter/decorations/ThrowableDecorationController";
 
 type ColorSettings = Partial<Record<`${HighlightingContext}Color` | `${HighlightingContext}ColorSource`, unknown>>;
 
@@ -267,7 +268,8 @@ test("ignores a pending result after its target becomes stale", async context =>
     for (const scenario of cases) {
         await context.test(scenario.name, async current => {
             const pending = createDeferred<boolean>();
-            const fixture = createFixture(current, [createCandidate("class", 0)]);
+            const onMeasurement = current.mock.fn<(measurement: RefreshMeasurement) => void>();
+            const fixture = createFixture(current, [createCandidate("class", 0)], {}, onMeasurement);
             fixture.resolve.mock.mockImplementation(() => pending.promise);
 
             try {
@@ -282,6 +284,7 @@ test("ignores a pending result after its target becomes stale", async context =>
                 await fixture.flush();
 
                 assert.equal(fixture.setDecorations.mock.callCount(), 0);
+                assert.equal(onMeasurement.mock.callCount(), 0);
             } finally {
                 pending.resolve(true);
                 await fixture.flush();
@@ -500,10 +503,50 @@ test("invalidates a running refresh before a deferred refresh starts", async con
     assert.equal(fixture.setDecorations.mock.callCount(), 4);
 });
 
+test("measures the latest request using the effective launch", async context => {
+    const pending = createDeferred<boolean>();
+    const onMeasurement = context.mock.fn<(measurement: RefreshMeasurement) => void>();
+    const fixture = createFixture(context, [createCandidate("class", 0)], {}, onMeasurement);
+    let now = 10;
+
+    context.mock.method(performance, "now", () => now);
+    fixture.resolve.mock.mockImplementationOnce(() => pending.promise);
+
+    fixture.controller.refresh("urgent", "active-editor");
+    now = 20;
+    fixture.controller.refresh("deferred", "document-change", 18);
+    now = 25;
+    await fixture.flush();
+
+    assert.equal(fixture.resolve.mock.callCount(), 1);
+    assert.equal(onMeasurement.mock.callCount(), 0);
+
+    now = 55;
+    pending.resolve(true);
+    await fixture.flush();
+
+    assert.equal(fixture.setDecorations.mock.callCount(), 4);
+    assert.deepEqual(
+        onMeasurement.mock.calls.map(call => call.arguments[0]),
+        [
+            {
+                generation: 2,
+                reason: "document-change",
+                mode: "urgent",
+                editorNumber: 1,
+                waitMs: 7,
+                processingMs: 30,
+                totalMs: 37
+            }
+        ]
+    );
+});
+
 function createFixture(
     context: TestContext,
     candidates: ThrowableHighlightingCandidate[] = [],
-    colors: ColorSettings = {}
+    colors: ColorSettings = {},
+    onMeasurement?: (measurement: RefreshMeasurement) => void
 ) {
     context.mock.timers.enable({apis: ["setTimeout"]});
 
@@ -567,7 +610,14 @@ function createFixture(
         async (_document: vscode.TextDocument, _position: vscode.Position) => true
     );
 
-    const controller = new ThrowableDecorationController(finder, resolver, new ThrowableHighlightingContext());
+    const controller = new ThrowableDecorationController(
+        finder,
+        resolver,
+        new ThrowableHighlightingContext(),
+        undefined,
+        undefined,
+        onMeasurement
+    );
     context.after(() => controller.dispose());
 
     return {

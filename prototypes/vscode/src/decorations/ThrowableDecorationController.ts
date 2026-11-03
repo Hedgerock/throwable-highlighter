@@ -13,33 +13,70 @@ import {ThrowableRefreshScheduler} from "@throwable-highlighter/decorations/sche
 import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
 import {ThrowableColorConfigurationReader} from "@throwable-highlighter/settings/ThrowableColorConfigurationReader";
 import {ThrowableColorResolver} from "@throwable-highlighter/settings/ThrowableColorResolver";
+import type {RefreshMode} from "@throwable-highlighter/decorations/scheduling/ThrowableRefreshScheduler";
+
+export type RefreshReason =
+    | "activation"
+    | "java-ready"
+    | "active-editor"
+    | "visible-editors"
+    | "document-change"
+    | "workspace-change"
+    | "configuration"
+    | "manual";
+
+export type RefreshMeasurement = {
+    readonly generation: number;
+    readonly reason: RefreshReason;
+    readonly mode: RefreshMode;
+    readonly editorNumber: number;
+    readonly waitMs: number;
+    readonly processingMs: number;
+    readonly totalMs: number;
+};
+
+type RefreshRequest = {
+    readonly reason: RefreshReason;
+    readonly requestedAt: number;
+};
+
+type RefreshTiming = RefreshRequest & {
+    readonly mode: RefreshMode;
+    readonly startedAt: number;
+};
 
 export class ThrowableDecorationController implements vscode.Disposable {
     private decorationTypes: DecorationTypes;
     private isDisposed = false;
     private refreshGeneration = 0;
     private readonly scheduler: ThrowableRefreshScheduler;
+    private pendingRequest: RefreshRequest | undefined;
 
     constructor(
         private readonly throwableHighlightingFinder: ThrowableHighlightingFinder,
         private readonly definitionResolver: JavaTypeDefinitionResolver,
         private readonly throwableHighlightingContext: ThrowableHighlightingContext,
         private readonly colorConfigurationReader = new ThrowableColorConfigurationReader(),
-        private readonly colorResolver = new ThrowableColorResolver()
+        private readonly colorResolver = new ThrowableColorResolver(),
+        private readonly onMeasurement?: (measurement: RefreshMeasurement) => void
     ) {
         this.decorationTypes = this.createDecorationTypes();
-        this.scheduler = new ThrowableRefreshScheduler(() => this.runRefresh(), {
+        this.scheduler = new ThrowableRefreshScheduler(mode => this.runRefresh(mode), {
             debounceMs: 150,
             maximumWaitMs: 500
         });
     }
 
-    public refresh(mode: "urgent" | "deferred" = "urgent"): void {
+    public refresh(mode: RefreshMode = "urgent", reason: RefreshReason = "manual", requestedAt?: number): void {
         if (this.isDisposed) {
             return;
         }
 
         this.refreshGeneration++;
+
+        if (this.onMeasurement !== undefined) {
+            this.pendingRequest = {reason, requestedAt: requestedAt ?? performance.now()};
+        }
 
         if (mode === "deferred") {
             this.scheduler.request();
@@ -57,7 +94,7 @@ export class ThrowableDecorationController implements vscode.Disposable {
         this.disposeDecorationTypes();
         this.decorationTypes = this.createDecorationTypes();
 
-        this.refresh();
+        this.refresh("urgent", "configuration");
     }
 
     public dispose(): void {
@@ -67,10 +104,16 @@ export class ThrowableDecorationController implements vscode.Disposable {
 
         this.isDisposed = true;
         this.scheduler.dispose();
+        this.pendingRequest = undefined;
         this.disposeDecorationTypes();
     }
 
-    private async apply(editor: vscode.TextEditor, refreshGeneration: number): Promise<void> {
+    private async apply(
+        editor: vscode.TextEditor,
+        refreshGeneration: number,
+        editorNumber: number,
+        timing?: RefreshTiming
+    ): Promise<void> {
         if (this.isDisposed) {
             return;
         }
@@ -112,6 +155,20 @@ export class ThrowableDecorationController implements vscode.Disposable {
 
         for (const context of ThrowableHighlightingContext.HIGHLIGHT_CONTEXTS) {
             editor.setDecorations(this.decorationTypes[context], highlights[context]);
+        }
+
+        if (timing !== undefined) {
+            const finishedAt = performance.now();
+
+            this.onMeasurement?.({
+                generation: refreshGeneration,
+                reason: timing.reason,
+                mode: timing.mode,
+                editorNumber,
+                waitMs: timing.startedAt - timing.requestedAt,
+                processingMs: finishedAt - timing.startedAt,
+                totalMs: finishedAt - timing.requestedAt
+            });
         }
     }
 
@@ -167,11 +224,15 @@ export class ThrowableDecorationController implements vscode.Disposable {
         }
     }
 
-    private runRefresh(): void {
+    private runRefresh(mode: RefreshMode): void {
         const refreshGeneration = this.refreshGeneration;
+        const request = this.pendingRequest;
+        this.pendingRequest = undefined;
 
-        for (const editor of vscode.window.visibleTextEditors) {
-            void this.apply(editor, refreshGeneration);
+        const timing = request === undefined ? undefined : {...request, mode, startedAt: performance.now()};
+
+        for (const [index, editor] of vscode.window.visibleTextEditors.entries()) {
+            void this.apply(editor, refreshGeneration, index + 1, timing);
         }
     }
 }

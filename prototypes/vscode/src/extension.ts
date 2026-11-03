@@ -16,6 +16,8 @@ import {
     ThrowableColorSettingsPanel
 } from "@throwable-highlighter/settings/panel/ThrowableColorSettingsPanel";
 import {ThrowableColorSettingsResources} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsResources";
+import type {RefreshMode} from "@throwable-highlighter/decorations/scheduling/ThrowableRefreshScheduler";
+import type {RefreshMeasurement, RefreshReason} from "@throwable-highlighter/decorations/ThrowableDecorationController";
 
 export function activate(context: vscode.ExtensionContext): void {
     const throwableHighlightingContext = new ThrowableHighlightingContext();
@@ -23,6 +25,14 @@ export function activate(context: vscode.ExtensionContext): void {
     const javaCodeMask = new JavaCodeMask();
     const typeReferenceRangeReader = new JavaTypeReferenceRangeReader();
     const definitionResolver = new JavaTypeDefinitionResolver(javaCodeMask);
+    const outputChannel = vscode.window.createOutputChannel("Throwable Highlighter Prototype");
+
+    const onMeasurement =
+        process.env.THROWABLE_HIGHLIGHTER_MEASURE_REFRESH === "1"
+            ? (measurement: RefreshMeasurement): void => {
+                  outputChannel.appendLine("[refresh-measurement] " + JSON.stringify(measurement));
+              }
+            : undefined;
 
     const controller = new ThrowableDecorationController(
         new ThrowableHighlightingFinder(
@@ -32,10 +42,11 @@ export function activate(context: vscode.ExtensionContext): void {
             new JavaThrowsClauseFinder(typeReferenceRangeReader)
         ),
         definitionResolver,
-        throwableHighlightingContext
+        throwableHighlightingContext,
+        undefined,
+        undefined,
+        onMeasurement
     );
-
-    const outputChannel = vscode.window.createOutputChannel("Throwable Highlighter Prototype");
 
     outputChannel.appendLine("Decoration controller activated.");
 
@@ -44,17 +55,16 @@ export function activate(context: vscode.ExtensionContext): void {
         new ThrowableColorSettingsResources(context.extensionUri)
     );
 
-    const invalidateTypeResolutionCache = (): void => {
+    const invalidateTypeResolutionCache = (mode: RefreshMode, reason: RefreshReason): void => {
+        const requestedAt = onMeasurement === undefined ? undefined : performance.now();
+
         definitionResolver.clearCache();
-        controller.refresh("deferred");
+        controller.refresh(mode, reason, requestedAt);
     };
 
     const javaSupportReadiness = new JavaSupportReadiness(
         () => vscode.extensions.getExtension<unknown>("redhat.java"),
-        () => {
-            definitionResolver.clearCache();
-            controller.refresh();
-        },
+        () => invalidateTypeResolutionCache("urgent", "java-ready"),
         outputChannel
     );
 
@@ -63,14 +73,20 @@ export function activate(context: vscode.ExtensionContext): void {
         controller,
         colorSettingsPanel,
         outputChannel,
-        vscode.window.onDidChangeActiveTextEditor(() => controller.refresh()),
-        vscode.window.onDidChangeVisibleTextEditors(() => controller.refresh()),
-        vscode.workspace.onDidChangeTextDocument(invalidateTypeResolutionCache),
-        vscode.workspace.onDidCreateFiles(invalidateTypeResolutionCache),
-        vscode.workspace.onDidDeleteFiles(invalidateTypeResolutionCache),
-        vscode.workspace.onDidRenameFiles(invalidateTypeResolutionCache),
+        vscode.window.onDidChangeActiveTextEditor(() => controller.refresh("urgent", "active-editor")),
+        vscode.window.onDidChangeVisibleTextEditors(() => controller.refresh("urgent", "visible-editors")),
+        vscode.workspace.onDidChangeTextDocument(event => {
+            if (event.document.uri.scheme === "output" || event.contentChanges.length === 0) {
+                return;
+            }
+
+            invalidateTypeResolutionCache("deferred", "document-change");
+        }),
+        vscode.workspace.onDidCreateFiles(() => invalidateTypeResolutionCache("deferred", "workspace-change")),
+        vscode.workspace.onDidDeleteFiles(() => invalidateTypeResolutionCache("deferred", "workspace-change")),
+        vscode.workspace.onDidRenameFiles(() => invalidateTypeResolutionCache("deferred", "workspace-change")),
         vscode.workspace.onDidChangeWorkspaceFolders(() => {
-            invalidateTypeResolutionCache();
+            invalidateTypeResolutionCache("deferred", "workspace-change");
             void colorSettingsPanel.refresh();
         }),
         vscode.workspace.onDidChangeConfiguration(event => {
@@ -83,7 +99,7 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.commands.registerCommand(OPEN_COLOR_SETTINGS_COMMAND, () => colorSettingsPanel.show())
     );
 
-    controller.refresh();
+    controller.refresh("urgent", "activation");
     javaSupportReadiness.start();
 }
 
