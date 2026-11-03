@@ -1,0 +1,392 @@
+{
+  "environment": {
+    "kind": "controlled-node",
+    "sourceCommit": "52cd09042ebff322b16259679038ae7131be6b3b",
+    "node": "v22.18.0",
+    "platform": "win32",
+    "osRelease": "10.0.26200",
+    "architecture": "x64",
+    "cpu": "11th Gen Intel(R) Core(TM) i7-11700KF @ 3.60GHz",
+    "machineMemoryBytes": 34222542848
+  },
+  "measurements": [
+    {
+      "scenario": "single",
+      "repetition": 1,
+      "candidateCount": 100,
+      "refreshCount": 1,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 100,
+      "peakPendingResolutions": 100,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 261.7635,
+      "totalMs": 261.7917
+    },
+    {
+      "scenario": "single",
+      "repetition": 2,
+      "candidateCount": 100,
+      "refreshCount": 1,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 100,
+      "peakPendingResolutions": 100,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 264.80660000000006,
+      "totalMs": 264.80840000000006
+    },
+    {
+      "scenario": "single",
+      "repetition": 3,
+      "candidateCount": 100,
+      "refreshCount": 1,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 100,
+      "peakPendingResolutions": 100,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 266.8160999999999,
+      "totalMs": 266.8178999999999
+    },
+    {
+      "scenario": "single",
+      "repetition": 4,
+      "candidateCount": 100,
+      "refreshCount": 1,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 100,
+      "peakPendingResolutions": 100,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 260.79449999999986,
+      "totalMs": 260.8052999999999
+    },
+    {
+      "scenario": "single",
+      "repetition": 5,
+      "candidateCount": 100,
+      "refreshCount": 1,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 100,
+      "peakPendingResolutions": 100,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 262.3944999999999,
+      "totalMs": 262.39609999999993
+    },
+    {
+      "scenario": "burst",
+      "repetition": 1,
+      "candidateCount": 100,
+      "refreshCount": 20,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 2000,
+      "peakPendingResolutions": 300,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 251.47530000000006,
+      "totalMs": 2329.2297
+    },
+    {
+      "scenario": "burst",
+      "repetition": 2,
+      "candidateCount": 100,
+      "refreshCount": 20,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 2000,
+      "peakPendingResolutions": 300,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 263.09839999999986,
+      "totalMs": 2326.4197000000004
+    },
+    {
+      "scenario": "burst",
+      "repetition": 3,
+      "candidateCount": 100,
+      "refreshCount": 20,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 2000,
+      "peakPendingResolutions": 300,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 252.08149999999932,
+      "totalMs": 2326.8482999999997
+    },
+    {
+      "scenario": "burst",
+      "repetition": 4,
+      "candidateCount": 100,
+      "refreshCount": 20,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 2000,
+      "peakPendingResolutions": 300,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 264.6158999999989,
+      "totalMs": 2331.3822999999993
+    },
+    {
+      "scenario": "burst",
+      "repetition": 5,
+      "candidateCount": 100,
+      "refreshCount": 20,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 2000,
+      "peakPendingResolutions": 300,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 264.52100000000064,
+      "totalMs": 2346.3963999999996
+    },
+    {
+      "scenario": "single",
+      "repetition": 1,
+      "candidateCount": 1000,
+      "refreshCount": 1,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 1000,
+      "peakPendingResolutions": 1000,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 260.96550000000025,
+      "totalMs": 260.96869999999944
+    },
+    {
+      "scenario": "single",
+      "repetition": 2,
+      "candidateCount": 1000,
+      "refreshCount": 1,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 1000,
+      "peakPendingResolutions": 1000,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 265.3828999999987,
+      "totalMs": 265.3838999999989
+    },
+    {
+      "scenario": "single",
+      "repetition": 3,
+      "candidateCount": 1000,
+      "refreshCount": 1,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 1000,
+      "peakPendingResolutions": 1000,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 265.14719999999943,
+      "totalMs": 265.15049999999974
+    },
+    {
+      "scenario": "single",
+      "repetition": 4,
+      "candidateCount": 1000,
+      "refreshCount": 1,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 1000,
+      "peakPendingResolutions": 1000,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 262.58749999999964,
+      "totalMs": 262.59130000000005
+    },
+    {
+      "scenario": "single",
+      "repetition": 5,
+      "candidateCount": 1000,
+      "refreshCount": 1,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 1000,
+      "peakPendingResolutions": 1000,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 267.53089999999975,
+      "totalMs": 267.53150000000096
+    },
+    {
+      "scenario": "burst",
+      "repetition": 1,
+      "candidateCount": 1000,
+      "refreshCount": 20,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 20000,
+      "peakPendingResolutions": 3000,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 265.13920000000144,
+      "totalMs": 2345.8569000000007
+    },
+    {
+      "scenario": "burst",
+      "repetition": 2,
+      "candidateCount": 1000,
+      "refreshCount": 20,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 20000,
+      "peakPendingResolutions": 3000,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 264.9171000000024,
+      "totalMs": 2339.603900000002
+    },
+    {
+      "scenario": "burst",
+      "repetition": 3,
+      "candidateCount": 1000,
+      "refreshCount": 20,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 20000,
+      "peakPendingResolutions": 3000,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 266.58780000000115,
+      "totalMs": 2328.550000000003
+    },
+    {
+      "scenario": "burst",
+      "repetition": 4,
+      "candidateCount": 1000,
+      "refreshCount": 20,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 20000,
+      "peakPendingResolutions": 3000,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 268.6301999999996,
+      "totalMs": 2330.2994999999974
+    },
+    {
+      "scenario": "burst",
+      "repetition": 5,
+      "candidateCount": 1000,
+      "refreshCount": 20,
+      "intervalMs": 100,
+      "resolverDelayMs": 250,
+      "resolverCalls": 20000,
+      "peakPendingResolutions": 3000,
+      "appliedUpdates": 1,
+      "latestUpdateMs": 253.3550000000032,
+      "totalMs": 2314.504000000001
+    }
+  ],
+  "summary": [
+    {
+      "scenario": "single",
+      "candidateCount": 100,
+      "resolverCalls": {
+        "min": 100,
+        "median": 100,
+        "max": 100
+      },
+      "peakPendingResolutions": {
+        "min": 100,
+        "median": 100,
+        "max": 100
+      },
+      "appliedUpdates": {
+        "min": 1,
+        "median": 1,
+        "max": 1
+      },
+      "latestUpdateMs": {
+        "min": 260.79449999999986,
+        "median": 262.3944999999999,
+        "max": 266.8160999999999
+      },
+      "totalMs": {
+        "min": 260.8052999999999,
+        "median": 262.39609999999993,
+        "max": 266.8178999999999
+      }
+    },
+    {
+      "scenario": "burst",
+      "candidateCount": 100,
+      "resolverCalls": {
+        "min": 2000,
+        "median": 2000,
+        "max": 2000
+      },
+      "peakPendingResolutions": {
+        "min": 300,
+        "median": 300,
+        "max": 300
+      },
+      "appliedUpdates": {
+        "min": 1,
+        "median": 1,
+        "max": 1
+      },
+      "latestUpdateMs": {
+        "min": 251.47530000000006,
+        "median": 263.09839999999986,
+        "max": 264.6158999999989
+      },
+      "totalMs": {
+        "min": 2326.4197000000004,
+        "median": 2329.2297,
+        "max": 2346.3963999999996
+      }
+    },
+    {
+      "scenario": "single",
+      "candidateCount": 1000,
+      "resolverCalls": {
+        "min": 1000,
+        "median": 1000,
+        "max": 1000
+      },
+      "peakPendingResolutions": {
+        "min": 1000,
+        "median": 1000,
+        "max": 1000
+      },
+      "appliedUpdates": {
+        "min": 1,
+        "median": 1,
+        "max": 1
+      },
+      "latestUpdateMs": {
+        "min": 260.96550000000025,
+        "median": 265.14719999999943,
+        "max": 267.53089999999975
+      },
+      "totalMs": {
+        "min": 260.96869999999944,
+        "median": 265.15049999999974,
+        "max": 267.53150000000096
+      }
+    },
+    {
+      "scenario": "burst",
+      "candidateCount": 1000,
+      "resolverCalls": {
+        "min": 20000,
+        "median": 20000,
+        "max": 20000
+      },
+      "peakPendingResolutions": {
+        "min": 3000,
+        "median": 3000,
+        "max": 3000
+      },
+      "appliedUpdates": {
+        "min": 1,
+        "median": 1,
+        "max": 1
+      },
+      "latestUpdateMs": {
+        "min": 253.3550000000032,
+        "median": 265.13920000000144,
+        "max": 268.6301999999996
+      },
+      "totalMs": {
+        "min": 2314.504000000001,
+        "median": 2330.2994999999974,
+        "max": 2345.8569000000007
+      }
+    }
+  ]
+}
