@@ -136,6 +136,7 @@ NNNN-краткое-название.md
 - [ADR-0021: Выбор источника подсветки Throwable catch в IntelliJ Platform](0021-intellij-catch-highlighting-source.md)
 - [ADR-0022: Восстановление подсветки после запуска Java-поддержки VS Code](0022-vscode-java-readiness.md)
 - [ADR-0023: Интеграционные проверки в Extension Host VS Code](0023-vscode-extension-host-tests.md)
+- [ADR-0024: Планирование обновлений подсветки VS Code](0024-vscode-refresh-scheduling.md)
 
 ---
 
