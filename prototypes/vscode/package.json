@@ -151,7 +151,8 @@
     "test:browser:container": "docker compose run --rm visual",
     "test:browser:visual:update": "npm run test:browser:visual -- --update-snapshots=all",
     "compile:extension-host": "node tooling/build/compile.cjs tsconfig.extension-host.json",
-    "test:extension-host": "npm run compile && npm run compile:extension-host && node tooling/extension-host/run.mjs"
+    "test:extension-host": "npm run compile && npm run compile:extension-host && node tooling/extension-host/run.mjs",
+    "benchmark:refresh": "npm run compile:test && node out-test/test/performance/refresh.benchmark.js"
   },
   "devDependencies": {
     "@ianvs/prettier-plugin-sort-imports": "4.7.1",
