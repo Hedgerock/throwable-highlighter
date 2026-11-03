@@ -101,7 +101,14 @@ const cases = [
         changes: [],
         options: {full: true},
         expected: {intellij: true, vscode: true, formatting: "all"}
-    }
+    },
+    {
+        name: "skips platform checks for archived research reports",
+        changes: [
+            {status: "A", path: "docs/research/data/vscode-refresh-scheduled.json"}
+        ],
+        expected: {intellij: false, vscode: false, formatting: "none"}
+    },
 ];
 
 for (const scenario of cases) {

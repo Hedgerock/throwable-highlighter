@@ -71,6 +71,7 @@ Hook запускает `scripts/check-staged.cjs`.
 | Остальные файлы в `prototypes/vscode/**`                                               | Прототип VS Code  |
 | `docs/specification/fixtures/**`, `.githooks/**`, `scripts/**`, `.github/workflows/**` | Обе платформы     |
 | Путь без отдельного правила                                                            | Обе платформы     |
+| JSON-отчёты в docs/research/data                                                       | Не выполняются    |
 
 Для смешанного набора изменений группы проверок объединяются.
 

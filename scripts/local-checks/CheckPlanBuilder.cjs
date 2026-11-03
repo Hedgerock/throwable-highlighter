@@ -18,7 +18,8 @@ function isDocumentation(path) {
         path === "README.md" ||
         path === "CHANGELOG.md" ||
         path === VSCODE_DIRECTORY + "README.md" ||
-        (path.startsWith("docs/") && path.endsWith(".md"))
+        (path.startsWith("docs/") && path.endsWith(".md")) ||
+        (path.startsWith("docs/research/data/") && path.endsWith(".json"))
     );
 }
 
