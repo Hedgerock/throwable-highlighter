@@ -46,4 +46,36 @@ suite("Java type resolution", () => {
 
         assert.equal(await resolver.isThrowableType(document, position), false);
     });
+
+    if (process.env.THROWABLE_HIGHLIGHTER_MEASURE_JAVA === "1") {
+        test("measures transitive Throwable resolution with real Java support", async () => {
+            const document = await openJavaFixture("usage", "TransitiveContextFixture.java");
+            const position = positionOf(document, "NestedException nestedException");
+            const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask());
+
+            await waitForThrowableType(resolver, document, position);
+
+            const measure = async (): Promise<number> => {
+                const startedAt = performance.now();
+                const confirmed = await resolver.isThrowableType(document, position);
+                const elapsedMs = performance.now() - startedAt;
+
+                assert.equal(confirmed, true);
+
+                return Number(elapsedMs.toFixed(3));
+            };
+
+            const measurements = [];
+
+            for (let repetition = 1; repetition <= 10; repetition++) {
+                resolver.clearCache();
+                const coldCacheMs = await measure();
+                const warmCacheMs = await measure();
+
+                measurements.push({coldCacheMs, warmCacheMs});
+            }
+
+            console.log("[java-resolution-benchmark] " + JSON.stringify(measurements));
+        });
+    }
 });
