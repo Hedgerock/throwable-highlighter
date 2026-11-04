@@ -1,0 +1,144 @@
+import assert from "node:assert/strict";
+import {test} from "node:test";
+import type {TestContext} from "node:test";
+
+import {ThrowableResourceMeasurement} from "@throwable-highlighter/diagnostics/ThrowableResourceMeasurement";
+import type {ResourceMeasurementSnapshot} from "@throwable-highlighter/diagnostics/ThrowableResourceMeasurement";
+
+test("collects an initial snapshot and reads current values on each interval", context => {
+    const fixture = createFixture(context);
+
+    assert.equal(fixture.readMemoryUsage.mock.callCount(), 0);
+    assert.equal(fixture.readResolverSnapshot.mock.callCount(), 0);
+
+    fixture.measurement.start();
+
+    assert.deepEqual(fixture.snapshots, [
+        {
+            processId: 42,
+            elapsedMs: 0,
+            memory: fixture.state.memory,
+            resolver: fixture.state.resolver
+        }
+    ]);
+
+    fixture.state.now = 1100;
+    fixture.state.memory = {...fixture.state.memory, rss: 200};
+    fixture.state.resolver = {...fixture.state.resolver, cacheGeneration: 1, cachedResolutionCount: 2};
+
+    context.mock.timers.tick(999);
+
+    assert.equal(fixture.snapshots.length, 1);
+
+    context.mock.timers.tick(1);
+
+    assert.deepEqual(fixture.snapshots[1], {
+        processId: 42,
+        elapsedMs: 1000,
+        memory: fixture.state.memory,
+        resolver: fixture.state.resolver
+    });
+
+    assert.equal(fixture.readMemoryUsage.mock.callCount(), 2);
+    assert.equal(fixture.snapshots[0].memory.rss, 100);
+    assert.equal(fixture.snapshots[0].resolver.cacheGeneration, 0);
+});
+
+test("does not schedule duplicate sampling when started repeatedly", context => {
+    const fixture = createFixture(context);
+
+    fixture.measurement.start();
+    fixture.measurement.start();
+
+    assert.equal(fixture.snapshots.length, 1);
+
+    context.mock.timers.tick(1000);
+
+    assert.equal(fixture.snapshots.length, 2);
+    assert.equal(fixture.readMemoryUsage.mock.callCount(), 2);
+    assert.equal(fixture.readResolverSnapshot.mock.callCount(), 2);
+});
+
+test("stops sampling on disposal and cannot restart", context => {
+    const fixture = createFixture(context);
+
+    fixture.measurement.start();
+    fixture.measurement.dispose();
+    fixture.measurement.dispose();
+    fixture.measurement.start();
+
+    context.mock.timers.tick(3000);
+
+    assert.equal(fixture.snapshots.length, 1);
+
+    assert.equal(fixture.readMemoryUsage.mock.callCount(), 1);
+    assert.equal(fixture.readResolverSnapshot.mock.callCount(), 1);
+});
+
+test("does not sample when disposed before startup", context => {
+    const fixture = createFixture(context);
+
+    fixture.measurement.dispose();
+    fixture.measurement.start();
+
+    context.mock.timers.tick(3000);
+
+    assert.equal(fixture.snapshots.length, 0);
+    assert.equal(fixture.readMemoryUsage.mock.callCount(), 0);
+    assert.equal(fixture.readResolverSnapshot.mock.callCount(), 0);
+});
+
+test("supports disposal from the initial measurement callback", context => {
+    const fixture = createFixture(context);
+
+    fixture.onMeasurement.mock.mockImplementation(() => fixture.measurement.dispose());
+    fixture.measurement.start();
+
+    context.mock.timers.tick(3000);
+
+    assert.equal(fixture.onMeasurement.mock.callCount(), 1);
+    assert.equal(fixture.readMemoryUsage.mock.callCount(), 1);
+    assert.equal(fixture.readResolverSnapshot.mock.callCount(), 1);
+});
+
+function createFixture(context: TestContext) {
+    context.mock.timers.enable({apis: ["setInterval"]});
+
+    const state = {
+        now: 100,
+        memory: {
+            rss: 100,
+            heapUsed: 40,
+            heapTotal: 60,
+            external: 10,
+            arrayBuffers: 4
+        },
+        resolver: {
+            cacheGeneration: 0,
+            cachedResolutionCount: 0,
+            pendingResolutionCount: 0,
+            definitionRequests: {active: 0, peak: 0},
+            documentSymbolRequests: {active: 0, peak: 0}
+        }
+    };
+
+    const snapshots: ResourceMeasurementSnapshot[] = [];
+    const readMemoryUsage = context.mock.fn(() => state.memory);
+    const readResolverSnapshot = context.mock.fn(() => state.resolver);
+    const onMeasurement = context.mock.fn<(snapshot: ResourceMeasurementSnapshot) => void>(snapshot => {
+        snapshots.push(snapshot);
+    });
+
+    const measurement = new ThrowableResourceMeasurement({
+        processId: 42,
+        intervalMs: 1000,
+        now: () => state.now,
+        readMemoryUsage,
+        readResolverSnapshot,
+        onMeasurement
+    });
+
+    context.after(() => measurement.dispose());
+
+    return {state, snapshots, readMemoryUsage, readResolverSnapshot, onMeasurement, measurement};
+}

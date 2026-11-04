@@ -1,3 +1,5 @@
+import process from "node:process";
+
 import * as vscode from "vscode";
 
 import {JavaCatchClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaCatchClauseFinder";
@@ -7,6 +9,7 @@ import {JavaTypeReferenceRangeReader} from "@throwable-highlighter/decorations/h
 import {ThrowableHighlightingContext} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingContext";
 import {ThrowableHighlightingFinder} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingFinder";
 import {ThrowableDecorationController} from "@throwable-highlighter/decorations/ThrowableDecorationController";
+import {ThrowableResourceMeasurement} from "@throwable-highlighter/diagnostics/ThrowableResourceMeasurement";
 import {JavaSupportReadiness} from "@throwable-highlighter/integration/JavaSupportReadiness";
 import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 import {DefinitionProbe, INSPECT_DEFINITION_COMMAND} from "@throwable-highlighter/resolution/DefinitionProbe";
@@ -19,6 +22,8 @@ import {ThrowableColorSettingsResources} from "@throwable-highlighter/settings/p
 import type {RefreshMode} from "@throwable-highlighter/decorations/scheduling/ThrowableRefreshScheduler";
 import type {RefreshMeasurement, RefreshReason} from "@throwable-highlighter/decorations/ThrowableDecorationController";
 
+const RESOURCE_MEASUREMENT_INTERVAL_IN_MS = 1000;
+
 export function activate(context: vscode.ExtensionContext): void {
     const throwableHighlightingContext = new ThrowableHighlightingContext();
 
@@ -27,12 +32,13 @@ export function activate(context: vscode.ExtensionContext): void {
     const definitionResolver = new JavaTypeDefinitionResolver(javaCodeMask);
     const outputChannel = vscode.window.createOutputChannel("Throwable Highlighter Prototype");
 
-    const onMeasurement =
-        process.env.THROWABLE_HIGHLIGHTER_MEASURE_REFRESH === "1"
-            ? (measurement: RefreshMeasurement): void => {
-                  outputChannel.appendLine("[refresh-measurement] " + JSON.stringify(measurement));
-              }
-            : undefined;
+    const resourceMeasurement = getResourceMeasurement(definitionResolver, outputChannel);
+
+    if (resourceMeasurement !== undefined) {
+        context.subscriptions.push(resourceMeasurement);
+    }
+
+    const onMeasurement = getRefreshMeasurementHandler(outputChannel);
 
     const controller = new ThrowableDecorationController(
         new ThrowableHighlightingFinder(
@@ -101,6 +107,31 @@ export function activate(context: vscode.ExtensionContext): void {
 
     controller.refresh("urgent", "activation");
     javaSupportReadiness.start();
+    resourceMeasurement?.start();
+}
+
+function getRefreshMeasurementHandler(outputChannel: vscode.OutputChannel) {
+    return process.env.THROWABLE_HIGHLIGHTER_MEASURE_REFRESH === "1"
+        ? (measurement: RefreshMeasurement): void => {
+              outputChannel.appendLine("[refresh-measurement] " + JSON.stringify(measurement));
+          }
+        : undefined;
+}
+
+function getResourceMeasurement(
+    definitionResolver: JavaTypeDefinitionResolver,
+    outputChannel: vscode.OutputChannel
+): ThrowableResourceMeasurement | undefined {
+    return process.env.THROWABLE_HIGHLIGHTER_MEASURE_RESOURCES === "1"
+        ? new ThrowableResourceMeasurement({
+              processId: process.pid,
+              intervalMs: RESOURCE_MEASUREMENT_INTERVAL_IN_MS,
+              now: () => performance.now(),
+              readMemoryUsage: () => process.memoryUsage(),
+              readResolverSnapshot: () => definitionResolver.getResourceSnapshot(),
+              onMeasurement: snapshot => outputChannel.appendLine("[resource-measurement] " + JSON.stringify(snapshot))
+          })
+        : undefined;
 }
 
 export function deactivate(): void {}

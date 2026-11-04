@@ -744,6 +744,127 @@ test("confirms each class in an inheritance chain through its declaration", asyn
     }
 });
 
+test("reports pending requests across cache invalidation", async context => {
+    const definitions = createDeferred<readonly vscode.Location[]>();
+    const fixture = createCacheFixture(context, () => definitions.promise);
+    const resolver = fixture.resolver;
+
+    assert.deepEqual(resolver.getResourceSnapshot(), {
+        cacheGeneration: 0,
+        cachedResolutionCount: 0,
+        pendingResolutionCount: 0,
+        definitionRequests: {active: 0, peak: 0},
+        documentSymbolRequests: {active: 0, peak: 0}
+    });
+
+    const first = resolver.isThrowableType(fixture.usage.document, fixture.usage.range.start);
+    const joined = resolver.isThrowableType(fixture.usage.document, fixture.usage.range.start);
+    const pendingSnapshot = resolver.getResourceSnapshot();
+    const requests = [first, joined];
+
+    try {
+        assert.deepEqual(pendingSnapshot, {
+            cacheGeneration: 0,
+            cachedResolutionCount: 0,
+            pendingResolutionCount: 1,
+            definitionRequests: {active: 1, peak: 1},
+            documentSymbolRequests: {active: 0, peak: 0}
+        });
+
+        resolver.clearCache();
+
+        assert.deepEqual(resolver.getResourceSnapshot(), {
+            cacheGeneration: 1,
+            cachedResolutionCount: 0,
+            pendingResolutionCount: 0,
+            definitionRequests: {active: 1, peak: 1},
+            documentSymbolRequests: {active: 0, peak: 0}
+        });
+
+        requests.push(resolver.isThrowableType(fixture.usage.document, fixture.usage.range.start));
+
+        assert.deepEqual(resolver.getResourceSnapshot(), {
+            cacheGeneration: 1,
+            cachedResolutionCount: 0,
+            pendingResolutionCount: 1,
+            definitionRequests: {active: 2, peak: 2},
+            documentSymbolRequests: {active: 0, peak: 0}
+        });
+
+        definitions.resolve([fixture.throwableLocation]);
+
+        assert.deepEqual(await Promise.all(requests), [true, true, true]);
+        assert.deepEqual(resolver.getResourceSnapshot(), {
+            cacheGeneration: 1,
+            cachedResolutionCount: 1,
+            pendingResolutionCount: 0,
+            definitionRequests: {active: 0, peak: 2},
+            documentSymbolRequests: {active: 0, peak: 0}
+        });
+
+        assert.deepEqual(pendingSnapshot.definitionRequests, {active: 1, peak: 1});
+        assert.equal(pendingSnapshot.pendingResolutionCount, 1);
+    } finally {
+        definitions.resolve([fixture.throwableLocation]);
+        await Promise.all(requests);
+    }
+});
+
+test("counts document symbol requests independently of definition requests", async context => {
+    const usage = createFixture("class Usage { Object value = new |RuntimeException(); }");
+    const target = createConstructorFixture(
+        "RuntimeException",
+        "java.lang",
+        "Exception",
+        "jdt://contents/RuntimeException.java"
+    );
+    const symbols = createDeferred<readonly vscode.DocumentSymbol[]>();
+    const started = createDeferred<void>();
+
+    context.mock.method(vscode.commands, "executeCommand", async (command: string) => {
+        if (command === "vscode.executeDefinitionProvider") {
+            return [new vscode.Location(target.document.uri, target.constructorSymbol.selectionRange)];
+        }
+
+        if (command === "vscode.executeDocumentSymbolProvider") {
+            started.resolve();
+            return symbols.promise;
+        }
+
+        throw new Error("Unexpected command: " + command);
+    });
+
+    mockDocumentProvider(context, [target.document]);
+    const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask());
+    const request = resolver.isThrowableType(usage.document, usage.range.start);
+
+    try {
+        await started.promise;
+
+        assert.deepEqual(resolver.getResourceSnapshot(), {
+            cacheGeneration: 0,
+            cachedResolutionCount: 0,
+            pendingResolutionCount: 1,
+            definitionRequests: {active: 0, peak: 1},
+            documentSymbolRequests: {active: 1, peak: 1}
+        });
+
+        symbols.resolve([target.classSymbol]);
+
+        assert.equal(await request, true);
+        assert.deepEqual(resolver.getResourceSnapshot(), {
+            cacheGeneration: 0,
+            cachedResolutionCount: 1,
+            pendingResolutionCount: 0,
+            definitionRequests: {active: 0, peak: 1},
+            documentSymbolRequests: {active: 0, peak: 1}
+        });
+    } finally {
+        symbols.resolve([target.classSymbol]);
+        await request;
+    }
+});
+
 function mockDefinitionProvider(
     context: TestContext,
     provideDefinitions: (uri: vscode.Uri, position: vscode.Position) => Promise<DefinitionResponse>

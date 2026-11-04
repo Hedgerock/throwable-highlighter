@@ -7,6 +7,7 @@ import {
     VsCodeTypeReference
 } from "@throwable-highlighter/resolution/JavaClassDeclarationReader";
 import {JavaDefinitionClassLocator} from "@throwable-highlighter/resolution/JavaDefinitionClassLocator";
+import {JavaProviderRequestCounter} from "@throwable-highlighter/resolution/JavaProviderRequestCounter";
 import {ThrowableTypeCatalog} from "@throwable-highlighter/resolution/ThrowableTypeCatalog";
 import type {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 import type {
@@ -16,6 +17,15 @@ import type {
     ThrowableTypeResolution
 } from "@throwable-highlighter/resolution/hierarchy/index";
 import type {JavaDefinitionSymbol} from "@throwable-highlighter/resolution/JavaDefinitionClassLocator";
+import type {JavaProviderRequestSnapshot} from "@throwable-highlighter/resolution/JavaProviderRequestCounter";
+
+export type JavaTypeDefinitionResolverResourceSnapshot = {
+    readonly cacheGeneration: number;
+    readonly cachedResolutionCount: number;
+    readonly pendingResolutionCount: number;
+    readonly definitionRequests: JavaProviderRequestSnapshot;
+    readonly documentSymbolRequests: JavaProviderRequestSnapshot;
+};
 
 export class JavaTypeDefinitionResolver {
     private readonly classDeclarationReader: JavaClassDeclarationReader;
@@ -26,6 +36,8 @@ export class JavaTypeDefinitionResolver {
     private readonly pendingResolutions = new Map<string, Promise<ThrowableTypeResolution>>();
     private cacheGeneration = 0;
     private readonly definitionClassLocator = new JavaDefinitionClassLocator();
+    private readonly definitionRequests = new JavaProviderRequestCounter();
+    private readonly documentSymbolRequests = new JavaProviderRequestCounter();
 
     constructor(codeMask: JavaCodeMask) {
         this.classDeclarationReader = new JavaClassDeclarationReader(codeMask);
@@ -35,6 +47,16 @@ export class JavaTypeDefinitionResolver {
         this.cacheGeneration++;
         this.cacheResolutions.clear();
         this.pendingResolutions.clear();
+    }
+
+    public getResourceSnapshot(): JavaTypeDefinitionResolverResourceSnapshot {
+        return {
+            cacheGeneration: this.cacheGeneration,
+            cachedResolutionCount: this.cacheResolutions.size,
+            pendingResolutionCount: this.pendingResolutions.size,
+            definitionRequests: this.definitionRequests.getSnapshot(),
+            documentSymbolRequests: this.documentSymbolRequests.getSnapshot()
+        };
     }
 
     public async isThrowableType(document: vscode.TextDocument, position: vscode.Position): Promise<boolean> {
@@ -146,9 +168,13 @@ export class JavaTypeDefinitionResolver {
         const declarations: ClassDeclaration<VsCodeTypeReference>[] = [];
 
         try {
-            const definitions = await vscode.commands.executeCommand<
-                readonly (vscode.Location | vscode.LocationLink)[]
-            >("vscode.executeDefinitionProvider", reference.document.uri, reference.range.start);
+            const definitions = await this.definitionRequests.track(() =>
+                vscode.commands.executeCommand<readonly (vscode.Location | vscode.LocationLink)[]>(
+                    "vscode.executeDefinitionProvider",
+                    reference.document.uri,
+                    reference.range.start
+                )
+            );
 
             if (definitions === undefined || definitions.length === 0) {
                 return {
@@ -206,9 +232,12 @@ export class JavaTypeDefinitionResolver {
             }
         }
 
-        const symbols = await vscode.commands.executeCommand<
-            readonly (vscode.DocumentSymbol | vscode.SymbolInformation)[]
-        >("vscode.executeDocumentSymbolProvider", document.uri);
+        const symbols = await this.documentSymbolRequests.track(() =>
+            vscode.commands.executeCommand<readonly (vscode.DocumentSymbol | vscode.SymbolInformation)[]>(
+                "vscode.executeDocumentSymbolProvider",
+                document.uri
+            )
+        );
 
         const sourceOffset =
             document.uri.toString() === sourceReference.document.uri.toString()

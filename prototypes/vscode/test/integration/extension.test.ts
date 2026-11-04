@@ -7,6 +7,7 @@ import * as vscode from "vscode";
 import {ThrowableDecorationController} from "@throwable-highlighter/decorations/ThrowableDecorationController";
 import {activate} from "@throwable-highlighter/extension";
 import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
+import type {ResourceMeasurementSnapshot} from "@throwable-highlighter/diagnostics/ThrowableResourceMeasurement";
 
 test("refreshes editors after late Java readiness without blocking activation", async context => {
     context.mock.timers.enable({apis: ["setTimeout"]});
@@ -65,7 +66,76 @@ test("refreshes after content edits and ignores Output and dirty-state events", 
     assert.deepEqual(fixture.operations, ["refresh", "clearCache", "refresh"]);
 });
 
-function createFixture(context: TestContext) {
+test("keeps resource measurements disabled without the exact enabling flag", async context => {
+    for (const flag of [undefined, "0", "true", ""]) {
+        await context.test(flag === undefined ? "missing flag" : JSON.stringify(flag), current => {
+            current.mock.timers.enable({apis: ["setInterval"]});
+            const fixture = createFixture(current, flag);
+            const readMemoryUsage = current.mock.method(process, "memoryUsage");
+            const readResolverSnapshot = current.mock.method(
+                JavaTypeDefinitionResolver.prototype,
+                "getResourceSnapshot"
+            );
+
+            activate(fixture.extensionContext);
+            current.mock.timers.tick(3000);
+
+            assert.equal(readMemoryUsage.mock.callCount(), 0);
+            assert.equal(readResolverSnapshot.mock.callCount(), 0);
+            assert.deepEqual(resourceMeasurements(fixture), []);
+        });
+    }
+});
+
+test("records resource measurements when enabled without requesting refreshes", context => {
+    context.mock.timers.enable({apis: ["setInterval"]});
+    const fixture = createFixture(context, "1");
+    const readMemoryUsage = context.mock.method(process, "memoryUsage");
+    const readResolverSnapshot = context.mock.method(JavaTypeDefinitionResolver.prototype, "getResourceSnapshot");
+
+    activate(fixture.extensionContext);
+
+    const [initial] = resourceMeasurements(fixture);
+
+    assert.equal(resourceMeasurements(fixture).length, 1);
+    assert.equal(initial.processId, process.pid);
+    assert.ok(initial.elapsedMs >= 0);
+    assert.deepEqual(initial.memory, readMemoryUsage.mock.calls[0].result);
+    assert.deepEqual(initial.resolver, readResolverSnapshot.mock.calls[0].result);
+
+    context.mock.timers.tick(1000);
+
+    assert.equal(resourceMeasurements(fixture).length, 2);
+    assert.equal(readMemoryUsage.mock.callCount(), 2);
+    assert.equal(readResolverSnapshot.mock.callCount(), 2);
+    assert.deepEqual(fixture.operations, ["refresh"]);
+});
+
+test("stops resource measurements when extension subscriptions are disposed", context => {
+    context.mock.timers.enable({apis: ["setInterval"]});
+    const fixture = createFixture(context, "1");
+    const readMemoryUsage = context.mock.method(process, "memoryUsage");
+    const readResolverSnapshot = context.mock.method(JavaTypeDefinitionResolver.prototype, "getResourceSnapshot");
+
+    activate(fixture.extensionContext);
+    fixture.dispose();
+
+    context.mock.timers.tick(3000);
+
+    assert.equal(resourceMeasurements(fixture).length, 1);
+    assert.equal(readMemoryUsage.mock.callCount(), 1);
+    assert.equal(readResolverSnapshot.mock.callCount(), 1);
+});
+
+function createFixture(context: TestContext, resourceMeasurementFlag?: string) {
+    const previousResourceMeasurementFlag = process.env.THROWABLE_HIGHLIGHTER_MEASURE_RESOURCES;
+
+    if (resourceMeasurementFlag === undefined) {
+        delete process.env.THROWABLE_HIGHLIGHTER_MEASURE_RESOURCES;
+    } else {
+        process.env.THROWABLE_HIGHLIGHTER_MEASURE_RESOURCES = resourceMeasurementFlag;
+    }
+
     const operations: string[] = [];
     const ready = createDeferred<boolean>();
     const subscriptions: vscode.Disposable[] = [];
@@ -88,8 +158,10 @@ function createFixture(context: TestContext) {
         operations.push("refresh");
     });
 
+    const appendLine = context.mock.fn((_message: string): void => {});
+
     const outputChannel = {
-        appendLine: context.mock.fn((_message: string): void => {}),
+        appendLine,
         dispose: context.mock.fn()
     } as unknown as vscode.OutputChannel;
 
@@ -128,9 +200,26 @@ function createFixture(context: TestContext) {
         }
     };
 
-    context.after(dispose);
+    context.after(() => {
+        dispose();
 
-    return {extensionContext, ready, operations, getExtension, dispose, onDidChangeTextDocument};
+        if (previousResourceMeasurementFlag === undefined) {
+            delete process.env.THROWABLE_HIGHLIGHTER_MEASURE_RESOURCES;
+        } else {
+            process.env.THROWABLE_HIGHLIGHTER_MEASURE_RESOURCES = previousResourceMeasurementFlag;
+        }
+    });
+
+    return {extensionContext, ready, operations, getExtension, dispose, onDidChangeTextDocument, appendLine};
+}
+
+function resourceMeasurements(fixture: ReturnType<typeof createFixture>): ResourceMeasurementSnapshot[] {
+    const prefix = "[resource-measurement] ";
+
+    return fixture.appendLine.mock.calls
+        .map(call => call.arguments[0])
+        .filter(message => message.startsWith(prefix))
+        .map(message => JSON.parse(message.slice(prefix.length)) as ResourceMeasurementSnapshot);
 }
 
 function createDeferred<T>() {
