@@ -329,6 +329,23 @@ npm run benchmark:refresh
 
 Методика и результаты описаны в [исследовании производительности](../../docs/research/vscode-performance.md).
 
+### Локальные измерения ресурсов
+
+Перед запуском расширение собирается командой `npm run compile` из каталога prototypes/vscode.
+
+В поле env конфигурации Extension Development Host задаётся `THROWABLE_HIGHLIGHTER_MEASURE_RESOURCES=1`.
+
+Режим записывает снимки памяти Extension Host и состояния resolver в канал `Throwable Highlighter Prototype` с префиксом
+`[resource-measurement]`.
+
+Первый снимок формируется при запуске сборщика, последующие — с периодом 1000 мс. Освобождение расширения прекращает сбор.
+
+Автоматические проверки покрывают счётчики обращений, смену поколения кэша, периодический сбор, условие включения режима
+и освобождение подписок.
+
+Методика и результаты описаны в
+[исследовании производительности](../../docs/research/vscode-performance.md#память).
+
 ### Запуск тестов в IntelliJ IDEA
 
 Проект содержит [общий шаблон Node.js Test Runner](../../.run/node-test-runner-template.run.xml). Он применяется к новым
