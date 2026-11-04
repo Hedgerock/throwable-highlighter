@@ -496,7 +496,13 @@ test("invalidates a running refresh before a deferred refresh starts", async con
 
     assert.equal(fixture.setDecorations.mock.callCount(), 0);
 
-    context.mock.timers.tick(150);
+    context.mock.timers.tick(119);
+    await fixture.flush();
+
+    assert.equal(fixture.resolve.mock.callCount(), 1);
+    assert.equal(fixture.setDecorations.mock.callCount(), 0);
+
+    context.mock.timers.tick(1);
     await fixture.flush();
 
     assert.equal(fixture.resolve.mock.callCount(), 2);

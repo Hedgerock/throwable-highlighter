@@ -45,6 +45,9 @@ type RefreshTiming = RefreshRequest & {
     readonly startedAt: number;
 };
 
+const DEBOUNCE_IN_MS = 120;
+const MAXIMUM_WAIT_IN_MS = 500;
+
 export class ThrowableDecorationController implements vscode.Disposable {
     private decorationTypes: DecorationTypes;
     private isDisposed = false;
@@ -62,8 +65,8 @@ export class ThrowableDecorationController implements vscode.Disposable {
     ) {
         this.decorationTypes = this.createDecorationTypes();
         this.scheduler = new ThrowableRefreshScheduler(mode => this.runRefresh(mode), {
-            debounceMs: 150,
-            maximumWaitMs: 500
+            debounceMs: DEBOUNCE_IN_MS,
+            maximumWaitMs: MAXIMUM_WAIT_IN_MS
         });
     }
 
