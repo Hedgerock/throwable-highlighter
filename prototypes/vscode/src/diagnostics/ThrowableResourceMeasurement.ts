@@ -5,6 +5,7 @@ export type ResourceMeasurementSnapshot = {
     readonly elapsedMs: number;
     readonly memory: Readonly<NodeJS.MemoryUsage>;
     readonly resolver: JavaTypeDefinitionResolverResourceSnapshot;
+    readonly capturedAtUtc: string;
 };
 
 export type ResourceMeasurementOptions = {
@@ -14,6 +15,7 @@ export type ResourceMeasurementOptions = {
     readonly readMemoryUsage: () => Readonly<NodeJS.MemoryUsage>;
     readonly readResolverSnapshot: () => JavaTypeDefinitionResolverResourceSnapshot;
     readonly onMeasurement: (snapshot: ResourceMeasurementSnapshot) => void;
+    readonly utcNow: () => string;
 };
 
 export class ThrowableResourceMeasurement {
@@ -51,6 +53,7 @@ export class ThrowableResourceMeasurement {
         this.options.onMeasurement({
             processId: this.options.processId,
             elapsedMs: this.options.now() - this.startedAt,
+            capturedAtUtc: this.options.utcNow(),
             memory: this.options.readMemoryUsage(),
             resolver: this.options.readResolverSnapshot()
         });

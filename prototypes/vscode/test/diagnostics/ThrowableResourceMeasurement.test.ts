@@ -18,11 +18,13 @@ test("collects an initial snapshot and reads current values on each interval", c
             processId: 42,
             elapsedMs: 0,
             memory: fixture.state.memory,
+            capturedAtUtc: fixture.state.utcNow,
             resolver: fixture.state.resolver
         }
     ]);
 
     fixture.state.now = 1100;
+    fixture.state.utcNow = "2026-11-04T20:00:01.000Z";
     fixture.state.memory = {...fixture.state.memory, rss: 200};
     fixture.state.resolver = {...fixture.state.resolver, cacheGeneration: 1, cachedResolutionCount: 2};
 
@@ -36,6 +38,7 @@ test("collects an initial snapshot and reads current values on each interval", c
         processId: 42,
         elapsedMs: 1000,
         memory: fixture.state.memory,
+        capturedAtUtc: fixture.state.utcNow,
         resolver: fixture.state.resolver
     });
 
@@ -101,11 +104,26 @@ test("supports disposal from the initial measurement callback", context => {
     assert.equal(fixture.readResolverSnapshot.mock.callCount(), 1);
 });
 
+test("keeps elapsed time independent of UTC clock adjustments", context => {
+    const fixture = createFixture(context);
+
+    fixture.measurement.start();
+    fixture.state.now = 1100;
+    fixture.state.utcNow = "2026-11-04T19:59:00.000Z";
+
+    context.mock.timers.tick(1000);
+
+    assert.equal(fixture.snapshots[1].elapsedMs, 1000);
+    assert.equal(fixture.snapshots[1].capturedAtUtc, "2026-11-04T19:59:00.000Z");
+    assert.equal(fixture.snapshots[0].capturedAtUtc, "2026-11-04T20:00:00.000Z");
+});
+
 function createFixture(context: TestContext) {
     context.mock.timers.enable({apis: ["setInterval"]});
 
     const state = {
         now: 100,
+        utcNow: "2026-11-04T20:00:00.000Z",
         memory: {
             rss: 100,
             heapUsed: 40,
@@ -133,6 +151,7 @@ function createFixture(context: TestContext) {
         processId: 42,
         intervalMs: 1000,
         now: () => state.now,
+        utcNow: () => state.utcNow,
         readMemoryUsage,
         readResolverSnapshot,
         onMeasurement

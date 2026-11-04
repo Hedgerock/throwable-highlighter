@@ -102,6 +102,7 @@ test("records resource measurements when enabled without requesting refreshes", 
     assert.ok(initial.elapsedMs >= 0);
     assert.deepEqual(initial.memory, readMemoryUsage.mock.calls[0].result);
     assert.deepEqual(initial.resolver, readResolverSnapshot.mock.calls[0].result);
+    assert.ok(Number.isFinite(Date.parse(initial.capturedAtUtc)));
 
     context.mock.timers.tick(1000);
 

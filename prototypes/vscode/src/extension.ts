@@ -127,6 +127,7 @@ function getResourceMeasurement(
               processId: process.pid,
               intervalMs: RESOURCE_MEASUREMENT_INTERVAL_IN_MS,
               now: () => performance.now(),
+              utcNow: () => new Date().toISOString(),
               readMemoryUsage: () => process.memoryUsage(),
               readResolverSnapshot: () => definitionResolver.getResourceSnapshot(),
               onMeasurement: snapshot => outputChannel.appendLine("[resource-measurement] " + JSON.stringify(snapshot))
