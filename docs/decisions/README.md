@@ -139,6 +139,7 @@ NNNN-краткое-название.md
 - [ADR-0024: Планирование обновлений подсветки VS Code](0024-vscode-refresh-scheduling.md)
 - [ADR-0025: Локальные замеры обновления подсветки VS Code](0025-vscode-refresh-measurement.md)
 - [ADR-0026: Локальные измерения ресурсов VS Code](0026-vscode-resource-measurement.md)
+- [ADR-0027: Ограничение параллельных обращений к Java-провайдерам VS Code](0027-vscode-java-provider-concurrency.md)
 
 ---
 
