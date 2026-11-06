@@ -77,6 +77,7 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
         javaSupportReadiness,
         controller,
+        definitionResolver,
         colorSettingsPanel,
         outputChannel,
         vscode.window.onDidChangeActiveTextEditor(() => controller.refresh("urgent", "active-editor")),

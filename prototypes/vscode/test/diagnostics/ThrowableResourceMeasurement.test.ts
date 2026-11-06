@@ -26,7 +26,14 @@ test("collects an initial snapshot and reads current values on each interval", c
     fixture.state.now = 1100;
     fixture.state.utcNow = "2026-11-04T20:00:01.000Z";
     fixture.state.memory = {...fixture.state.memory, rss: 200};
-    fixture.state.resolver = {...fixture.state.resolver, cacheGeneration: 1, cachedResolutionCount: 2};
+    fixture.state.resolver = {
+        ...fixture.state.resolver,
+        cacheGeneration: 1,
+        cachedResolutionCount: 2,
+        pendingResolutionCount: 3,
+        definitionRequests: {active: 1, peak: 1},
+        providerRequests: {active: 1, queued: 2, peakActive: 1, peakQueued: 2}
+    };
 
     context.mock.timers.tick(999);
 
@@ -45,6 +52,8 @@ test("collects an initial snapshot and reads current values on each interval", c
     assert.equal(fixture.readMemoryUsage.mock.callCount(), 2);
     assert.equal(fixture.snapshots[0].memory.rss, 100);
     assert.equal(fixture.snapshots[0].resolver.cacheGeneration, 0);
+    assert.equal(fixture.snapshots[0].resolver.providerRequests.queued, 0);
+    assert.equal(fixture.snapshots[1].resolver.providerRequests.queued, 2);
 });
 
 test("does not schedule duplicate sampling when started repeatedly", context => {
@@ -136,7 +145,8 @@ function createFixture(context: TestContext) {
             cachedResolutionCount: 0,
             pendingResolutionCount: 0,
             definitionRequests: {active: 0, peak: 0},
-            documentSymbolRequests: {active: 0, peak: 0}
+            documentSymbolRequests: {active: 0, peak: 0},
+            providerRequests: {active: 0, queued: 0, peakActive: 0, peakQueued: 0}
         }
     };
 

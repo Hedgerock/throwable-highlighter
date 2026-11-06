@@ -465,7 +465,7 @@ test("isolates pending requests and cached results across invalidation", async c
 
                     if (obsoleteFinishesFirst) {
                         obsolete.resolve([fixture.throwableLocation]);
-                        assert.equal(await obsoleteCall, true);
+                        assert.equal(await obsoleteCall, false);
 
                         const joinedCall = fixture.resolver.isThrowableType(
                             fixture.usage.document,
@@ -480,7 +480,7 @@ test("isolates pending requests and cached results across invalidation", async c
                         assert.equal(await activeCall, false);
 
                         obsolete.resolve([fixture.throwableLocation]);
-                        assert.equal(await obsoleteCall, true);
+                        assert.equal(await obsoleteCall, false);
                     }
 
                     assert.equal(
@@ -490,14 +490,7 @@ test("isolates pending requests and cached results across invalidation", async c
 
                     assertMockCalls(fixture.provider, [fixture.definitionCall, fixture.definitionCall]);
 
-                    const documentUris = obsoleteFinishesFirst
-                        ? [fixture.throwableLocation.uri, fixture.plainLocation.uri]
-                        : [fixture.plainLocation.uri, fixture.throwableLocation.uri];
-
-                    assertMockCalls(
-                        fixture.documentProvider,
-                        documentUris.map(uri => [uri])
-                    );
+                    assertMockCalls(fixture.documentProvider, [[fixture.plainLocation.uri]]);
                 } finally {
                     obsolete.resolve([fixture.throwableLocation]);
                     active.resolve([fixture.plainLocation]);
@@ -754,7 +747,13 @@ test("reports pending requests across cache invalidation", async context => {
         cachedResolutionCount: 0,
         pendingResolutionCount: 0,
         definitionRequests: {active: 0, peak: 0},
-        documentSymbolRequests: {active: 0, peak: 0}
+        documentSymbolRequests: {active: 0, peak: 0},
+        providerRequests: {
+            active: 0,
+            queued: 0,
+            peakActive: 0,
+            peakQueued: 0
+        }
     });
 
     const first = resolver.isThrowableType(fixture.usage.document, fixture.usage.range.start);
@@ -768,7 +767,8 @@ test("reports pending requests across cache invalidation", async context => {
             cachedResolutionCount: 0,
             pendingResolutionCount: 1,
             definitionRequests: {active: 1, peak: 1},
-            documentSymbolRequests: {active: 0, peak: 0}
+            documentSymbolRequests: {active: 0, peak: 0},
+            providerRequests: {active: 1, queued: 0, peakActive: 1, peakQueued: 0}
         });
 
         resolver.clearCache();
@@ -778,7 +778,8 @@ test("reports pending requests across cache invalidation", async context => {
             cachedResolutionCount: 0,
             pendingResolutionCount: 0,
             definitionRequests: {active: 1, peak: 1},
-            documentSymbolRequests: {active: 0, peak: 0}
+            documentSymbolRequests: {active: 0, peak: 0},
+            providerRequests: {active: 1, queued: 0, peakActive: 1, peakQueued: 0}
         });
 
         requests.push(resolver.isThrowableType(fixture.usage.document, fixture.usage.range.start));
@@ -788,21 +789,29 @@ test("reports pending requests across cache invalidation", async context => {
             cachedResolutionCount: 0,
             pendingResolutionCount: 1,
             definitionRequests: {active: 2, peak: 2},
-            documentSymbolRequests: {active: 0, peak: 0}
+            documentSymbolRequests: {active: 0, peak: 0},
+            providerRequests: {active: 2, queued: 0, peakActive: 2, peakQueued: 0}
         });
 
         definitions.resolve([fixture.throwableLocation]);
 
-        assert.deepEqual(await Promise.all(requests), [true, true, true]);
+        assert.deepEqual(await Promise.all(requests), [false, false, true]);
         assert.deepEqual(resolver.getResourceSnapshot(), {
             cacheGeneration: 1,
             cachedResolutionCount: 1,
             pendingResolutionCount: 0,
             definitionRequests: {active: 0, peak: 2},
-            documentSymbolRequests: {active: 0, peak: 0}
+            documentSymbolRequests: {active: 0, peak: 0},
+            providerRequests: {active: 0, queued: 0, peakActive: 2, peakQueued: 0}
         });
 
         assert.deepEqual(pendingSnapshot.definitionRequests, {active: 1, peak: 1});
+        assert.deepEqual(pendingSnapshot.providerRequests, {
+            active: 1,
+            queued: 0,
+            peakActive: 1,
+            peakQueued: 0
+        });
         assert.equal(pendingSnapshot.pendingResolutionCount, 1);
     } finally {
         definitions.resolve([fixture.throwableLocation]);
@@ -846,7 +855,8 @@ test("counts document symbol requests independently of definition requests", asy
             cachedResolutionCount: 0,
             pendingResolutionCount: 1,
             definitionRequests: {active: 0, peak: 1},
-            documentSymbolRequests: {active: 1, peak: 1}
+            documentSymbolRequests: {active: 1, peak: 1},
+            providerRequests: {active: 1, queued: 0, peakActive: 1, peakQueued: 0}
         });
 
         symbols.resolve([target.classSymbol]);
@@ -857,11 +867,83 @@ test("counts document symbol requests independently of definition requests", asy
             cachedResolutionCount: 1,
             pendingResolutionCount: 0,
             definitionRequests: {active: 0, peak: 1},
-            documentSymbolRequests: {active: 0, peak: 1}
+            documentSymbolRequests: {active: 0, peak: 1},
+            providerRequests: {active: 0, queued: 0, peakActive: 1, peakQueued: 0}
         });
     } finally {
         symbols.resolve([target.classSymbol]);
         await request;
+    }
+});
+
+test("resolves a transitive type with one provider slot", async context => {
+    const usage = createFixture("class Usage { |CustomException value; }");
+    const custom = createFixture(
+        "package example; class |CustomException extends RuntimeException {}",
+        "file:///CustomException.java"
+    );
+    const parent = createFixture(
+        "package java.lang; public class |RuntimeException extends Exception {}",
+        "jdt://contents/RuntimeException.java"
+    );
+
+    const locations = new Map([
+        [usage.document.uri.toString(), new vscode.Location(custom.document.uri, custom.range)],
+        [custom.document.uri.toString(), new vscode.Location(parent.document.uri, parent.range)]
+    ]);
+    const provider = mockDefinitionProvider(context, async uri => {
+        const location = locations.get(uri.toString());
+        return location === undefined ? [] : [location];
+    });
+    const documentProvider = mockDocumentProvider(context, [custom.document, parent.document]);
+    const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask(), 1);
+
+    context.after(() => resolver.dispose());
+
+    assert.equal(await resolver.isThrowableType(usage.document, usage.range.start), true);
+    assert.equal(provider.mock.callCount(), 2);
+    assert.equal(documentProvider.mock.callCount(), 2);
+
+    assert.deepEqual(resolver.getResourceSnapshot().definitionRequests, {
+        active: 0,
+        peak: 1
+    });
+});
+
+test("does not continue an obsolete hierarchy after opening its definition document", async context => {
+    const usage = createFixture("class Usage { |CustomException value; }");
+    const custom = createFixture(
+        "package example; class |CustomException extends RuntimeException {}",
+        "file:///CustomException.java"
+    );
+    const opened = createDeferred<void>();
+    const definitionDocument = createDeferred<vscode.TextDocument>();
+    const provider = mockDefinitionProvider(context, async () => [
+        new vscode.Location(custom.document.uri, custom.range)
+    ]);
+
+    context.mock.method(vscode.workspace, "openTextDocument", async () => {
+        opened.resolve();
+        return definitionDocument.promise;
+    });
+
+    const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask(), 1);
+    const request = resolver.isThrowableType(usage.document, usage.range.start);
+
+    try {
+        await opened.promise;
+        resolver.clearCache();
+        definitionDocument.resolve(custom.document);
+
+        assert.equal(await request, false);
+        assert.equal(provider.mock.callCount(), 1);
+
+        assert.equal(resolver.getResourceSnapshot().cachedResolutionCount, 0);
+        assert.equal(resolver.getResourceSnapshot().pendingResolutionCount, 0);
+    } finally {
+        resolver.dispose();
+        definitionDocument.resolve(custom.document);
+        await Promise.allSettled([request]);
     }
 });
 
@@ -882,6 +964,203 @@ function mockDefinitionProvider(
     );
 }
 
+test("shares one provider limit between definition and document symbol requests", async context => {
+    const constructorUsage = createFixture(
+        "class ConstructorUsage { Object value = new |RuntimeException(); }",
+        "file:///ConstructorUsage.java"
+    );
+    const classUsage = createFixture("class ClassUsage { |RuntimeException value; }", "file:///ClassUsage.java");
+    const target = createConstructorFixture(
+        "RuntimeException",
+        "java.lang",
+        "Exception",
+        "jdt://contents/RuntimeException.java"
+    );
+    const symbols = createDeferred<readonly vscode.DocumentSymbol[]>();
+    const symbolsStarted = createDeferred<void>();
+    const provider = context.mock.method(
+        vscode.commands,
+        "executeCommand",
+        async (command: string, uri: vscode.Uri) => {
+            if (command === "vscode.executeDefinitionProvider") {
+                const range =
+                    uri.toString() === constructorUsage.document.uri.toString()
+                        ? target.constructorSymbol.selectionRange
+                        : target.classSymbol.selectionRange;
+                return [new vscode.Location(target.document.uri, range)];
+            }
+
+            if (command === "vscode.executeDocumentSymbolProvider") {
+                symbolsStarted.resolve();
+                return symbols.promise;
+            }
+
+            throw new Error("Unexpected command: " + command);
+        }
+    );
+
+    mockDocumentProvider(context, [target.document]);
+
+    const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask(), 1);
+    const first = resolver.isThrowableType(constructorUsage.document, constructorUsage.range.start);
+    const requests = [first];
+
+    try {
+        await symbolsStarted.promise;
+
+        requests.push(resolver.isThrowableType(classUsage.document, classUsage.range.start));
+
+        assert.equal(provider.mock.callCount(), 2);
+        assert.deepEqual(resolver.getResourceSnapshot(), {
+            cacheGeneration: 0,
+            cachedResolutionCount: 0,
+            pendingResolutionCount: 2,
+            definitionRequests: {active: 0, peak: 1},
+            documentSymbolRequests: {active: 1, peak: 1},
+            providerRequests: {active: 1, queued: 1, peakActive: 1, peakQueued: 1}
+        });
+
+        symbols.resolve([target.classSymbol]);
+
+        assert.deepEqual(await Promise.all(requests), [true, true]);
+        assertMockCalls(provider, [
+            ["vscode.executeDefinitionProvider", constructorUsage.document.uri, constructorUsage.range.start],
+            ["vscode.executeDocumentSymbolProvider", target.document.uri],
+            ["vscode.executeDefinitionProvider", classUsage.document.uri, classUsage.range.start]
+        ]);
+        assert.deepEqual(resolver.getResourceSnapshot().definitionRequests, {active: 0, peak: 1});
+        assert.deepEqual(resolver.getResourceSnapshot().documentSymbolRequests, {active: 0, peak: 1});
+        assert.deepEqual(resolver.getResourceSnapshot().providerRequests, {
+            active: 0,
+            queued: 0,
+            peakActive: 1,
+            peakQueued: 1
+        });
+    } finally {
+        resolver.dispose();
+        symbols.resolve([target.classSymbol]);
+        await Promise.allSettled(requests);
+    }
+});
+
+test("cancels queued resolutions on invalidation without releasing active provider slots", async context => {
+    const {definitions, fixture, resolver, requests, queued} = setUpConcurrentVariables(context);
+
+    const pendingSnapshot = resolver.getResourceSnapshot();
+
+    try {
+        assert.equal(pendingSnapshot.pendingResolutionCount, 2);
+        assert.deepEqual(pendingSnapshot.providerRequests, {
+            active: 1,
+            queued: 1,
+            peakActive: 1,
+            peakQueued: 1
+        });
+        assert.equal(fixture.provider.mock.callCount(), 1);
+
+        resolver.clearCache();
+
+        assert.deepEqual(resolver.getResourceSnapshot(), {
+            cacheGeneration: 1,
+            cachedResolutionCount: 0,
+            pendingResolutionCount: 0,
+            definitionRequests: {active: 1, peak: 1},
+            documentSymbolRequests: {active: 0, peak: 0},
+            providerRequests: {active: 1, queued: 0, peakActive: 1, peakQueued: 1}
+        });
+        assert.equal(await queued, false);
+
+        const current = resolver.isThrowableType(fixture.usage.document, fixture.usage.range.start);
+        requests.push(current);
+
+        assert.equal(fixture.provider.mock.callCount(), 1);
+
+        assert.deepEqual(resolver.getResourceSnapshot().providerRequests, {
+            active: 1,
+            queued: 1,
+            peakActive: 1,
+            peakQueued: 1
+        });
+
+        definitions.resolve([fixture.throwableLocation]);
+
+        assert.deepEqual(await Promise.all(requests), [false, false, true]);
+        assertMockCalls(fixture.provider, [fixture.definitionCall, fixture.definitionCall]);
+        assertMockCalls(fixture.documentProvider, [[fixture.throwableLocation.uri]]);
+        assert.deepEqual(resolver.getResourceSnapshot(), {
+            cacheGeneration: 1,
+            cachedResolutionCount: 1,
+            pendingResolutionCount: 0,
+            definitionRequests: {active: 0, peak: 1},
+            documentSymbolRequests: {active: 0, peak: 0},
+            providerRequests: {active: 0, queued: 0, peakActive: 1, peakQueued: 1}
+        });
+        assert.deepEqual(pendingSnapshot.providerRequests, {
+            active: 1,
+            queued: 1,
+            peakActive: 1,
+            peakQueued: 1
+        });
+    } finally {
+        resolver.dispose();
+        definitions.resolve([fixture.throwableLocation]);
+        await Promise.allSettled(requests);
+    }
+});
+
+test("cancels queued resolutions on disposal and prevents further provider work", async context => {
+    const {definitions, fixture, resolver, queued, requests} = setUpConcurrentVariables(context);
+
+    try {
+        assert.deepEqual(resolver.getResourceSnapshot().providerRequests, {
+            active: 1,
+            queued: 1,
+            peakActive: 1,
+            peakQueued: 1
+        });
+
+        resolver.dispose();
+        resolver.dispose();
+        resolver.clearCache();
+
+        assert.equal(await queued, false);
+        assert.deepEqual(resolver.getResourceSnapshot(), {
+            cacheGeneration: 1,
+            cachedResolutionCount: 0,
+            pendingResolutionCount: 0,
+            definitionRequests: {active: 1, peak: 1},
+            documentSymbolRequests: {active: 0, peak: 0},
+            providerRequests: {
+                active: 1,
+                queued: 0,
+                peakActive: 1,
+                peakQueued: 1
+            }
+        });
+
+        assert.equal(await resolver.isThrowableType(fixture.usage.document, fixture.usage.range.start), false);
+        assert.equal(fixture.provider.mock.callCount(), 1);
+
+        definitions.resolve([fixture.throwableLocation]);
+
+        assert.deepEqual(await Promise.all(requests), [false, false]);
+        assertMockCalls(fixture.provider, [fixture.definitionCall]);
+        assertMockCalls(fixture.documentProvider, []);
+        assert.deepEqual(resolver.getResourceSnapshot(), {
+            cacheGeneration: 1,
+            cachedResolutionCount: 0,
+            pendingResolutionCount: 0,
+            definitionRequests: {active: 0, peak: 1},
+            documentSymbolRequests: {active: 0, peak: 0},
+            providerRequests: {active: 0, queued: 0, peakActive: 1, peakQueued: 1}
+        });
+    } finally {
+        resolver.dispose();
+        definitions.resolve([fixture.throwableLocation]);
+        await Promise.allSettled(requests);
+    }
+});
+
 function mockDocumentProvider(context: TestContext, documents: readonly vscode.TextDocument[]) {
     const documentsByUri = new Map(documents.map(document => [document.uri.toString(), document]));
 
@@ -898,7 +1177,8 @@ function mockDocumentProvider(context: TestContext, documents: readonly vscode.T
 
 function createCacheFixture(
     context: TestContext,
-    provideDefinitions: () => Promise<readonly vscode.Location[] | undefined>
+    provideDefinitions: () => Promise<readonly vscode.Location[] | undefined>,
+    maximumConcurrentRequests?: number
 ) {
     const usage = createFixture("class Usage { |RuntimeException value; }");
     const throwable = createFixture(
@@ -913,7 +1193,7 @@ function createCacheFixture(
 
     return {
         usage,
-        resolver: new JavaTypeDefinitionResolver(new JavaCodeMask()),
+        resolver: new JavaTypeDefinitionResolver(new JavaCodeMask(), maximumConcurrentRequests),
         provider,
         documentProvider,
         throwableLocation: new vscode.Location(throwable.document.uri, throwable.range),
@@ -941,6 +1221,18 @@ function assertMockCalls(
         expectedCalls,
         message
     );
+}
+
+function setUpConcurrentVariables(context: TestContext) {
+    const definitions = createDeferred<readonly vscode.Location[]>();
+    const fixture = createCacheFixture(context, () => definitions.promise, 1);
+    const other = createFixture("class OtherUsage { |RuntimeException value; }", "file:///OtherUsage.java");
+    const resolver = fixture.resolver;
+    const first = resolver.isThrowableType(fixture.usage.document, fixture.usage.range.start);
+    const queued = resolver.isThrowableType(other.document, other.range.start);
+    const requests = [first, queued];
+
+    return {definitions, fixture, resolver, queued, requests};
 }
 
 function createConstructorFixture(name: string, packageName: string, superclass: string, uri: string) {

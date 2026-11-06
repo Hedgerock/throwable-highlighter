@@ -8,6 +8,7 @@ import {
 } from "@throwable-highlighter/resolution/JavaClassDeclarationReader";
 import {JavaDefinitionClassLocator} from "@throwable-highlighter/resolution/JavaDefinitionClassLocator";
 import {JavaProviderRequestCounter} from "@throwable-highlighter/resolution/JavaProviderRequestCounter";
+import {JavaProviderRequestLimiter} from "@throwable-highlighter/resolution/JavaProviderRequestLimiter";
 import {ThrowableTypeCatalog} from "@throwable-highlighter/resolution/ThrowableTypeCatalog";
 import type {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 import type {
@@ -18,6 +19,13 @@ import type {
 } from "@throwable-highlighter/resolution/hierarchy/index";
 import type {JavaDefinitionSymbol} from "@throwable-highlighter/resolution/JavaDefinitionClassLocator";
 import type {JavaProviderRequestSnapshot} from "@throwable-highlighter/resolution/JavaProviderRequestCounter";
+import type {JavaProviderRequestLimiterSnapshot} from "@throwable-highlighter/resolution/JavaProviderRequestLimiter";
+
+const DEFAULT_MAXIMUM_CONCURRENT_REQUESTS = 16;
+
+type JavaTypeResolutionContext = HierarchyResolutionContext & {
+    readonly isCurrent: () => boolean;
+};
 
 export type JavaTypeDefinitionResolverResourceSnapshot = {
     readonly cacheGeneration: number;
@@ -25,6 +33,7 @@ export type JavaTypeDefinitionResolverResourceSnapshot = {
     readonly pendingResolutionCount: number;
     readonly definitionRequests: JavaProviderRequestSnapshot;
     readonly documentSymbolRequests: JavaProviderRequestSnapshot;
+    readonly providerRequests: JavaProviderRequestLimiterSnapshot;
 };
 
 export class JavaTypeDefinitionResolver {
@@ -39,14 +48,31 @@ export class JavaTypeDefinitionResolver {
     private readonly definitionRequests = new JavaProviderRequestCounter();
     private readonly documentSymbolRequests = new JavaProviderRequestCounter();
 
-    constructor(codeMask: JavaCodeMask) {
+    private readonly providerRequestLimiter: JavaProviderRequestLimiter;
+    private isDisposed = false;
+
+    constructor(codeMask: JavaCodeMask, maximumConcurrentRequests = DEFAULT_MAXIMUM_CONCURRENT_REQUESTS) {
         this.classDeclarationReader = new JavaClassDeclarationReader(codeMask);
+        this.providerRequestLimiter = new JavaProviderRequestLimiter(maximumConcurrentRequests);
     }
 
     public clearCache(): void {
-        this.cacheGeneration++;
-        this.cacheResolutions.clear();
-        this.pendingResolutions.clear();
+        if (this.isDisposed) {
+            return;
+        }
+
+        this.invalidateCache();
+        this.providerRequestLimiter.cancelPending();
+    }
+
+    public dispose(): void {
+        if (this.isDisposed) {
+            return;
+        }
+
+        this.isDisposed = true;
+        this.invalidateCache();
+        this.providerRequestLimiter.dispose();
     }
 
     public getResourceSnapshot(): JavaTypeDefinitionResolverResourceSnapshot {
@@ -55,19 +81,32 @@ export class JavaTypeDefinitionResolver {
             cachedResolutionCount: this.cacheResolutions.size,
             pendingResolutionCount: this.pendingResolutions.size,
             definitionRequests: this.definitionRequests.getSnapshot(),
-            documentSymbolRequests: this.documentSymbolRequests.getSnapshot()
+            documentSymbolRequests: this.documentSymbolRequests.getSnapshot(),
+            providerRequests: this.providerRequestLimiter.getSnapshot()
         };
     }
 
     public async isThrowableType(document: vscode.TextDocument, position: vscode.Position): Promise<boolean> {
-        const resolution = await this.resolveType(document, position);
+        if (this.isDisposed) {
+            return false;
+        }
 
-        return resolution.kind === "confirmed" && resolution.isThrowable;
+        const generation = this.cacheGeneration;
+        const context: JavaTypeResolutionContext = {
+            visitedDeclarations: new Set(),
+            remainingDepth: MAXIMUM_INHERITANCE_DEPTH,
+            isCurrent: () => !this.isDisposed && generation === this.cacheGeneration
+        };
+
+        const resolution = await this.resolveType(document, position, context);
+
+        return context.isCurrent() && resolution.kind === "confirmed" && resolution.isThrowable;
     }
 
     private async resolveType(
         document: vscode.TextDocument,
-        position: vscode.Position
+        position: vscode.Position,
+        context: JavaTypeResolutionContext
     ): Promise<ThrowableTypeResolution> {
         const reference = this.classDeclarationReader.readTypeReference(document, position);
 
@@ -77,16 +116,17 @@ export class JavaTypeDefinitionResolver {
             };
         }
 
-        return this.resolveReference(reference, {
-            visitedDeclarations: new Set(),
-            remainingDepth: MAXIMUM_INHERITANCE_DEPTH
-        });
+        return this.resolveReference(reference, context);
     }
 
     private async resolveReference(
         reference: VsCodeTypeReference,
-        context: HierarchyResolutionContext
+        context: JavaTypeResolutionContext
     ): Promise<ThrowableTypeResolution> {
+        if (!context.isCurrent()) {
+            return {kind: "unavailable"};
+        }
+
         if (this.classDeclarationReader.readClassDeclaration(reference) !== undefined) {
             return this.resolveHierarchy(reference, context);
         }
@@ -108,7 +148,7 @@ export class JavaTypeDefinitionResolver {
     private async resolveHierarchyWithCache(
         cacheKey: string,
         reference: VsCodeTypeReference,
-        context: HierarchyResolutionContext
+        context: JavaTypeResolutionContext
     ): Promise<ThrowableTypeResolution> {
         const isTopLevelRequest = context.visitedDeclarations.size === 0;
         const pendingResolution = isTopLevelRequest ? this.pendingResolutions.get(cacheKey) : undefined;
@@ -117,7 +157,6 @@ export class JavaTypeDefinitionResolver {
             return pendingResolution;
         }
 
-        const cacheGeneration = this.cacheGeneration;
         const resolutionPromise = this.resolveHierarchy(reference, context);
 
         if (isTopLevelRequest) {
@@ -127,7 +166,11 @@ export class JavaTypeDefinitionResolver {
         try {
             const resolution = await resolutionPromise;
 
-            if (resolution.kind === "confirmed" && cacheGeneration === this.cacheGeneration) {
+            if (!context.isCurrent()) {
+                return {kind: "unavailable"};
+            }
+
+            if (resolution.kind === "confirmed") {
                 this.cacheResolutions.set(cacheKey, resolution.isThrowable);
             }
 
@@ -141,18 +184,22 @@ export class JavaTypeDefinitionResolver {
 
     private async resolveHierarchy(
         reference: VsCodeTypeReference,
-        context: HierarchyResolutionContext
+        context: JavaTypeResolutionContext
     ): Promise<ThrowableTypeResolution> {
-        return this.hierarchyResolver.resolve(
+        const resolution = await this.hierarchyResolver.resolve(
             reference,
             context,
-            candidate => this.resolveDeclarations(candidate),
-            (parentReference, parentContext) => this.resolveReference(parentReference, parentContext)
+            candidate => this.resolveDeclarations(candidate, context),
+            (parentReference, parentContext) =>
+                this.resolveReference(parentReference, {...parentContext, isCurrent: context.isCurrent})
         );
+
+        return context.isCurrent() ? resolution : {kind: "unavailable"};
     }
 
     private async resolveDeclarations(
-        reference: VsCodeTypeReference
+        reference: VsCodeTypeReference,
+        context: JavaTypeResolutionContext
     ): Promise<ClassDeclarationResolution<VsCodeTypeReference>> {
         const localDeclaration = this.classDeclarationReader.readClassDeclaration(reference);
 
@@ -168,12 +215,15 @@ export class JavaTypeDefinitionResolver {
         const declarations: ClassDeclaration<VsCodeTypeReference>[] = [];
 
         try {
-            const definitions = await this.definitionRequests.track(() =>
-                vscode.commands.executeCommand<readonly (vscode.Location | vscode.LocationLink)[]>(
-                    "vscode.executeDefinitionProvider",
-                    reference.document.uri,
-                    reference.range.start
-                )
+            const definitions = await this.runProviderRequest(
+                this.definitionRequests,
+                () =>
+                    vscode.commands.executeCommand<readonly (vscode.Location | vscode.LocationLink)[]>(
+                        "vscode.executeDefinitionProvider",
+                        reference.document.uri,
+                        reference.range.start
+                    ),
+                context
             );
 
             if (definitions === undefined || definitions.length === 0) {
@@ -183,10 +233,28 @@ export class JavaTypeDefinitionResolver {
             }
 
             for (const definition of definitions) {
+                if (!context.isCurrent()) {
+                    return {kind: "unavailable"};
+                }
+
                 try {
                     const location = this.toLocation(definition);
                     const definitionDocument = await vscode.workspace.openTextDocument(location.uri);
-                    const declaration = await this.readDefinitionClass(definitionDocument, location.range, reference);
+
+                    if (!context.isCurrent()) {
+                        return {kind: "unavailable"};
+                    }
+
+                    const declaration = await this.readDefinitionClass(
+                        definitionDocument,
+                        location.range,
+                        reference,
+                        context
+                    );
+
+                    if (!context.isCurrent()) {
+                        return {kind: "unavailable"};
+                    }
 
                     if (declaration === undefined) {
                         hasUnavailableDefinition = true;
@@ -220,7 +288,8 @@ export class JavaTypeDefinitionResolver {
     private async readDefinitionClass(
         document: vscode.TextDocument,
         definitionRange: vscode.Range,
-        sourceReference: VsCodeTypeReference
+        sourceReference: VsCodeTypeReference,
+        context: JavaTypeResolutionContext
     ): Promise<ClassDeclaration<VsCodeTypeReference> | undefined> {
         const directReference = this.classDeclarationReader.readTypeReference(document, definitionRange.start);
 
@@ -232,12 +301,19 @@ export class JavaTypeDefinitionResolver {
             }
         }
 
-        const symbols = await this.documentSymbolRequests.track(() =>
-            vscode.commands.executeCommand<readonly (vscode.DocumentSymbol | vscode.SymbolInformation)[]>(
-                "vscode.executeDocumentSymbolProvider",
-                document.uri
-            )
+        const symbols = await this.runProviderRequest(
+            this.documentSymbolRequests,
+            () =>
+                vscode.commands.executeCommand<readonly (vscode.DocumentSymbol | vscode.SymbolInformation)[]>(
+                    "vscode.executeDocumentSymbolProvider",
+                    document.uri
+                ),
+            context
         );
+
+        if (!context.isCurrent()) {
+            return undefined;
+        }
 
         const sourceOffset =
             document.uri.toString() === sourceReference.document.uri.toString()
@@ -264,6 +340,20 @@ export class JavaTypeDefinitionResolver {
         }
 
         return this.classDeclarationReader.readClassDeclaration(classReference);
+    }
+
+    private runProviderRequest<T>(
+        counter: JavaProviderRequestCounter,
+        operation: () => PromiseLike<T>,
+        context: JavaTypeResolutionContext
+    ): Promise<T> {
+        return this.providerRequestLimiter.run(() => counter.track(operation), context.isCurrent);
+    }
+
+    private invalidateCache(): void {
+        this.cacheGeneration++;
+        this.cacheResolutions.clear();
+        this.pendingResolutions.clear();
     }
 
     private toDefinitionSymbols(

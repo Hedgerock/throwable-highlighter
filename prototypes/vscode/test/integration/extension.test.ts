@@ -35,11 +35,13 @@ test("refreshes editors after late Java readiness without blocking activation", 
 
 test("does not refresh after extension subscriptions are disposed", async context => {
     const fixture = createFixture(context);
+    const disposeResolver = context.mock.method(JavaTypeDefinitionResolver.prototype, "dispose");
 
     activate(fixture.extensionContext);
     await flushTasks();
 
     fixture.dispose();
+    assert.equal(disposeResolver.mock.callCount(), 1);
     fixture.ready.resolve(true);
     await flushTasks();
 
