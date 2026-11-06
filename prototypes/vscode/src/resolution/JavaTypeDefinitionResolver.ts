@@ -21,7 +21,7 @@ import type {JavaDefinitionSymbol} from "@throwable-highlighter/resolution/JavaD
 import type {JavaProviderRequestSnapshot} from "@throwable-highlighter/resolution/JavaProviderRequestCounter";
 import type {JavaProviderRequestLimiterSnapshot} from "@throwable-highlighter/resolution/JavaProviderRequestLimiter";
 
-const DEFAULT_MAXIMUM_CONCURRENT_REQUESTS = 16;
+const DEFAULT_MAXIMUM_CONCURRENT_REQUESTS = 32;
 
 type JavaTypeResolutionContext = HierarchyResolutionContext & {
     readonly isCurrent: () => boolean;
