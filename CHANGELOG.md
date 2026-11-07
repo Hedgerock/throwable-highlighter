@@ -6,6 +6,12 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Added
+
+- Independent highlighting source selection for class declarations and references, explicit imports, `catch`, `throws`,
+  and supported Javadoc tags under `Settings | Tools | Throwable Highlighter`.
+  Existing `catch` source settings carry over on upgrade.
+
 ## [1.4.0] - 2026-10-30
 
 ### Added
