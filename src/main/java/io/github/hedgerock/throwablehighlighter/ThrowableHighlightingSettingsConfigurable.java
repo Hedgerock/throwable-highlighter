@@ -23,15 +23,11 @@ public final class ThrowableHighlightingSettingsConfigurable
     @Override
     public @NotNull JComponent createComponent() {
         ThrowableHighlightingSettingsComponent component = settingsComponent;
-
         if (component == null) {
             component = new ThrowableHighlightingSettingsComponent();
-
-            component.setCatchHighlightingSource(
-                    ThrowableHighlightingSettings.getInstance()
-                            .getCatchHighlightingSource()
+            component.setSelectedSources(
+                    ThrowableHighlightingSettings.getInstance().getHighlightingSources()
             );
-
             settingsComponent = component;
         }
 
@@ -50,37 +46,28 @@ public final class ThrowableHighlightingSettingsConfigurable
     @Override
     public boolean isModified() {
         ThrowableHighlightingSettingsComponent component = settingsComponent;
-
-        return component != null
-                && component.getCatchHighlightingSource()
-                != ThrowableHighlightingSettings.getInstance()
-                .getCatchHighlightingSource();
+        return component != null && !component.getSelectedSources().equals(
+                ThrowableHighlightingSettings.getInstance().getHighlightingSources()
+        );
     }
 
     @Override
     public void apply() {
         ThrowableHighlightingSettingsComponent component = settingsComponent;
-
         if (component == null) {
             return;
         }
 
-        CatchHighlightingSource selectedSource =
-                component.getCatchHighlightingSource();
-
         ThrowableHighlightingSettings settings =
                 ThrowableHighlightingSettings.getInstance();
-
-        if (settings.getCatchHighlightingSource() == selectedSource) {
+        if (!settings.updateHighlightingSources(component.getSelectedSources())) {
             return;
         }
-
-        settings.setCatchSource(selectedSource);
 
         for (Project project : ProjectManager.getInstance().getOpenProjects()) {
             if (!project.isDisposed()) {
                 DaemonCodeAnalyzer.getInstance(project).restart(
-                        "Throwable Highlighter: catch highlighting source changed"
+                        "Throwable Highlighter: highlighting sources changed"
                 );
             }
         }
@@ -89,11 +76,9 @@ public final class ThrowableHighlightingSettingsConfigurable
     @Override
     public void reset() {
         ThrowableHighlightingSettingsComponent component = settingsComponent;
-
         if (component != null) {
-            component.setCatchHighlightingSource(
-                    ThrowableHighlightingSettings.getInstance()
-                            .getCatchHighlightingSource()
+            component.setSelectedSources(
+                    ThrowableHighlightingSettings.getInstance().getHighlightingSources()
             );
         }
     }

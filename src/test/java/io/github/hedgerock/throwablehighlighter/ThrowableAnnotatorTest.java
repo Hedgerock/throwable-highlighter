@@ -10,6 +10,8 @@ import org.jetbrains.annotations.Nullable;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.openapi.util.Disposer;
 
+import java.util.List;
+
 public final class ThrowableAnnotatorTest
         extends LightJavaCodeInsightFixtureTestCase {
 
@@ -24,17 +26,14 @@ public final class ThrowableAnnotatorTest
 
         ThrowableHighlightingSettings settings =
                 ThrowableHighlightingSettings.getInstance();
-
-        CatchHighlightingSource originalSource =
-                settings.getCatchHighlightingSource();
+        ThrowableHighlightingSettings.SettingsState originalState = settings.getState();
 
         Disposer.register(
                 getTestRootDisposable(),
-                () -> ThrowableHighlightingSettings.getInstance()
-                        .setCatchSource(originalSource)
+                () -> settings.loadState(originalState)
         );
 
-        settings.setCatchSource(CatchHighlightingSource.THROWABLE_CATCH);
+        settings.loadState(new ThrowableHighlightingSettings.SettingsState());
     }
 
     public void testShouldKeepCatchBodyHighlightingWithJavaSource() {
@@ -1242,5 +1241,58 @@ public final class ThrowableAnnotatorTest
             }
         }
         """);
+    }
+    public void testShouldKeepOtherContextWithJavaClassSource() {
+        assertOnlyContextUsesJavaSource(ThrowableHighlightingContext.CLASS);
+    }
+
+    public void testShouldKeepOtherContextWithJavaImportSource() {
+        assertOnlyContextUsesJavaSource(ThrowableHighlightingContext.IMPORT);
+    }
+
+    public void testShouldKeepOtherContextWithJavaCatchSource() {
+        assertOnlyContextUsesJavaSource(ThrowableHighlightingContext.CATCH);
+    }
+
+    public void testShouldKeepOtherContextWithJavaThrowsSource() {
+        assertOnlyContextUsesJavaSource(ThrowableHighlightingContext.THROWS);
+    }
+
+    public void testShouldKeepOtherContextWithJavaJavadocSource() {
+        assertOnlyContextUsesJavaSource(ThrowableHighlightingContext.JAVADOC);
+    }
+
+    public void testShouldUseJavaSourceForThrowableClassDeclaration() {
+        ThrowableHighlightingSettings.getInstance().setHighlightingSource(
+                ThrowableHighlightingContext.CLASS,
+                ThrowableHighlightingSource.JAVA
+        );
+
+        configureJava("""
+                class ExampleException extends RuntimeException {
+                }
+                """);
+
+        assertEquals(0, countHighlights(ThrowableHighlighting.THROWABLE_CLASS));
+    }
+
+    private void assertOnlyContextUsesJavaSource(ThrowableHighlightingContext selectedContext) {
+        ThrowableHighlightingSettings.getInstance().setHighlightingSource(
+                selectedContext,
+                ThrowableHighlightingSource.JAVA
+        );
+
+        configureIOExceptionContexts();
+        List<HighlightInfo> highlights = myFixture.doHighlighting();
+
+        for (ThrowableHighlightingContext context : ThrowableHighlightingContext.values()) {
+            TextAttributesKey key = context.getTextAttributesKey();
+            long enableCount = context == ThrowableHighlightingContext.CLASS ? 3 : 1;
+            long actualCount = highlights.stream()
+                    .filter(info -> key.equals(info.forcedTextAttributesKey))
+                    .count();
+
+            assertEquals(context.name(), context == selectedContext ? 0 : enableCount, actualCount);
+        }
     }
 }

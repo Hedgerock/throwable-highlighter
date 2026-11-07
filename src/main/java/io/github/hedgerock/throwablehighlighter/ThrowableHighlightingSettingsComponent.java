@@ -9,35 +9,41 @@ import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComponent;
 import javax.swing.ListCellRenderer;
 import javax.swing.JPanel;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Objects;
 
 public final class ThrowableHighlightingSettingsComponent {
 
-    private final ComboBox<CatchHighlightingSource> catchSourceComboBox =
-            new ComboBox<>(CatchHighlightingSource.values());
-
+    private final EnumMap<ThrowableHighlightingContext, ComboBox<ThrowableHighlightingSource>> sourceComboBoxes =
+            new EnumMap<>(ThrowableHighlightingContext.class);
     private final JPanel panel;
 
     public ThrowableHighlightingSettingsComponent() {
-        catchSourceComboBox.setRenderer(createSourceRenderer());
+        FormBuilder formBuilder = FormBuilder.createFormBuilder();
 
-        JBLabel description = new JBLabel(
-                "<html>"
-                        + "Throwable catch uses the color scheme attributes.<br>"
-                        + "It inherits Throwable class unless configured separately.<br><br>"
-                        + "Java highlighting keeps standard Java highlighting.<br><br>"
-                        + "Configure attributes under:<br>"
-                        + "Editor | Color Scheme | Throwable Highlighter.<br><br>"
-                        + "The color scheme preview always shows Throwable catch attributes.<br>"
-                        + "This choice applies to all projects."
-                        + "</html>"
-        );
+        for (ThrowableHighlightingContext context : ThrowableHighlightingContext.values()) {
+            ComboBox<ThrowableHighlightingSource> comboBox =
+                    new ComboBox<>(ThrowableHighlightingSource.values());
+            comboBox.setName(context.name());
+            comboBox.setRenderer(createSourceRenderer(context));
 
-        panel = FormBuilder.createFormBuilder()
-                .addLabeledComponent(
-                        "Catch highlighting source:",
-                        catchSourceComboBox
-                )
+            sourceComboBoxes.put(context, comboBox);
+            formBuilder.addLabeledComponent(context.getDisplayName() + ":", comboBox);
+        }
+
+        JBLabel description = new JBLabel("""
+                <html>
+                Choose a highlighting source for each context.<br>
+                Java highlighting keeps the IDE's standard highlighting.<br><br>
+                Configure plugin attributes under:<br>
+                Editor | Color Scheme | Throwable Highlighter.<br><br>
+                The color scheme preview shows the plugin's attributes.<br>
+                These choices apply to all projects.
+                </html>
+                """);
+
+        panel = formBuilder
                 .addComponent(description)
                 .addComponentFillVertically(new JPanel(), 0)
                 .getPanel();
@@ -48,41 +54,41 @@ public final class ThrowableHighlightingSettingsComponent {
     }
 
     public @NotNull JComponent getPreferredFocusedComponent() {
-        return catchSourceComboBox;
+        return Objects.requireNonNull(sourceComboBoxes.get(ThrowableHighlightingContext.CLASS));
     }
 
-    public @NotNull CatchHighlightingSource getCatchHighlightingSource() {
-        return Objects.requireNonNull(
-                (CatchHighlightingSource) catchSourceComboBox.getSelectedItem()
+    @NotNull Map<ThrowableHighlightingContext, ThrowableHighlightingSource> getSelectedSources() {
+        EnumMap<ThrowableHighlightingContext, ThrowableHighlightingSource> selectedSources =
+                new EnumMap<>(ThrowableHighlightingContext.class);
+
+        sourceComboBoxes.forEach((context, comboBox) ->
+                selectedSources.put(
+                        context,
+                        Objects.requireNonNull((ThrowableHighlightingSource) comboBox.getSelectedItem())
+                )
+        );
+
+        return selectedSources;
+    }
+
+    void setSelectedSources(
+            @NotNull Map<ThrowableHighlightingContext, ThrowableHighlightingSource> sources
+    ) {
+        sourceComboBoxes.forEach((context, comboBox) ->
+                comboBox.setSelectedItem(sources.get(context))
         );
     }
 
-    public void setCatchHighlightingSource(
-            @NotNull CatchHighlightingSource source
+    private static ListCellRenderer<ThrowableHighlightingSource> createSourceRenderer(
+            ThrowableHighlightingContext context
     ) {
-        catchSourceComboBox.setSelectedItem(source);
-    }
-
-    private static @NotNull ListCellRenderer<CatchHighlightingSource>
-    createSourceRenderer() {
         DefaultListCellRenderer renderer = new DefaultListCellRenderer();
-
         return (list, source, index, selected, focused) -> {
-            renderer.getListCellRendererComponent(
-                    list,
-                    source,
-                    index,
-                    selected,
-                    focused
-            );
-
-            renderer.setText(
-                    source == null ? "" : switch (source) {
-                        case THROWABLE_CATCH -> "Throwable catch";
-                        case JAVA -> "Java highlighting";
-                    }
-            );
-
+            renderer.getListCellRendererComponent(list, source, index, selected, focused);
+            renderer.setText(source == null ? "" : switch (source) {
+                case PLUGIN -> context.getDisplayName();
+                case JAVA -> "Java highlighting";
+            });
             return renderer;
         };
     }

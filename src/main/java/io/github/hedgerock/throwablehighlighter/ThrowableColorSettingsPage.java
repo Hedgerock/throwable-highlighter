@@ -12,32 +12,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
+import java.util.Arrays;
 import java.util.Map;
 
 public final class ThrowableColorSettingsPage implements ColorSettingsPage {
 
-    private static final AttributesDescriptor[] DESCRIPTIONS = {
-            new AttributesDescriptor(
-                    "Throwable class",
-                    ThrowableHighlighting.THROWABLE_CLASS
-            ),
-            new AttributesDescriptor(
-                    "Throwable import",
-                    ThrowableHighlighting.THROWABLE_IMPORT
-            ),
-            new AttributesDescriptor(
-                    "Throwable catch",
-                    ThrowableHighlighting.THROWABLE_CATCH
-            ),
-            new AttributesDescriptor(
-                    "Throwable throws",
-                    ThrowableHighlighting.THROWABLE_THROWS
-            ),
-            new AttributesDescriptor(
-                    "Throwable Javadoc",
-                    ThrowableHighlighting.THROWABLE_JAVADOC
-            )
-    };
+    private static final AttributesDescriptor[] DESCRIPTIONS = Arrays.stream(ThrowableHighlightingContext.values())
+        .map(context -> new AttributesDescriptor(
+                context.getDisplayName(),
+                context.getTextAttributesKey()
+        ))
+        .toArray(AttributesDescriptor[]::new);
 
     @Override
     public @Nullable Icon getIcon() {

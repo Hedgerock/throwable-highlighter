@@ -263,10 +263,8 @@ public final class ThrowableAnnotator implements Annotator {
     }
 
     private boolean shouldApplyHighlighting(ThrowableHighlightingContext context) {
-        return context != ThrowableHighlightingContext.CATCH
-                || ThrowableHighlightingSettings
-                    .getInstance()
-                    .getCatchHighlightingSource() == CatchHighlightingSource.THROWABLE_CATCH;
+        return ThrowableHighlightingSettings.getInstance()
+                .getHighlightingSource(context) == ThrowableHighlightingSource.PLUGIN;
     }
 
     private void applyHighlight(
