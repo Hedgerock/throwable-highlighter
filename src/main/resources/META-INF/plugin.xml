@@ -49,6 +49,20 @@
 
     <change-notes>
         <![CDATA[
+    <h3>1.5.0</h3>
+    <ul>
+        <li>
+            Adds independent highlighting source selection for class declarations
+            and references, explicit imports, <code>catch</code>, <code>throws</code>,
+            and supported Javadoc tags.
+        </li>
+        <li>
+            Choose plugin attributes or <code>Java highlighting</code> for each
+            context under <b>Tools | Throwable Highlighter</b>.
+        </li>
+        <li>Existing <code>catch</code> source settings carry over from version 1.4.0.</li>
+    </ul>
+
     <h3>1.4.0</h3>
     <ul>
         <li>

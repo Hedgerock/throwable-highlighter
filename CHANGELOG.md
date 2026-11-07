@@ -6,6 +6,8 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-07
+
 ### Added
 
 - Independent highlighting source selection for class declarations and references, explicit imports, `catch`, `throws`,
@@ -75,7 +77,8 @@ The project follows Semantic Versioning.
 - Support for custom exception classes and transitive inheritance.
 - Configurable highlighting through the IntelliJ IDEA color scheme.
 
-[Unreleased]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.1.0...v1.2.0
