@@ -71,7 +71,7 @@ type RefreshResolution = {
 const DEBOUNCE_IN_MS = 120;
 const MAXIMUM_WAIT_IN_MS = 500;
 
-const MAXIMUM_CONCURRENT_RESOLUTION = 32;
+const MAXIMUM_CONCURRENT_RESOLUTION = 64;
 
 export class ThrowableDecorationController implements vscode.Disposable {
     private decorationTypes: DecorationTypes;

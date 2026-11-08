@@ -7,7 +7,7 @@ import process from "node:process";
 import {measureRefresh} from "./ThrowableRefreshBenchmark";
 import type {RefreshBenchmarkResult} from "./ThrowableRefreshBenchmark";
 
-const MAXIMUM_CONCURRENT_RESOLUTIONS = 32;
+const MAXIMUM_CONCURRENT_RESOLUTIONS = 64;
 
 const SCENARIOS = [
     {name: "single", refreshCount: 1, editorCount: 1, disposeAfterMs: null},
