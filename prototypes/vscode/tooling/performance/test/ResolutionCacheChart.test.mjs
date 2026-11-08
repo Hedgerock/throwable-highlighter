@@ -75,6 +75,22 @@ test("rejects a cached resolution count stored as text", () => {
     assertInvalidCount("12");
 });
 
+test("compares resolution cache limits when provider concurrency is the same", () => {
+    const archives = createArchives();
+    archives[0].scenario = {providerConcurrencyLimit: 32, resolutionCacheLimit: 256};
+    archives[1].scenario = {providerConcurrencyLimit: 32, resolutionCacheLimit: 512};
+
+    const option = buildResolutionCacheChartOption(archives, {compareCacheLimits: true});
+
+    assert.deepEqual(
+        option.series.map(series => [series.name, series.data.at(-1)[1]]),
+        [
+            ["Лимит 256", 4],
+            ["Лимит 512", 6]
+        ]
+    );
+});
+
 function assertInvalidCount(count) {
     const archives = createArchives();
     archives[1].extensionHostMeasurements[0].resolver.cachedResolutionCount = count;

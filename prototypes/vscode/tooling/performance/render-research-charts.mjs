@@ -11,59 +11,73 @@ import {buildResolutionCacheChartOption} from "./ResolutionCacheChart.mjs";
 
 const repositoryRoot = fileURLToPath(new URL("../../../../", import.meta.url));
 const dataDirectory = path.join(repositoryRoot, "docs/research/data");
-const outputDirectory = path.join(repositoryRoot, "docs/research/figures/vscode-provider-concurrency");
+const figuresDirectory = path.join(repositoryRoot, "docs/research/figures");
 
-const archives = await Promise.all(
-    [16, 32].map(async limit => {
-        const filename = "vscode-resources-limit-" + limit + ".json";
-        const text = await readFile(path.join(dataDirectory, filename), "utf8");
+const providerArchives = await readArchives("vscode-resources-limit-", [16, 32]);
+const cacheArchives = await readArchives("vscode-resources-cache-limit-", [256, 512]);
 
-        return JSON.parse(text.replace(/^\uFEFF/, ""));
-    })
-);
-
-const figures = [
+await renderFigures("vscode-provider-concurrency", [
     {
         filename: "refresh-latency.svg",
         height: 560,
-        option: buildFirstRefreshLatencyChartOption(archives)
+        option: buildFirstRefreshLatencyChartOption(providerArchives)
     },
     {
         filename: "provider-requests.svg",
         height: 800,
-        option: buildProviderRequestsChartOption(archives)
+        option: buildProviderRequestsChartOption(providerArchives)
     },
     {
         filename: "process-memory.svg",
         height: 800,
-        option: buildProcessMemoryChartOption(archives)
+        option: buildProcessMemoryChartOption(providerArchives)
     },
     {
         filename: "resolution-cache.svg",
         height: 560,
-        option: buildResolutionCacheChartOption(archives)
+        option: buildResolutionCacheChartOption(providerArchives)
     }
-];
+]);
 
-await mkdir(outputDirectory, {recursive: true});
+await renderFigures("vscode-resolution-cache", [
+    {
+        filename: "resolution-cache.svg",
+        height: 560,
+        option: buildResolutionCacheChartOption(cacheArchives, {compareCacheLimits: true})
+    }
+]);
 
-for (const figure of figures) {
-    const chart = echarts.init(null, null, {
-        renderer: "svg",
-        ssr: true,
-        width: 1000,
-        height: figure.height
-    });
+function readArchives(prefix, limits) {
+    return Promise.all(
+        limits.map(async limit => {
+            const filename = prefix + limit + ".json";
+            const text = await readFile(path.join(dataDirectory, filename), "utf8");
 
-    try {
-        chart.setOption(figure.option);
+            return JSON.parse(text.replace(/^\uFEFF/, ""));
+        })
+    );
+}
 
-        const outputPath = path.join(outputDirectory, figure.filename);
+async function renderFigures(directory, figures) {
+    const outputDirectory = path.join(figuresDirectory, directory);
+    await mkdir(outputDirectory, {recursive: true});
 
-        await writeFile(outputPath, chart.renderToSVGString() + "\n", "utf8");
+    for (const figure of figures) {
+        const chart = echarts.init(null, null, {
+            renderer: "svg",
+            ssr: true,
+            width: 1000,
+            height: figure.height
+        });
 
-        console.log("Chart saved: " + outputPath);
-    } finally {
-        chart.dispose();
+        try {
+            chart.setOption(figure.option);
+
+            const outputPath = path.join(outputDirectory, figure.filename);
+            await writeFile(outputPath, chart.renderToSVGString() + "\n", "utf8");
+            console.log("Chart saved: " + outputPath);
+        } finally {
+            chart.dispose();
+        }
     }
 }

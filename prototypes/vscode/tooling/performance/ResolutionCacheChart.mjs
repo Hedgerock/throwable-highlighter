@@ -1,7 +1,11 @@
 import {buildResearchPhaseAreas, readResearchTimelines} from "./ResearchChartTimeline.mjs";
 
-export function buildResolutionCacheChartOption(archives) {
-    const timelines = readResearchTimelines(archives, "extensionHostMeasurements", "Extension Host");
+export function buildResolutionCacheChartOption(archives, {compareCacheLimits = false} = {}) {
+    const comparison = compareCacheLimits
+        ? {limitKey: "resolutionCacheLimit", limitLabel: "resolution cache"}
+        : undefined;
+    const timelines = readResearchTimelines(archives, "extensionHostMeasurements", "Extension Host", comparison);
+
     const lines = timelines.map(timeline => ({
         limit: timeline.limit,
         data: timeline.points.map(({seconds, measurement}) => {
@@ -17,6 +21,14 @@ export function buildResolutionCacheChartOption(archives) {
     const sampling = timelines[0].sampling;
     const numberFormat = new Intl.NumberFormat("ru-RU", {maximumFractionDigits: 0});
 
+    const titleSubtextContent = compareCacheLimits
+        ? "По одному ручному прогону на предел кэша.\nОдна запись соответствует месту ссылки на тип."
+        : "Количество записей resolver; по одному ручному прогону на лимит.\nЗапись соответствует ссылке на тип, а не уникальному классу.";
+
+    const graphicsTextContent = compareCacheLimits
+        ? "В заполненном кэше новая запись вытесняет наименее недавно использованную."
+        : "Стабильность на этом наборе файлов не устанавливает предел роста кэша.";
+
     return {
         animation: false,
         backgroundColor: "#ffffff",
@@ -24,8 +36,7 @@ export function buildResolutionCacheChartOption(archives) {
         textStyle: {fontFamily: "Arial, sans-serif", color: "#1f2937"},
         title: {
             text: "Кэш результатов определения типов",
-            subtext:
-                "Количество записей resolver; по одному ручному прогону на лимит.\nЗапись соответствует ссылке на тип, а не уникальному классу.",
+            subtext: titleSubtextContent,
             left: 32,
             top: 24,
             textStyle: {fontSize: 22, fontWeight: 600},
@@ -74,7 +85,7 @@ export function buildResolutionCacheChartOption(archives) {
                                 .map(line => "Лимит " + line.limit + " — " + numberFormat.format(line.data.at(-1)[1]))
                                 .join("; ") +
                             ".",
-                        "Стабильность на этом наборе файлов не устанавливает предел роста кэша."
+                        graphicsTextContent
                     ].join("\n"),
                     font: "13px Arial",
                     lineHeight: 20,

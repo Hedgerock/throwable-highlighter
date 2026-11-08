@@ -1,4 +1,9 @@
-export function readResearchTimelines(archives, measurementsKey, sourceLabel) {
+export function readResearchTimelines(
+    archives,
+    measurementsKey,
+    sourceLabel,
+    {limitKey = "providerConcurrencyLimit", limitLabel = "provider concurrency"} = {}
+) {
     if (!Array.isArray(archives) || archives.length < 2) {
         throw new Error("At least two research archives are required.");
     }
@@ -31,11 +36,11 @@ export function readResearchTimelines(archives, measurementsKey, sourceLabel) {
     const limits = new Set();
 
     return archives.map(archive => {
-        const limit = archive.scenario?.providerConcurrencyLimit;
+        const limit = archive.scenario?.[limitKey];
         const startedAt = Date.parse(archive.sampling?.startedAtUtc);
 
         if (!Number.isInteger(limit) || limit <= 0 || limits.has(limit)) {
-            throw new Error("Archives must have distinct positive provider concurrency limits.");
+            throw new Error("Archives must have distinct positive " + limitLabel + " limits.");
         }
 
         limits.add(limit);
