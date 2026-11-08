@@ -72,6 +72,7 @@ Hook запускает `scripts/check-staged.cjs`.
 | `docs/specification/fixtures/**`, `.githooks/**`, `scripts/**`, `.github/workflows/**` | Обе платформы     |
 | Путь без отдельного правила                                                            | Обе платформы     |
 | JSON-отчёты в docs/research/data                                                       | Не выполняются    |
+| SVG-графики в `docs/research/figures/` | Не выполняются |
 
 Для смешанного набора изменений группы проверок объединяются.
 

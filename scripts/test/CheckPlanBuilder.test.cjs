@@ -109,6 +109,34 @@ const cases = [
         ],
         expected: {intellij: false, vscode: false, formatting: "none"}
     },
+    {
+        name: "skips platform checks for research SVG figures",
+        changes: [
+            {status: "M", path: "docs/research/figures/vscode-provider-concurrency/resolution-cache.svg"}
+        ],
+        expected: {intellij: false, vscode: false, formatting: "none"}
+    },
+    {
+        name: "checks only IntelliJ for a research figure and a plugin icon",
+        changes: [
+            {status: "M", path: "docs/research/figures/vscode-provider-concurrency/resolution-cache.svg"},
+            {status: "M", path: "src/main/resources/META-INF/pluginIcon.svg"}
+        ],
+        expected: {intellij: true, vscode: false, formatting: "none"}
+    },
+    {
+        name: "checks only VS Code for a research figure and a webview icon",
+        changes: [
+            {status: "M", path: "docs/research/figures/vscode-provider-concurrency/resolution-cache.svg"},
+            {status: "M", path: "prototypes/vscode/webview/color-settings/icon-dark.svg"}
+        ],
+        expected: {intellij: false, vscode: true, formatting: "changed"}
+    },
+    {
+        name: "checks both platforms for a non-SVG file in research figures",
+        changes: [{status: "A", path: "docs/research/figures/export.cjs"}],
+        expected: {intellij: true, vscode: true, formatting: "all"}
+    },
 ];
 
 for (const scenario of cases) {
