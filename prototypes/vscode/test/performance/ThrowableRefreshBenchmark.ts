@@ -20,6 +20,7 @@ export type RefreshBenchmarkOptions = {
     readonly refreshCount: number;
     readonly intervalMs: number;
     readonly resolverDelayMs: number;
+    readonly maximumConcurrentResolutions: number;
     readonly editorCount: number;
     readonly disposeAfterMs: number | null;
 };
@@ -38,6 +39,8 @@ type CandidateRequest = {
     readonly number: number;
     readonly document: vscode.TextDocument;
 };
+
+const BENCHMARK_TIMEOUT_MARGIN_MS = 10_000;
 
 export async function measureRefresh(options: RefreshBenchmarkOptions): Promise<RefreshBenchmarkResult> {
     let controller: ThrowableDecorationController | undefined;
@@ -62,7 +65,19 @@ export async function measureRefresh(options: RefreshBenchmarkOptions): Promise<
         complete = resolve;
         fail = reject;
     });
-    const timeout = setTimeout(() => fail(new Error("Refresh benchmark did not finish within 10 seconds.")), 10_000);
+    const refreshWindowsMs = (options.refreshCount - 1) * options.intervalMs;
+    const resolutionBatches = Math.ceil(
+        (options.candidateCount * options.editorCount) / options.maximumConcurrentResolutions
+    );
+    const timeoutMs =
+        Math.max(refreshWindowsMs, options.disposeAfterMs ?? 0) +
+        (resolutionBatches + 1) * options.resolverDelayMs +
+        BENCHMARK_TIMEOUT_MARGIN_MS;
+
+    const timeout = setTimeout(
+        () => fail(new Error("Refresh benchmark did not finish within " + timeoutMs + " ms.")),
+        timeoutMs
+    );
 
     function finishIfReady(): void {
         if (issuedRefreshes !== options.refreshCount || pendingResolutions !== 0) {
@@ -201,7 +216,11 @@ export async function measureRefresh(options: RefreshBenchmarkOptions): Promise<
         const currentController = new ThrowableDecorationController(
             finder,
             resolver,
-            new ThrowableHighlightingContext()
+            new ThrowableHighlightingContext(),
+            undefined,
+            undefined,
+            undefined,
+            options.maximumConcurrentResolutions
         );
 
         controller = currentController;

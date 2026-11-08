@@ -7,6 +7,8 @@ import process from "node:process";
 import {measureRefresh} from "./ThrowableRefreshBenchmark";
 import type {RefreshBenchmarkResult} from "./ThrowableRefreshBenchmark";
 
+const MAXIMUM_CONCURRENT_RESOLUTIONS = 32;
+
 const SCENARIOS = [
     {name: "single", refreshCount: 1, editorCount: 1, disposeAfterMs: null},
     {name: "burst", refreshCount: 20, editorCount: 1, disposeAfterMs: null},
@@ -38,7 +40,8 @@ async function main(): Promise<void> {
                     intervalMs: 100,
                     resolverDelayMs: 250,
                     editorCount: scenario.editorCount,
-                    disposeAfterMs: scenario.disposeAfterMs
+                    disposeAfterMs: scenario.disposeAfterMs,
+                    maximumConcurrentResolutions: MAXIMUM_CONCURRENT_RESOLUTIONS
                 });
 
                 measurements.push({scenario: scenario.name, repetition, ...result});

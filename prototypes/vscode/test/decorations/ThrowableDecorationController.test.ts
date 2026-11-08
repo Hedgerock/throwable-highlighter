@@ -548,11 +548,133 @@ test("measures the latest request using the effective launch", async context => 
     );
 });
 
+test("starts only current candidates when a shared resolution slot is released", async context => {
+    const pending = createDeferred<boolean>();
+    const previous = [createCandidate("class", 0), createCandidate("class", 20)];
+    const current = createCandidate("class", 40);
+    const fixture = createFixture(context, previous, {}, undefined, 1);
+
+    fixture.resolve.mock.mockImplementationOnce(() => pending.promise);
+
+    try {
+        fixture.controller.refresh();
+        await fixture.flush();
+
+        fixture.findCandidates.mock.mockImplementation(() => [current]);
+        fixture.controller.refresh();
+        await fixture.flush();
+
+        assert.deepEqual(
+            fixture.resolve.mock.calls.map(call => call.arguments[1]),
+            [previous[0].range.start]
+        );
+
+        assert.equal(fixture.setDecorations.mock.callCount(), 0);
+
+        pending.resolve(true);
+        await fixture.flush();
+
+        assert.deepEqual(
+            fixture.resolve.mock.calls.map(call => call.arguments[1]),
+            [previous[0].range.start, current.range.start]
+        );
+
+        assertHighlights(fixture, [[current.range], [], [], []]);
+    } finally {
+        pending.resolve(true);
+        await fixture.flush();
+    }
+});
+
+test("shares one resolution limit between visible editors", async context => {
+    const first = createDeferred<boolean>();
+    const second = createDeferred<boolean>();
+    const firstCandidate = createCandidate("class", 0);
+    const secondCandidate = createCandidate("class", 20);
+    const fixture = createFixture(context, [firstCandidate], {}, undefined, 1);
+    const secondDocument = {...fixture.document};
+    const secondDecorations = context.mock.fn<vscode.TextEditor["setDecorations"]>();
+
+    const secondEditor: Pick<vscode.TextEditor, "document" | "setDecorations"> = {
+        document: secondDocument,
+        setDecorations: secondDecorations
+    };
+    fixture.visibleEditors.push(secondEditor as vscode.TextEditor);
+    fixture.findCandidates.mock.mockImplementation(document =>
+        document === fixture.document ? [firstCandidate] : [secondCandidate]
+    );
+    fixture.resolve.mock.mockImplementation(document =>
+        document === fixture.document ? first.promise : second.promise
+    );
+
+    try {
+        fixture.controller.refresh();
+        await fixture.flush();
+
+        assert.deepEqual(
+            fixture.resolve.mock.calls.map(call => call.arguments),
+            [[fixture.document, firstCandidate.range.start]]
+        );
+        assert.equal(fixture.setDecorations.mock.callCount(), 0);
+        assert.equal(secondDecorations.mock.callCount(), 0);
+
+        first.resolve(true);
+        await fixture.flush();
+
+        assert.deepEqual(
+            fixture.resolve.mock.calls.map(call => call.arguments),
+            [
+                [fixture.document, firstCandidate.range.start],
+                [secondDocument, secondCandidate.range.start]
+            ]
+        );
+        assertHighlights(fixture, [[firstCandidate.range], [], [], []]);
+        assert.equal(secondDecorations.mock.callCount(), 0);
+
+        second.resolve(true);
+        await fixture.flush();
+
+        assert.equal(secondDecorations.mock.callCount(), 4);
+        assert.deepEqual(secondDecorations.mock.calls[0].arguments, [
+            fixture.decorationTypes[0],
+            [secondCandidate.range]
+        ]);
+    } finally {
+        first.resolve(true);
+        second.resolve(true);
+        await fixture.flush();
+    }
+});
+
+test("does not start an unprocessed candidate after disposal", async context => {
+    const pending = createDeferred<boolean>();
+    const candidates = [createCandidate("class", 0), createCandidate("class", 20)];
+    const fixture = createFixture(context, candidates, {}, undefined, 1);
+    fixture.resolve.mock.mockImplementationOnce(() => pending.promise);
+
+    try {
+        fixture.controller.refresh();
+        await fixture.flush();
+        assert.equal(fixture.resolve.mock.callCount(), 1);
+
+        fixture.controller.dispose();
+        pending.resolve(true);
+        await fixture.flush();
+
+        assert.equal(fixture.resolve.mock.callCount(), 1);
+        assert.equal(fixture.setDecorations.mock.callCount(), 0);
+    } finally {
+        pending.resolve(true);
+        await fixture.flush();
+    }
+});
+
 function createFixture(
     context: TestContext,
     candidates: ThrowableHighlightingCandidate[] = [],
     colors: ColorSettings = {},
-    onMeasurement?: (measurement: RefreshMeasurement) => void
+    onMeasurement?: (measurement: RefreshMeasurement) => void,
+    maximumConcurrentResolutions?: number
 ) {
     context.mock.timers.enable({apis: ["setTimeout"]});
 
@@ -578,7 +700,8 @@ function createFixture(
         }
     } as vscode.WorkspaceConfiguration;
 
-    context.mock.getter(vscode.window, "visibleTextEditors", () => [editor]);
+    const visibleEditors: vscode.TextEditor[] = [editor];
+    context.mock.getter(vscode.window, "visibleTextEditors", () => visibleEditors);
     context.mock.method(vscode.workspace, "getConfiguration", () => configuration);
 
     const createDecorationType = context.mock.method(
@@ -622,7 +745,8 @@ function createFixture(
         new ThrowableHighlightingContext(),
         undefined,
         undefined,
-        onMeasurement
+        onMeasurement,
+        maximumConcurrentResolutions
     );
     context.after(() => controller.dispose());
 
@@ -635,6 +759,7 @@ function createFixture(
         decorationTypes,
         createDecorationType,
         findCandidates,
+        visibleEditors,
         resolve,
         async flush(): Promise<void> {
             context.mock.timers.tick(0);
