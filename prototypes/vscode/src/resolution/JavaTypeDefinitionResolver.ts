@@ -9,6 +9,7 @@ import {
 import {JavaDefinitionClassLocator} from "@throwable-highlighter/resolution/JavaDefinitionClassLocator";
 import {JavaProviderRequestCounter} from "@throwable-highlighter/resolution/JavaProviderRequestCounter";
 import {JavaProviderRequestLimiter} from "@throwable-highlighter/resolution/JavaProviderRequestLimiter";
+import {JavaTypeResolutionCache} from "@throwable-highlighter/resolution/JavaTypeResolutionCache";
 import {ThrowableTypeCatalog} from "@throwable-highlighter/resolution/ThrowableTypeCatalog";
 import type {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 import type {
@@ -22,6 +23,7 @@ import type {JavaProviderRequestSnapshot} from "@throwable-highlighter/resolutio
 import type {JavaProviderRequestLimiterSnapshot} from "@throwable-highlighter/resolution/JavaProviderRequestLimiter";
 
 const DEFAULT_MAXIMUM_CONCURRENT_REQUESTS = 32;
+const DEFAULT_MAXIMUM_CACHED_RESOLUTIONS = 512;
 
 type JavaTypeResolutionContext = HierarchyResolutionContext & {
     readonly isCurrent: () => boolean;
@@ -41,7 +43,7 @@ export class JavaTypeDefinitionResolver {
     private readonly hierarchyResolver = new ThrowableHierarchyResolver<VsCodeTypeReference>(typeName =>
         ThrowableTypeCatalog.isKnownThrowableType(typeName)
     );
-    private readonly cacheResolutions = new Map<string, boolean>();
+    private readonly cacheResolutions: JavaTypeResolutionCache;
     private readonly pendingResolutions = new Map<string, Promise<ThrowableTypeResolution>>();
     private cacheGeneration = 0;
     private readonly definitionClassLocator = new JavaDefinitionClassLocator();
@@ -51,9 +53,14 @@ export class JavaTypeDefinitionResolver {
     private readonly providerRequestLimiter: JavaProviderRequestLimiter;
     private isDisposed = false;
 
-    constructor(codeMask: JavaCodeMask, maximumConcurrentRequests = DEFAULT_MAXIMUM_CONCURRENT_REQUESTS) {
+    constructor(
+        codeMask: JavaCodeMask,
+        maximumConcurrentRequests = DEFAULT_MAXIMUM_CONCURRENT_REQUESTS,
+        maximumCachedResolutions = DEFAULT_MAXIMUM_CACHED_RESOLUTIONS
+    ) {
         this.classDeclarationReader = new JavaClassDeclarationReader(codeMask);
         this.providerRequestLimiter = new JavaProviderRequestLimiter(maximumConcurrentRequests);
+        this.cacheResolutions = new JavaTypeResolutionCache(maximumCachedResolutions);
     }
 
     public clearCache(): void {

@@ -1161,6 +1161,30 @@ test("cancels queued resolutions on disposal and prevents further provider work"
     }
 });
 
+test("resolves an evicted reference again in the same cache generation", async context => {
+    let definitions: readonly vscode.Location[] = [];
+    const fixture = createCacheFixture(context, async () => definitions, undefined, 1);
+    const other = createFixture("class OtherUsage { |RuntimeException value; }", "file:///OtherUsage.java");
+    const {resolver} = fixture;
+    definitions = [fixture.throwableLocation];
+
+    assert.deepEqual(await resolver.isThrowableType(fixture.usage.document, fixture.usage.range.start), true);
+    assert.equal(await resolver.isThrowableType(other.document, other.range.start), true);
+
+    assert.equal(resolver.getResourceSnapshot().cachedResolutionCount, 1);
+
+    assert.equal(await resolver.isThrowableType(fixture.usage.document, fixture.usage.range.start), true);
+
+    assertMockCalls(fixture.provider, [
+        fixture.definitionCall,
+        ["vscode.executeDefinitionProvider", other.document.uri, other.range.start],
+        fixture.definitionCall
+    ]);
+
+    assert.equal(resolver.getResourceSnapshot().cacheGeneration, 0);
+    assert.equal(resolver.getResourceSnapshot().cachedResolutionCount, 1);
+});
+
 function mockDocumentProvider(context: TestContext, documents: readonly vscode.TextDocument[]) {
     const documentsByUri = new Map(documents.map(document => [document.uri.toString(), document]));
 
@@ -1178,7 +1202,8 @@ function mockDocumentProvider(context: TestContext, documents: readonly vscode.T
 function createCacheFixture(
     context: TestContext,
     provideDefinitions: () => Promise<readonly vscode.Location[] | undefined>,
-    maximumConcurrentRequests?: number
+    maximumConcurrentRequests?: number,
+    maximumCachedResolutions?: number
 ) {
     const usage = createFixture("class Usage { |RuntimeException value; }");
     const throwable = createFixture(
@@ -1193,7 +1218,11 @@ function createCacheFixture(
 
     return {
         usage,
-        resolver: new JavaTypeDefinitionResolver(new JavaCodeMask(), maximumConcurrentRequests),
+        resolver: new JavaTypeDefinitionResolver(
+            new JavaCodeMask(),
+            maximumConcurrentRequests,
+            maximumCachedResolutions
+        ),
         provider,
         documentProvider,
         throwableLocation: new vscode.Location(throwable.document.uri, throwable.range),
