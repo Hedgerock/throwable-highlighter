@@ -142,6 +142,7 @@ NNNN-краткое-название.md
 - [ADR-0027: Ограничение параллельных обращений к Java-провайдерам VS Code](0027-vscode-java-provider-concurrency.md)
 - [ADR-0028: Выбор источника подсветки для контекстов IntelliJ Platform](0028-intellij-context-highlighting-sources.md)
 - [ADR-0029: Ограничение кэша результатов определения типов в VS Code](0029-vscode-bounded-resolution-cache.md)
+- [ADR-0030: Ограничение незавершённых определений типов при подсветке VS Code](0030-vscode-bounded-refresh-resolution.md)
 
 ---
 
