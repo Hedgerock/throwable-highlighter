@@ -1,7 +1,13 @@
 import * as vscode from "vscode";
 
 import type {ThrowableHighlightingContext} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingContext";
-import type {RefreshActivity} from "@throwable-highlighter/decorations/ThrowableDecorationController";
+import type {
+    RefreshActivity,
+    RefreshFailureStage
+} from "@throwable-highlighter/decorations/ThrowableDecorationController";
+
+type RefreshDiagnosticResult =
+    {readonly outcome: "slow" | "applied"} | {readonly outcome: "failed"; readonly stage: RefreshFailureStage};
 
 export const OPEN_DIAGNOSTICS_COMMAND = "throwableHighlighter.prototype.openDiagnostics";
 
@@ -11,6 +17,7 @@ const STATUS_TEXT = {
     "waiting-for-java": "Waiting for Java",
     "java-readiness-unconfirmed": "Java readiness unconfirmed",
     "updating-highlighting": "Updating highlighting",
+    "highlighting-update-failed": "Highlighting update failed",
     ready: "Ready"
 } as const;
 
@@ -25,9 +32,8 @@ type ObservedRefresh = {
     isSlow: boolean;
 };
 
-type RefreshDiagnostic = {
+type RefreshDiagnostic = RefreshDiagnosticResult & {
     readonly generation: number;
-    readonly outcome: "slow" | "applied";
     readonly elapsedMs: number;
 };
 
@@ -37,6 +43,7 @@ export class ThrowableHighlightingStatus implements vscode.Disposable {
     private refresh: ObservedRefresh | undefined;
     private timer: ReturnType<typeof setTimeout> | undefined;
     private isDisposed = false;
+    private refreshFailed = false;
 
     constructor(
         private readonly highlightingContext: ThrowableHighlightingContext,
@@ -84,11 +91,17 @@ export class ThrowableHighlightingStatus implements vscode.Disposable {
             return;
         }
 
+        this.refreshFailed = activity.kind === "failed";
         this.clearRefresh();
         this.render();
 
-        if (refresh.isSlow) {
-            this.report(refresh, "applied");
+        if (activity.kind === "failed") {
+            this.report(refresh, {
+                outcome: "failed",
+                stage: activity.stage
+            });
+        } else if (refresh.isSlow) {
+            this.report(refresh, {outcome: "applied"});
         }
     }
 
@@ -103,6 +116,7 @@ export class ThrowableHighlightingStatus implements vscode.Disposable {
     }
 
     private startRefresh(generation: number): void {
+        this.refreshFailed = false;
         this.clearRefresh();
 
         const editor = vscode.window.activeTextEditor;
@@ -137,7 +151,7 @@ export class ThrowableHighlightingStatus implements vscode.Disposable {
 
         refresh.isSlow = true;
         this.render();
-        this.report(refresh, "slow");
+        this.report(refresh, {outcome: "slow"});
     }
 
     private isCurrentTarget(refresh: ObservedRefresh): boolean {
@@ -155,10 +169,13 @@ export class ThrowableHighlightingStatus implements vscode.Disposable {
     }
 
     private render(): void {
-        const state =
-            this.javaReadiness !== "waiting-for-java" && this.refresh?.isSlow
-                ? "updating-highlighting"
-                : this.javaReadiness;
+        let state: keyof typeof STATUS_TEXT = this.javaReadiness;
+
+        if (this.refreshFailed) {
+            state = "highlighting-update-failed";
+        } else if (state !== "waiting-for-java" && this.refresh?.isSlow) {
+            state = "updating-highlighting";
+        }
 
         const text = STATUS_TEXT[state];
 
@@ -168,12 +185,15 @@ export class ThrowableHighlightingStatus implements vscode.Disposable {
 
         this.item.text = text;
         this.item.busy = state === "waiting-for-java" || state === "updating-highlighting";
+        this.item.severity = this.refreshFailed
+            ? vscode.LanguageStatusSeverity.Error
+            : vscode.LanguageStatusSeverity.Information;
     }
 
-    private report(refresh: ObservedRefresh, outcome: RefreshDiagnostic["outcome"]): void {
+    private report(refresh: ObservedRefresh, result: RefreshDiagnosticResult): void {
         this.onDiagnostic({
             generation: refresh.generation,
-            outcome,
+            ...result,
             elapsedMs: performance.now() - refresh.requestedAt
         });
     }

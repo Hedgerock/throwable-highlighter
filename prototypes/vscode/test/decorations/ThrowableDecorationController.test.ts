@@ -15,7 +15,10 @@ import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
 import type {HighlightingContext} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingContext";
 import type {ThrowableHighlightingCandidate} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingFinder";
-import type {RefreshMeasurement} from "@throwable-highlighter/decorations/ThrowableDecorationController";
+import type {
+    RefreshActivity,
+    RefreshMeasurement
+} from "@throwable-highlighter/decorations/ThrowableDecorationController";
 
 type ColorSettings = Partial<Record<`${HighlightingContext}Color` | `${HighlightingContext}ColorSource`, unknown>>;
 
@@ -669,12 +672,89 @@ test("does not start an unprocessed candidate after disposal", async context => 
     }
 });
 
+test("reports preparation failure and highlights the next editor", async context => {
+    const onActivity = context.mock.fn<(activity: RefreshActivity) => void>();
+    const candidate = createCandidate("class", 0);
+    const fixture = createFixture(context, [], {}, undefined, undefined, onActivity);
+    const firstEditor = fixture.visibleEditors[0];
+    const secondDecorations = context.mock.fn<vscode.TextEditor["setDecorations"]>();
+    const secondEditor = {
+        ...firstEditor,
+        document: {...fixture.document},
+        setDecorations: secondDecorations
+    };
+    fixture.visibleEditors.push(secondEditor);
+    fixture.findCandidates.mock.mockImplementation(document => {
+        if (document === fixture.document) {
+            throw new Error("Candidate preparation failed");
+        }
+
+        return [candidate];
+    });
+
+    fixture.controller.refresh();
+    await fixture.flush();
+
+    assert.equal(fixture.setDecorations.mock.callCount(), 0);
+    assert.equal(secondDecorations.mock.callCount(), 4);
+
+    assert.deepEqual(secondDecorations.mock.calls[0].arguments, [fixture.decorationTypes[0], [candidate.range]]);
+    assert.deepEqual(
+        onActivity.mock.calls.map(call => call.arguments[0]),
+        [
+            {kind: "requested", generation: 1},
+            {kind: "failed", generation: 1, editor: firstEditor, stage: "prepare"},
+            {kind: "applied", generation: 1, editor: secondEditor}
+        ]
+    );
+});
+
+test("reports partial application failure and restores highlighting on the next refresh", async context => {
+    const onActivity = context.mock.fn<(activity: RefreshActivity) => void>();
+    const onMeasurement = context.mock.fn<(measurement: RefreshMeasurement) => void>();
+    const candidate = createCandidate("class", 0);
+    const fixture = createFixture(context, [candidate], {}, onMeasurement, 1, onActivity);
+    const editor = fixture.visibleEditors[0];
+
+    fixture.setDecorations.mock.mockImplementationOnce(() => {
+        throw new Error("Decoration application failed");
+    }, 1);
+
+    fixture.controller.refresh();
+    await fixture.flush();
+
+    assert.equal(fixture.setDecorations.mock.callCount(), 2);
+    assert.equal(onMeasurement.mock.callCount(), 0);
+    assert.deepEqual(
+        onActivity.mock.calls.map(call => call.arguments[0]),
+        [
+            {kind: "requested", generation: 1},
+            {kind: "failed", generation: 1, editor, stage: "apply"}
+        ]
+    );
+
+    fixture.setDecorations.mock.resetCalls();
+    fixture.controller.refresh();
+    await fixture.flush();
+
+    assertHighlights(fixture, [[candidate.range], [], [], []]);
+    assert.equal(onMeasurement.mock.callCount(), 1);
+    assert.deepEqual(
+        onActivity.mock.calls.slice(2).map(call => call.arguments[0]),
+        [
+            {kind: "requested", generation: 2},
+            {kind: "applied", generation: 2, editor}
+        ]
+    );
+});
+
 function createFixture(
     context: TestContext,
     candidates: ThrowableHighlightingCandidate[] = [],
     colors: ColorSettings = {},
     onMeasurement?: (measurement: RefreshMeasurement) => void,
-    maximumConcurrentResolutions?: number
+    maximumConcurrentResolutions?: number,
+    onActivity?: (activity: RefreshActivity) => void
 ) {
     context.mock.timers.enable({apis: ["setTimeout"]});
 
@@ -746,7 +826,8 @@ function createFixture(
         undefined,
         undefined,
         onMeasurement,
-        maximumConcurrentResolutions
+        maximumConcurrentResolutions,
+        onActivity
     );
     context.after(() => controller.dispose());
 

@@ -19,6 +19,11 @@ export const ConfigurationTarget = {
     Workspace: 2
 } satisfies Pick<typeof vscode.ConfigurationTarget, "Global" | "Workspace">;
 
+export const LanguageStatusSeverity = {
+    Information: 0,
+    Error: 2
+} satisfies Pick<typeof vscode.LanguageStatusSeverity, "Information" | "Error">;
+
 export const languages = {
     createLanguageStatusItem(_id: string, _selector: vscode.DocumentSelector): vscode.LanguageStatusItem {
         throw new Error("Unexpected language status request.");
@@ -128,6 +133,7 @@ export default {
     SymbolKind,
     FileType,
     ConfigurationTarget,
+    LanguageStatusSeverity,
     Uri,
     ViewColumn,
     Location,

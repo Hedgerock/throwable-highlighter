@@ -118,6 +118,67 @@ test("cancels the pending timer when disposed", context => {
     assert.deepEqual(fixture.outcomes, []);
 });
 
+test("gives a refresh failure priority over Java readiness and resets it on the next request", context => {
+    const fixture = createFixture(context);
+
+    fixture.status.onRefreshActivity({kind: "requested", generation: 1});
+    fixture.status.onRefreshActivity({
+        kind: "failed",
+        generation: 1,
+        editor: fixture.editor,
+        stage: "prepare"
+    });
+    context.mock.timers.tick(2000);
+
+    assert.equal(fixture.item.text, "Highlighting update failed");
+    assert.equal(fixture.item.severity, vscode.LanguageStatusSeverity.Error);
+    assert.equal(fixture.item.busy, false);
+    assert.deepEqual(fixture.outcomes, ["failed"]);
+
+    fixture.status.setJavaReadiness("ready");
+    assert.equal(fixture.item.text, "Highlighting update failed");
+
+    fixture.status.onRefreshActivity({kind: "requested", generation: 2});
+    assert.equal(fixture.item.text, "Ready");
+    assert.equal(fixture.item.severity, vscode.LanguageStatusSeverity.Information);
+});
+
+test("ignores failures from a previous generation or another editor", context => {
+    const fixture = createFixture(context);
+    fixture.status.setJavaReadiness("ready");
+
+    fixture.status.onRefreshActivity({
+        kind: "requested",
+        generation: 1
+    });
+
+    fixture.status.onRefreshActivity({
+        kind: "requested",
+        generation: 2
+    });
+
+    fixture.status.onRefreshActivity({
+        kind: "failed",
+        generation: 1,
+        editor: fixture.editor,
+        stage: "apply"
+    });
+
+    assert.deepEqual(fixture.outcomes, []);
+    context.mock.timers.tick(2000);
+    assert.equal(fixture.item.text, "Updating highlighting");
+
+    fixture.status.onRefreshActivity({
+        kind: "failed",
+        generation: 2,
+        editor: fixture.editor,
+        stage: "apply"
+    });
+
+    assert.equal(fixture.item.text, "Highlighting update failed");
+    assert.deepEqual(fixture.outcomes, ["slow", "failed"]);
+});
+
 function createFixture(context: TestContext) {
     context.mock.timers.enable({apis: ["setTimeout"]});
 

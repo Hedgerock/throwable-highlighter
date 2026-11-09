@@ -35,9 +35,17 @@ export type RefreshMeasurement = {
     readonly totalMs: number;
 };
 
+export type RefreshFailureStage = "prepare" | "apply";
+
 export type RefreshActivity =
     | {readonly kind: "requested"; readonly generation: number}
-    | {readonly kind: "applied"; readonly generation: number; readonly editor: vscode.TextEditor};
+    | {readonly kind: "applied"; readonly generation: number; readonly editor: vscode.TextEditor}
+    | {
+          readonly kind: "failed";
+          readonly generation: number;
+          readonly editor: vscode.TextEditor;
+          readonly stage: RefreshFailureStage;
+      };
 
 type RefreshRequest = {
     readonly reason: RefreshReason;
@@ -170,8 +178,8 @@ export class ThrowableDecorationController implements vscode.Disposable {
             }
         }
 
-        for (const context of ThrowableHighlightingContext.HIGHLIGHT_CONTEXTS) {
-            target.editor.setDecorations(this.decorationTypes[context], highlights[context]);
+        if (!this.setEditorDecorations(target.editor, highlights, refreshGeneration)) {
+            return;
         }
 
         if (timing !== undefined) {
@@ -211,9 +219,25 @@ export class ThrowableDecorationController implements vscode.Disposable {
         };
     }
 
-    private clear(editor: vscode.TextEditor): void {
-        for (const context of ThrowableHighlightingContext.HIGHLIGHT_CONTEXTS) {
-            editor.setDecorations(this.decorationTypes[context], []);
+    private setEditorDecorations(
+        editor: vscode.TextEditor,
+        highlights: Record<HighlightingContext, vscode.Range[]>,
+        generation: number
+    ): boolean {
+        try {
+            for (const context of ThrowableHighlightingContext.HIGHLIGHT_CONTEXTS) {
+                editor.setDecorations(this.decorationTypes[context], highlights[context]);
+            }
+
+            return true;
+        } catch {
+            this.onRefreshActivity?.({
+                kind: "failed",
+                generation,
+                editor,
+                stage: "apply"
+            });
+            return false;
         }
     }
 
@@ -255,12 +279,26 @@ export class ThrowableDecorationController implements vscode.Disposable {
             const document = editor.document;
 
             if (!this.throwableHighlightingContext.isSupportedDocument(document)) {
-                this.clear(editor);
+                this.setEditorDecorations(editor, this.createHighlights(), generation);
                 continue;
             }
 
             const documentVersion = document.version;
-            const candidates = this.throwableHighlightingFinder.findCandidates(document);
+
+            let candidates: ThrowableHighlightingCandidate[];
+
+            try {
+                candidates = this.throwableHighlightingFinder.findCandidates(document);
+            } catch {
+                this.onRefreshActivity?.({
+                    kind: "failed",
+                    generation,
+                    editor,
+                    stage: "prepare"
+                });
+                continue;
+            }
+
             const target: EditorResolution = {
                 editor,
                 document,

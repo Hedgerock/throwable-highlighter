@@ -4,6 +4,7 @@ import type {TestContext} from "node:test";
 
 import * as vscode from "vscode";
 
+import {ThrowableHighlightingFinder} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingFinder";
 import {ThrowableDecorationController} from "@throwable-highlighter/decorations/ThrowableDecorationController";
 import {OPEN_DIAGNOSTICS_COMMAND} from "@throwable-highlighter/diagnostics/ThrowableHighlightingStatus";
 import {activate} from "@throwable-highlighter/extension";
@@ -145,8 +146,11 @@ test("writes Java readiness failures only to the diagnostics channel", async con
     fixture.getExtension.mock.mockImplementation(() => {
         throw new Error("Private Java startup details");
     });
+    let nowMs = 100;
+    context.mock.method(performance, "now", () => nowMs);
 
     activate(fixture.extensionContext);
+    nowMs = 117.456789;
     await flushTasks();
 
     assert.equal(fixture.languageStatus.busy, false);
@@ -159,12 +163,63 @@ test("writes Java readiness failures only to the diagnostics channel", async con
     assert.ok(messages[0].startsWith(prefix));
     const {elapsedMs, ...result} = JSON.parse(messages[0].slice(prefix.length));
     assert.deepEqual(result, {outcome: "check-failed"});
-    assert.ok(Number.isFinite(elapsedMs) && elapsedMs >= 0);
+    assert.equal(elapsedMs, 17.457);
     assert.deepEqual(
         fixture.appendLine.mock.calls.map(call => call.arguments[0]),
         ["Decoration controller activated."]
     );
     assert.deepEqual(fixture.operations, ["refresh"]);
+});
+
+test("writes only classified highlighting failure details to the diagnostics channel", context => {
+    context.mock.timers.enable({apis: ["setTimeout"]});
+    const fixture = createFixture(context);
+    fixture.refresh.mock.restore();
+
+    const privatePath = "/private/workspace/PrivateException.java";
+    const document = {
+        languageId: "java",
+        uri: {scheme: "file", path: privatePath},
+        version: 1
+    } as vscode.TextDocument;
+
+    const editor = {document} as vscode.TextEditor;
+
+    context.mock.getter(vscode.window, "activeTextEditor", () => editor);
+    context.mock.getter(vscode.window, "visibleTextEditors", () => [editor]);
+
+    context.mock.method(ThrowableHighlightingFinder.prototype, "findCandidates", () => {
+        throw new Error(`PrivateException at ${privatePath}`);
+    });
+    const readResolverSnapshot = context.mock.method(JavaTypeDefinitionResolver.prototype, "getResourceSnapshot");
+
+    let nowMs = 100;
+    context.mock.method(performance, "now", () => nowMs);
+
+    activate(fixture.extensionContext);
+    nowMs = 117.456789;
+    context.mock.timers.tick(0);
+
+    assert.equal(fixture.languageStatus.text, "Highlighting update failed");
+    assert.equal(fixture.appendDiagnosticLine.mock.callCount(), 1);
+    assert.equal(readResolverSnapshot.mock.callCount(), 1);
+
+    const [message] = fixture.appendDiagnosticLine.mock.calls[0].arguments;
+    const prefix = "[highlighting-refresh] ";
+    assert.ok(message.startsWith(prefix));
+    const {elapsedMs, ...result} = JSON.parse(message.slice(prefix.length));
+    assert.deepEqual(result, {
+        generation: 1,
+        outcome: "failed",
+        stage: "prepare",
+        resolver: readResolverSnapshot.mock.calls[0].result
+    });
+    assert.equal(elapsedMs, 17.457);
+    assert.doesNotMatch(message, /PrivateException|\/private\/workspace/);
+    assert.deepEqual(
+        fixture.appendLine.mock.calls.map(call => call.arguments[0]),
+        ["Decoration controller activated."]
+    );
 });
 
 test("opens the diagnostics channel from the Java language status command", context => {
@@ -221,7 +276,7 @@ function createFixture(context: TestContext, resourceMeasurementFlag?: string) {
     context.mock.method(JavaTypeDefinitionResolver.prototype, "clearCache", () => {
         operations.push("clearCache");
     });
-    context.mock.method(ThrowableDecorationController.prototype, "refresh", () => {
+    const refresh = context.mock.method(ThrowableDecorationController.prototype, "refresh", () => {
         operations.push("refresh");
     });
 
@@ -318,6 +373,7 @@ function createFixture(context: TestContext, resourceMeasurementFlag?: string) {
         operations,
         getExtension,
         dispose,
+        refresh,
         disposeDiagnostics,
         onDidChangeTextDocument,
         appendLine,

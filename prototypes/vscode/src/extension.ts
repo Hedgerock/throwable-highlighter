@@ -43,6 +43,7 @@ export function activate(context: vscode.ExtensionContext): void {
             "[highlighting-refresh] " +
                 JSON.stringify({
                     ...diagnostic,
+                    elapsedMs: Number(diagnostic.elapsedMs.toFixed(3)),
                     resolver: definitionResolver.getResourceSnapshot()
                 })
         );
@@ -124,7 +125,13 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         highlightingStatus.setJavaReadiness(isReady ? "ready" : "java-readiness-unconfirmed");
-        diagnosticOutputChannel.appendLine("[java-readiness] " + JSON.stringify(result));
+        diagnosticOutputChannel.appendLine(
+            "[java-readiness] " +
+                JSON.stringify({
+                    ...result,
+                    elapsedMs: Number(result.elapsedMs.toFixed(3))
+                })
+        );
     }
 
     function onDidChangeConfigurationHandler(event: ConfigurationChangeEvent) {
