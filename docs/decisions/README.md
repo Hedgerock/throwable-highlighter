@@ -144,6 +144,7 @@ NNNN-краткое-название.md
 - [ADR-0029: Ограничение кэша результатов определения типов в VS Code](0029-vscode-bounded-resolution-cache.md)
 - [ADR-0030: Ограничение незавершённых определений типов при подсветке VS Code](0030-vscode-bounded-refresh-resolution.md)
 - [ADR-0031: Проверка бюджетов производительности VS Code перед выпуском](0031-vscode-release-performance-budgets.md)
+- [ADR-0032: Локальная диагностика подсветки VS Code](0032-vscode-local-highlighting-diagnostics.md)
 
 ---
 
