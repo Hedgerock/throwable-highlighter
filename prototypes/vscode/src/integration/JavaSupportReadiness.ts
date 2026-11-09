@@ -6,14 +6,21 @@ type JavaExtensionApi = {
     serverReady(): PromiseLike<boolean>;
 };
 
+export type JavaSupportReadinessOutcome =
+    "ready" | "extension-unavailable" | "api-unavailable" | "server-unconfirmed" | "check-failed";
+
+export type JavaSupportReadinessResult = {
+    readonly outcome: JavaSupportReadinessOutcome;
+    readonly elapsedMs: number;
+};
+
 export class JavaSupportReadiness implements vscode.Disposable {
     private hasStarted = false;
     private isDisposed = false;
 
     constructor(
         private readonly getJavaExtension: () => JavaExtension | undefined,
-        private readonly onReady: () => void,
-        private readonly outputChannel: Pick<vscode.OutputChannel, "appendLine">
+        private readonly onResult: (result: JavaSupportReadinessResult) => void
     ) {}
 
     public start(): void {
@@ -30,54 +37,39 @@ export class JavaSupportReadiness implements vscode.Disposable {
     }
 
     private async waitForServerReady(): Promise<void> {
+        const startedAt = performance.now();
+        const outcome = await this.checkReadiness();
+
+        if (!this.isDisposed && outcome !== undefined) {
+            this.onResult({outcome, elapsedMs: performance.now() - startedAt});
+        }
+    }
+
+    private async checkReadiness(): Promise<JavaSupportReadinessOutcome | undefined> {
         try {
             const extension = this.getJavaExtension();
 
             if (extension === undefined) {
-                this.log("Red Hat Java extension is unavailable.");
-
-                return;
+                return "extension-unavailable";
             }
 
             const api: unknown = await extension.activate();
 
             if (this.isDisposed) {
-                return;
+                return undefined;
             }
 
             if (!this.isJavaExtensionApi(api)) {
-                this.log("Red Hat Java API does not provide serverReady().");
-
-                return;
+                return "api-unavailable";
             }
 
-            const isReady = await api.serverReady();
-
-            if (this.isDisposed) {
-                return;
-            }
-
-            if (!isReady) {
-                this.log("Red Hat Java did not confirm standard server readiness.");
-
-                return;
-            }
-
-            this.onReady();
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-
-            this.log("Java readiness initialization failed: " + message);
+            return (await api.serverReady()) ? "ready" : "server-unconfirmed";
+        } catch {
+            return "check-failed";
         }
     }
 
     private isJavaExtensionApi(api: unknown): api is JavaExtensionApi {
         return typeof api === "object" && api !== null && "serverReady" in api && typeof api.serverReady === "function";
-    }
-
-    private log(message: string): void {
-        if (!this.isDisposed) {
-            this.outputChannel.appendLine("[Java support] " + message);
-        }
     }
 }

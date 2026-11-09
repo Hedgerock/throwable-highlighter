@@ -3,6 +3,10 @@ import {test} from "node:test";
 import type {TestContext} from "node:test";
 
 import {JavaSupportReadiness} from "@throwable-highlighter/integration/JavaSupportReadiness";
+import type {
+    JavaSupportReadinessOutcome,
+    JavaSupportReadinessResult
+} from "@throwable-highlighter/integration/JavaSupportReadiness";
 
 type JavaExtensionLookup = ConstructorParameters<typeof JavaSupportReadiness>[0];
 
@@ -14,13 +18,12 @@ test("waits for readiness without blocking the caller", async context => {
 
     assert.equal(fixture.activate.mock.callCount(), 1);
     assert.equal(fixture.serverReady.mock.callCount(), 1);
-    assert.equal(fixture.onReady.mock.callCount(), 0);
+    assertReadinessOutcomes(fixture);
 
     fixture.ready.resolve(true);
     await flushTasks();
 
-    assert.equal(fixture.onReady.mock.callCount(), 1);
-    assert.equal(fixture.appendLine.mock.callCount(), 0);
+    assertReadinessOutcomes(fixture, "ready");
 });
 
 test("handles an already ready server", async context => {
@@ -30,7 +33,7 @@ test("handles an already ready server", async context => {
     fixture.readiness.start();
     await flushTasks();
 
-    assert.equal(fixture.onReady.mock.callCount(), 1);
+    assertReadinessOutcomes(fixture, "ready");
 });
 
 test("starts readiness waiting only once", async context => {
@@ -49,7 +52,7 @@ test("starts readiness waiting only once", async context => {
     assert.equal(fixture.getJavaExtension.mock.callCount(), 1);
     assert.equal(fixture.activate.mock.callCount(), 1);
     assert.equal(fixture.serverReady.mock.callCount(), 1);
-    assert.equal(fixture.onReady.mock.callCount(), 1);
+    assertReadinessOutcomes(fixture, "ready");
 });
 
 test("handles an unavailable Java extension", async context => {
@@ -60,8 +63,7 @@ test("handles an unavailable Java extension", async context => {
     await flushTasks();
 
     assert.equal(fixture.activate.mock.callCount(), 0);
-    assert.equal(fixture.onReady.mock.callCount(), 0);
-    assert.equal(fixture.appendLine.mock.callCount(), 1);
+    assertReadinessOutcomes(fixture, "extension-unavailable");
 });
 
 test("handles incompatible Java APIs", async context => {
@@ -82,8 +84,7 @@ test("handles incompatible Java APIs", async context => {
             await flushTasks();
 
             assert.equal(fixture.serverReady.mock.callCount(), 0);
-            assert.equal(fixture.onReady.mock.callCount(), 0);
-            assert.equal(fixture.appendLine.mock.callCount(), 1);
+            assertReadinessOutcomes(fixture, "api-unavailable");
         });
     }
 });
@@ -106,9 +107,7 @@ test("reports activation and readiness failures", async context => {
             fixture.readiness.start();
             await flushTasks();
 
-            assert.equal(fixture.onReady.mock.callCount(), 0);
-            assert.equal(fixture.appendLine.mock.callCount(), 1);
-            assert.match(fixture.appendLine.mock.calls[0].arguments[0], /Java startup failed/);
+            assertReadinessOutcomes(fixture, "check-failed");
         });
     }
 });
@@ -120,8 +119,7 @@ test("does not refresh when readiness is not confirmed", async context => {
     fixture.readiness.start();
     await flushTasks();
 
-    assert.equal(fixture.onReady.mock.callCount(), 0);
-    assert.equal(fixture.appendLine.mock.callCount(), 1);
+    assertReadinessOutcomes(fixture, "server-unconfirmed");
 });
 
 test("ignores readiness completion after disposal", async context => {
@@ -141,8 +139,7 @@ test("ignores readiness completion after disposal", async context => {
 
             await flushTasks();
 
-            assert.equal(fixture.onReady.mock.callCount(), 0);
-            assert.equal(fixture.appendLine.mock.callCount(), 0);
+            assertReadinessOutcomes(fixture);
         });
     }
 });
@@ -159,8 +156,7 @@ test("does not wait for readiness after disposal during activation", async conte
     await flushTasks();
 
     assert.equal(fixture.serverReady.mock.callCount(), 0);
-    assert.equal(fixture.onReady.mock.callCount(), 0);
-    assert.equal(fixture.appendLine.mock.callCount(), 0);
+    assertReadinessOutcomes(fixture);
 });
 
 test("does not activate Java after disposal", async context => {
@@ -172,8 +168,7 @@ test("does not activate Java after disposal", async context => {
 
     assert.equal(fixture.getJavaExtension.mock.callCount(), 0);
     assert.equal(fixture.activate.mock.callCount(), 0);
-    assert.equal(fixture.onReady.mock.callCount(), 0);
-    assert.equal(fixture.appendLine.mock.callCount(), 0);
+    assertReadinessOutcomes(fixture);
 });
 
 function createFixture(context: TestContext) {
@@ -181,13 +176,22 @@ function createFixture(context: TestContext) {
     const serverReady = context.mock.fn(() => ready.promise);
     const activate = context.mock.fn(async (): Promise<unknown> => ({serverReady}));
     const getJavaExtension = context.mock.fn<JavaExtensionLookup>(() => ({activate}));
-    const onReady = context.mock.fn();
-    const appendLine = context.mock.fn((_message: string): void => {});
 
-    const readiness = new JavaSupportReadiness(getJavaExtension, onReady, {appendLine});
+    const onResult = context.mock.fn<(result: JavaSupportReadinessResult) => void>();
+    const readiness = new JavaSupportReadiness(getJavaExtension, onResult);
     context.after(() => readiness.dispose());
 
-    return {readiness, ready, serverReady, activate, getJavaExtension, onReady, appendLine};
+    return {readiness, ready, serverReady, activate, getJavaExtension, onResult};
+}
+
+function assertReadinessOutcomes(
+    fixture: ReturnType<typeof createFixture>,
+    ...expected: JavaSupportReadinessOutcome[]
+): void {
+    assert.deepEqual(
+        fixture.onResult.mock.calls.map(call => call.arguments[0].outcome),
+        expected
+    );
 }
 
 function createDeferred<T>() {

@@ -42,10 +42,13 @@ test("does not refresh after extension subscriptions are disposed", async contex
 
     fixture.dispose();
     assert.equal(disposeResolver.mock.callCount(), 1);
+    assert.equal(fixture.disposeDiagnostics.mock.callCount(), 1);
+
     fixture.ready.resolve(true);
     await flushTasks();
 
     assert.deepEqual(fixture.operations, ["refresh"]);
+    assert.equal(fixture.appendDiagnosticLine.mock.callCount(), 0);
 });
 
 test("refreshes after content edits and ignores Output and dirty-state events", context => {
@@ -130,6 +133,30 @@ test("stops resource measurements when extension subscriptions are disposed", co
     assert.equal(readResolverSnapshot.mock.callCount(), 1);
 });
 
+test("writes Java readiness failures only to the diagnostics channel", async context => {
+    const fixture = createFixture(context);
+    fixture.getExtension.mock.mockImplementation(() => {
+        throw new Error("Private Java startup details");
+    });
+
+    activate(fixture.extensionContext);
+    await flushTasks();
+
+    const messages = fixture.appendDiagnosticLine.mock.calls.map(call => call.arguments[0]);
+    assert.equal(messages.length, 1);
+
+    const prefix = "[java-readiness] ";
+    assert.ok(messages[0].startsWith(prefix));
+    const {elapsedMs, ...result} = JSON.parse(messages[0].slice(prefix.length));
+    assert.deepEqual(result, {outcome: "check-failed"});
+    assert.ok(Number.isFinite(elapsedMs) && elapsedMs >= 0);
+    assert.deepEqual(
+        fixture.appendLine.mock.calls.map(call => call.arguments[0]),
+        ["Decoration controller activated."]
+    );
+    assert.deepEqual(fixture.operations, ["refresh"]);
+});
+
 function createFixture(context: TestContext, resourceMeasurementFlag?: string) {
     const previousResourceMeasurementFlag = process.env.THROWABLE_HIGHLIGHTER_MEASURE_RESOURCES;
 
@@ -173,7 +200,16 @@ function createFixture(context: TestContext, resourceMeasurementFlag?: string) {
         inspect: () => undefined
     } as unknown as vscode.WorkspaceConfiguration;
 
-    context.mock.method(vscode.window, "createOutputChannel", () => outputChannel);
+    const appendDiagnosticLine = context.mock.fn((_message: string): void => {});
+    const disposeDiagnostics = context.mock.fn();
+    const diagnosticsOutputChannel = {
+        appendLine: appendDiagnosticLine,
+        dispose: disposeDiagnostics
+    } as unknown as vscode.OutputChannel;
+
+    context.mock.method(vscode.window, "createOutputChannel", (name: string) =>
+        name === "Throwable Highlighter Diagnostics" ? diagnosticsOutputChannel : outputChannel
+    );
     context.mock.method(vscode.workspace, "getConfiguration", () => configuration);
     context.mock.method(vscode.Uri, "joinPath", () => extensionUri);
     context.mock.method(vscode.window, "createTextEditorDecorationType", () => ({
@@ -213,7 +249,17 @@ function createFixture(context: TestContext, resourceMeasurementFlag?: string) {
         }
     });
 
-    return {extensionContext, ready, operations, getExtension, dispose, onDidChangeTextDocument, appendLine};
+    return {
+        extensionContext,
+        ready,
+        operations,
+        getExtension,
+        dispose,
+        disposeDiagnostics,
+        onDidChangeTextDocument,
+        appendLine,
+        appendDiagnosticLine
+    };
 }
 
 function resourceMeasurements(fixture: ReturnType<typeof createFixture>): ResourceMeasurementSnapshot[] {

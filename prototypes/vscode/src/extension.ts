@@ -31,6 +31,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const typeReferenceRangeReader = new JavaTypeReferenceRangeReader();
     const definitionResolver = new JavaTypeDefinitionResolver(javaCodeMask);
     const outputChannel = vscode.window.createOutputChannel("Throwable Highlighter Prototype");
+    const diagnosticOutputChannel = vscode.window.createOutputChannel("Throwable Highlighter Diagnostics");
 
     const resourceMeasurement = getResourceMeasurement(definitionResolver, outputChannel);
 
@@ -70,8 +71,13 @@ export function activate(context: vscode.ExtensionContext): void {
 
     const javaSupportReadiness = new JavaSupportReadiness(
         () => vscode.extensions.getExtension<unknown>("redhat.java"),
-        () => invalidateTypeResolutionCache("urgent", "java-ready"),
-        outputChannel
+        result => {
+            if (result.outcome === "ready") {
+                invalidateTypeResolutionCache("urgent", "java-ready");
+            }
+
+            diagnosticOutputChannel.appendLine("[java-readiness] " + JSON.stringify(result));
+        }
     );
 
     context.subscriptions.push(
@@ -80,6 +86,7 @@ export function activate(context: vscode.ExtensionContext): void {
         definitionResolver,
         colorSettingsPanel,
         outputChannel,
+        diagnosticOutputChannel,
         vscode.window.onDidChangeActiveTextEditor(() => controller.refresh("urgent", "active-editor")),
         vscode.window.onDidChangeVisibleTextEditors(() => controller.refresh("urgent", "visible-editors")),
         vscode.workspace.onDidChangeTextDocument(event => {
