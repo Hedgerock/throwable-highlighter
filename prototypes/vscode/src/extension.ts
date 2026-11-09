@@ -38,7 +38,15 @@ export function activate(context: vscode.ExtensionContext): void {
     const definitionResolver = new JavaTypeDefinitionResolver(javaCodeMask);
     const outputChannel = vscode.window.createOutputChannel("Throwable Highlighter Prototype");
     const diagnosticOutputChannel = vscode.window.createOutputChannel("Throwable Highlighter Diagnostics");
-    const highlightingStatus = new ThrowableHighlightingStatus();
+    const highlightingStatus = new ThrowableHighlightingStatus(throwableHighlightingContext, diagnostic => {
+        diagnosticOutputChannel.appendLine(
+            "[highlighting-refresh] " +
+                JSON.stringify({
+                    ...diagnostic,
+                    resolver: definitionResolver.getResourceSnapshot()
+                })
+        );
+    });
 
     const resourceMeasurement = getResourceMeasurement(definitionResolver, outputChannel);
 
@@ -59,7 +67,9 @@ export function activate(context: vscode.ExtensionContext): void {
         throwableHighlightingContext,
         undefined,
         undefined,
-        onMeasurement
+        onMeasurement,
+        undefined,
+        activity => highlightingStatus.onRefreshActivity(activity)
     );
 
     outputChannel.appendLine("Decoration controller activated.");
@@ -113,7 +123,7 @@ export function activate(context: vscode.ExtensionContext): void {
             invalidateTypeResolutionCache("urgent", "java-ready");
         }
 
-        highlightingStatus.setState(isReady ? "ready" : "java-readiness-unconfirmed");
+        highlightingStatus.setJavaReadiness(isReady ? "ready" : "java-readiness-unconfirmed");
         diagnosticOutputChannel.appendLine("[java-readiness] " + JSON.stringify(result));
     }
 

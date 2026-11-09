@@ -35,6 +35,10 @@ export type RefreshMeasurement = {
     readonly totalMs: number;
 };
 
+export type RefreshActivity =
+    | {readonly kind: "requested"; readonly generation: number}
+    | {readonly kind: "applied"; readonly generation: number; readonly editor: vscode.TextEditor};
+
 type RefreshRequest = {
     readonly reason: RefreshReason;
     readonly requestedAt: number;
@@ -89,7 +93,8 @@ export class ThrowableDecorationController implements vscode.Disposable {
         private readonly colorConfigurationReader = new ThrowableColorConfigurationReader(),
         private readonly colorResolver = new ThrowableColorResolver(),
         private readonly onMeasurement?: (measurement: RefreshMeasurement) => void,
-        private readonly maximumConcurrentResolution = MAXIMUM_CONCURRENT_RESOLUTION
+        private readonly maximumConcurrentResolution = MAXIMUM_CONCURRENT_RESOLUTION,
+        private readonly onRefreshActivity?: (activity: RefreshActivity) => void
     ) {
         if (!Number.isSafeInteger(maximumConcurrentResolution) || maximumConcurrentResolution <= 0) {
             throw new RangeError("Maximum concurrent resolution must be a positive integer");
@@ -113,6 +118,8 @@ export class ThrowableDecorationController implements vscode.Disposable {
         if (this.onMeasurement !== undefined) {
             this.pendingRequest = {reason, requestedAt: requestedAt ?? performance.now()};
         }
+
+        this.onRefreshActivity?.({kind: "requested", generation: this.refreshGeneration});
 
         if (mode === "deferred") {
             this.scheduler.request();
@@ -180,6 +187,8 @@ export class ThrowableDecorationController implements vscode.Disposable {
                 totalMs: finishedAt - timing.requestedAt
             });
         }
+
+        this.onRefreshActivity?.({kind: "applied", generation: refreshGeneration, editor: target.editor});
     }
 
     private async isThrowableCandidate(

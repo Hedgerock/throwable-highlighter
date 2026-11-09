@@ -105,6 +105,9 @@ export const window = {
     get visibleTextEditors(): readonly vscode.TextEditor[] {
         return [];
     },
+    get activeTextEditor(): vscode.TextEditor | undefined {
+        return undefined;
+    },
     createTextEditorDecorationType(_options: vscode.DecorationRenderOptions): vscode.TextEditorDecorationType {
         throw new Error("Unexpected decoration type request.");
     },
