@@ -5,6 +5,7 @@ import type {TestContext} from "node:test";
 import * as vscode from "vscode";
 
 import {ThrowableDecorationController} from "@throwable-highlighter/decorations/ThrowableDecorationController";
+import {OPEN_DIAGNOSTICS_COMMAND} from "@throwable-highlighter/diagnostics/ThrowableHighlightingStatus";
 import {activate} from "@throwable-highlighter/extension";
 import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
 import type {ResourceMeasurementSnapshot} from "@throwable-highlighter/diagnostics/ThrowableResourceMeasurement";
@@ -14,6 +15,8 @@ test("refreshes editors after late Java readiness without blocking activation", 
     const fixture = createFixture(context);
 
     assert.equal(activate(fixture.extensionContext), undefined);
+    assert.equal(fixture.languageStatus.busy, true);
+    assert.equal(fixture.languageStatus.text, "Waiting for Java");
     await flushTasks();
 
     assert.deepEqual(fixture.operations, ["refresh"]);
@@ -31,6 +34,8 @@ test("refreshes editors after late Java readiness without blocking activation", 
     await flushTasks();
 
     assert.deepEqual(fixture.operations, ["refresh", "clearCache", "refresh"]);
+    assert.equal(fixture.languageStatus.busy, false);
+    assert.equal(fixture.languageStatus.text, "Ready");
 });
 
 test("does not refresh after extension subscriptions are disposed", async context => {
@@ -126,6 +131,8 @@ test("stops resource measurements when extension subscriptions are disposed", co
     activate(fixture.extensionContext);
     fixture.dispose();
 
+    assert.equal(fixture.disposeLanguageStatus.mock.callCount(), 1);
+
     context.mock.timers.tick(3000);
 
     assert.equal(resourceMeasurements(fixture).length, 1);
@@ -142,6 +149,9 @@ test("writes Java readiness failures only to the diagnostics channel", async con
     activate(fixture.extensionContext);
     await flushTasks();
 
+    assert.equal(fixture.languageStatus.busy, false);
+    assert.equal(fixture.languageStatus.text, "Java readiness unconfirmed");
+
     const messages = fixture.appendDiagnosticLine.mock.calls.map(call => call.arguments[0]);
     assert.equal(messages.length, 1);
 
@@ -155,6 +165,33 @@ test("writes Java readiness failures only to the diagnostics channel", async con
         ["Decoration controller activated."]
     );
     assert.deepEqual(fixture.operations, ["refresh"]);
+});
+
+test("opens the diagnostics channel from the Java language status command", context => {
+    const fixture = createFixture(context);
+
+    activate(fixture.extensionContext);
+
+    assert.deepEqual(
+        fixture.createLanguageStatusItem.mock.calls.map(call => call.arguments[1]),
+        [{language: "java", scheme: "file"}]
+    );
+    assert.deepEqual(fixture.languageStatus.command, {
+        command: OPEN_DIAGNOSTICS_COMMAND,
+        title: "Open Diagnostics"
+    });
+
+    const registration = fixture.registerCommand.mock.calls.find(
+        call => call.arguments[0] === OPEN_DIAGNOSTICS_COMMAND
+    );
+    assert.ok(registration);
+
+    registration.arguments[1]();
+
+    assert.deepEqual(
+        fixture.showDiagnostics.mock.calls.map(call => call.arguments),
+        [[true]]
+    );
 });
 
 function createFixture(context: TestContext, resourceMeasurementFlag?: string) {
@@ -200,12 +237,33 @@ function createFixture(context: TestContext, resourceMeasurementFlag?: string) {
         inspect: () => undefined
     } as unknown as vscode.WorkspaceConfiguration;
 
+    const showDiagnostics = context.mock.fn((_preserverFocus?: boolean): void => {});
+
     const appendDiagnosticLine = context.mock.fn((_message: string): void => {});
     const disposeDiagnostics = context.mock.fn();
     const diagnosticsOutputChannel = {
         appendLine: appendDiagnosticLine,
-        dispose: disposeDiagnostics
+        dispose: disposeDiagnostics,
+        show: showDiagnostics
     } as unknown as vscode.OutputChannel;
+
+    const disposeLanguageStatus = context.mock.fn();
+    const languageStatus: vscode.LanguageStatusItem = {
+        id: "test-highlighting-status",
+        name: undefined,
+        selector: [],
+        severity: 0,
+        text: "",
+        busy: false,
+        command: undefined,
+        dispose: disposeLanguageStatus
+    };
+
+    const createLanguageStatusItem = context.mock.method(
+        vscode.languages,
+        "createLanguageStatusItem",
+        (_id: string, _selector: vscode.DocumentSelector) => languageStatus
+    );
 
     context.mock.method(vscode.window, "createOutputChannel", (name: string) =>
         name === "Throwable Highlighter Diagnostics" ? diagnosticsOutputChannel : outputChannel
@@ -231,7 +289,12 @@ function createFixture(context: TestContext, resourceMeasurementFlag?: string) {
     context.mock.method(vscode.workspace, "onDidRenameFiles", subscribe);
     context.mock.method(vscode.workspace, "onDidChangeWorkspaceFolders", subscribe);
     context.mock.method(vscode.workspace, "onDidChangeConfiguration", subscribe);
-    context.mock.method(vscode.commands, "registerCommand", () => ({dispose: context.mock.fn()}));
+
+    const registerCommand = context.mock.method(
+        vscode.commands,
+        "registerCommand",
+        (_command: string, _callback: (...args: unknown[]) => unknown) => ({dispose: context.mock.fn()})
+    );
 
     const dispose = (): void => {
         for (const subscription of subscriptions.splice(0)) {
@@ -258,7 +321,12 @@ function createFixture(context: TestContext, resourceMeasurementFlag?: string) {
         disposeDiagnostics,
         onDidChangeTextDocument,
         appendLine,
-        appendDiagnosticLine
+        appendDiagnosticLine,
+        languageStatus,
+        createLanguageStatusItem,
+        disposeLanguageStatus,
+        registerCommand,
+        showDiagnostics
     };
 }
 

@@ -6,7 +6,8 @@ const EXTENSION_ID = "hedgerock.throwable-highlighter-vscode-prototype";
 
 const COMMAND_IDS = [
     "throwableHighlighter.prototype.inspectDefinition",
-    "throwableHighlighter.prototype.openColorSettings"
+    "throwableHighlighter.prototype.openColorSettings",
+    "throwableHighlighter.prototype.openDiagnostics"
 ] as const;
 
 suite("Extension activation", () => {

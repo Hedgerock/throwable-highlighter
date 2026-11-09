@@ -15,7 +15,8 @@
   "activationEvents": [
     "onLanguage:java",
     "onCommand:throwableHighlighter.prototype.inspectDefinition",
-    "onCommand:throwableHighlighter.prototype.openColorSettings"
+    "onCommand:throwableHighlighter.prototype.openColorSettings",
+    "onCommand:throwableHighlighter.prototype.openDiagnostics"
   ],
   "main": "./out/extension.js",
   "web-types": "./web-types.json",
@@ -28,6 +29,10 @@
       {
         "command": "throwableHighlighter.prototype.openColorSettings",
         "title": "Throwable Highlighter Prototype: Open Color Settings"
+      },
+      {
+        "command": "throwableHighlighter.prototype.openDiagnostics",
+        "title": "Throwable Highlighter Prototype: Open Diagnostics"
       }
     ],
     "menus": {

@@ -1,6 +1,7 @@
 import process from "node:process";
 
 import * as vscode from "vscode";
+import type {ConfigurationChangeEvent} from "vscode";
 
 import {JavaCatchClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaCatchClauseFinder";
 import {JavaImportClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaImportClauseFinder";
@@ -9,6 +10,10 @@ import {JavaTypeReferenceRangeReader} from "@throwable-highlighter/decorations/h
 import {ThrowableHighlightingContext} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingContext";
 import {ThrowableHighlightingFinder} from "@throwable-highlighter/decorations/highlighting/ThrowableHighlightingFinder";
 import {ThrowableDecorationController} from "@throwable-highlighter/decorations/ThrowableDecorationController";
+import {
+    OPEN_DIAGNOSTICS_COMMAND,
+    ThrowableHighlightingStatus
+} from "@throwable-highlighter/diagnostics/ThrowableHighlightingStatus";
 import {ThrowableResourceMeasurement} from "@throwable-highlighter/diagnostics/ThrowableResourceMeasurement";
 import {JavaSupportReadiness} from "@throwable-highlighter/integration/JavaSupportReadiness";
 import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
@@ -21,6 +26,7 @@ import {
 import {ThrowableColorSettingsResources} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsResources";
 import type {RefreshMode} from "@throwable-highlighter/decorations/scheduling/ThrowableRefreshScheduler";
 import type {RefreshMeasurement, RefreshReason} from "@throwable-highlighter/decorations/ThrowableDecorationController";
+import type {JavaSupportReadinessResult} from "@throwable-highlighter/integration/JavaSupportReadiness";
 
 const RESOURCE_MEASUREMENT_INTERVAL_IN_MS = 1000;
 
@@ -32,6 +38,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const definitionResolver = new JavaTypeDefinitionResolver(javaCodeMask);
     const outputChannel = vscode.window.createOutputChannel("Throwable Highlighter Prototype");
     const diagnosticOutputChannel = vscode.window.createOutputChannel("Throwable Highlighter Diagnostics");
+    const highlightingStatus = new ThrowableHighlightingStatus();
 
     const resourceMeasurement = getResourceMeasurement(definitionResolver, outputChannel);
 
@@ -71,17 +78,12 @@ export function activate(context: vscode.ExtensionContext): void {
 
     const javaSupportReadiness = new JavaSupportReadiness(
         () => vscode.extensions.getExtension<unknown>("redhat.java"),
-        result => {
-            if (result.outcome === "ready") {
-                invalidateTypeResolutionCache("urgent", "java-ready");
-            }
-
-            diagnosticOutputChannel.appendLine("[java-readiness] " + JSON.stringify(result));
-        }
+        onResultHandler
     );
 
     context.subscriptions.push(
         javaSupportReadiness,
+        highlightingStatus,
         controller,
         definitionResolver,
         colorSettingsPanel,
@@ -89,33 +91,51 @@ export function activate(context: vscode.ExtensionContext): void {
         diagnosticOutputChannel,
         vscode.window.onDidChangeActiveTextEditor(() => controller.refresh("urgent", "active-editor")),
         vscode.window.onDidChangeVisibleTextEditors(() => controller.refresh("urgent", "visible-editors")),
-        vscode.workspace.onDidChangeTextDocument(event => {
-            if (event.document.uri.scheme === "output" || event.contentChanges.length === 0) {
-                return;
-            }
-
-            invalidateTypeResolutionCache("deferred", "document-change");
-        }),
+        vscode.workspace.onDidChangeTextDocument(onDidChangeTextDocumentHandler),
         vscode.workspace.onDidCreateFiles(() => invalidateTypeResolutionCache("deferred", "workspace-change")),
         vscode.workspace.onDidDeleteFiles(() => invalidateTypeResolutionCache("deferred", "workspace-change")),
         vscode.workspace.onDidRenameFiles(() => invalidateTypeResolutionCache("deferred", "workspace-change")),
-        vscode.workspace.onDidChangeWorkspaceFolders(() => {
-            invalidateTypeResolutionCache("deferred", "workspace-change");
-            void colorSettingsPanel.refresh();
-        }),
-        vscode.workspace.onDidChangeConfiguration(event => {
-            if (event.affectsConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION)) {
-                controller.refreshConfiguration();
-                void colorSettingsPanel.refresh();
-            }
-        }),
+        vscode.workspace.onDidChangeWorkspaceFolders(onDidChangeWorkspaceFolders),
+        vscode.workspace.onDidChangeConfiguration(onDidChangeConfigurationHandler),
         vscode.commands.registerCommand(INSPECT_DEFINITION_COMMAND, () => definitionProbe.inspectActiveSelection()),
-        vscode.commands.registerCommand(OPEN_COLOR_SETTINGS_COMMAND, () => colorSettingsPanel.show())
+        vscode.commands.registerCommand(OPEN_COLOR_SETTINGS_COMMAND, () => colorSettingsPanel.show()),
+        vscode.commands.registerCommand(OPEN_DIAGNOSTICS_COMMAND, () => diagnosticOutputChannel.show(true))
     );
 
     controller.refresh("urgent", "activation");
     javaSupportReadiness.start();
     resourceMeasurement?.start();
+
+    function onResultHandler(result: JavaSupportReadinessResult) {
+        const isReady = result.outcome === "ready";
+
+        if (isReady) {
+            invalidateTypeResolutionCache("urgent", "java-ready");
+        }
+
+        highlightingStatus.setState(isReady ? "ready" : "java-readiness-unconfirmed");
+        diagnosticOutputChannel.appendLine("[java-readiness] " + JSON.stringify(result));
+    }
+
+    function onDidChangeConfigurationHandler(event: ConfigurationChangeEvent) {
+        if (event.affectsConfiguration(ThrowableHighlightingContext.CONFIGURATION_SECTION)) {
+            controller.refreshConfiguration();
+            void colorSettingsPanel.refresh();
+        }
+    }
+
+    function onDidChangeWorkspaceFolders() {
+        invalidateTypeResolutionCache("deferred", "workspace-change");
+        void colorSettingsPanel.refresh();
+    }
+
+    function onDidChangeTextDocumentHandler(event: vscode.TextDocumentChangeEvent) {
+        if (event.document.uri.scheme === "output" || event.contentChanges.length === 0) {
+            return;
+        }
+
+        invalidateTypeResolutionCache("deferred", "document-change");
+    }
 }
 
 function getRefreshMeasurementHandler(outputChannel: vscode.OutputChannel) {

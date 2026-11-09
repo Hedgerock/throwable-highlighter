@@ -19,6 +19,12 @@ export const ConfigurationTarget = {
     Workspace: 2
 } satisfies Pick<typeof vscode.ConfigurationTarget, "Global" | "Workspace">;
 
+export const languages = {
+    createLanguageStatusItem(_id: string, _selector: vscode.DocumentSelector): vscode.LanguageStatusItem {
+        throw new Error("Unexpected language status request.");
+    }
+} satisfies Pick<typeof vscode.languages, "createLanguageStatusItem">;
+
 export const Uri = {
     joinPath(_base: vscode.Uri, ..._pathSegments: string[]): vscode.Uri {
         throw new Error("Unexpected URI join request.");
@@ -126,5 +132,6 @@ export default {
     commands,
     extensions,
     workspace,
-    window
+    window,
+    languages
 };
