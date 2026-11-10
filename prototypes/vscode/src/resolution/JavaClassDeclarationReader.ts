@@ -1,5 +1,9 @@
 import * as vscode from "vscode";
 
+import {JavaCatchClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaCatchClauseFinder";
+import {JavaImportClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaImportClauseFinder";
+import {JavaThrowsClauseFinder} from "@throwable-highlighter/decorations/highlighting/JavaThrowsClauseFinder";
+import {JavaTypeReferenceRangeReader} from "@throwable-highlighter/decorations/highlighting/JavaTypeReferenceRangeReader";
 import {JavaClassNameReader} from "@throwable-highlighter/resolution/JavaClassNameReader";
 import type {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 import type {
@@ -15,11 +19,20 @@ export type VsCodeTypeReference = TypeReference & {
 
 export class JavaClassDeclarationReader {
     private readonly classNameReader = new JavaClassNameReader();
+    private readonly typeReferenceRangeReader = new JavaTypeReferenceRangeReader();
+    private readonly importClauseFinder = new JavaImportClauseFinder();
+    private readonly catchClauseFinder = new JavaCatchClauseFinder(this.typeReferenceRangeReader);
+    private readonly throwsClauseFinder = new JavaThrowsClauseFinder(this.typeReferenceRangeReader);
 
     private static readonly IDENTIFIER_PATTERN = /[\p{L}\p{Nl}\p{Sc}\p{Pc}][\p{ID_Continue}\p{Sc}\p{Cf}]*/u;
 
     private static readonly SUPERCLASS_PATTERN = new RegExp(
         String.raw`^\s*(?:${JavaClassDeclarationReader.IDENTIFIER_PATTERN.source}\s*\.\s*)*(${JavaClassDeclarationReader.IDENTIFIER_PATTERN.source})`,
+        "u"
+    );
+
+    private static readonly EXTENDS_TYPE_PREFIX_PATTERN = new RegExp(
+        String.raw`(?<![\p{ID_Continue}\p{Sc}\p{Cf}])extends\s+(?:${JavaClassDeclarationReader.IDENTIFIER_PATTERN.source}\s*\.\s*)*$`,
         "u"
     );
 
@@ -29,6 +42,19 @@ export class JavaClassDeclarationReader {
     };
 
     constructor(private readonly codeMask: JavaCodeMask) {}
+
+    public isExplicitTypeReference(reference: VsCodeTypeReference): boolean {
+        const {document, range} = reference;
+        const source = this.codeMask.maskNonCode(document.getText());
+        const offset = document.offsetAt(range.start);
+
+        return (
+            JavaClassDeclarationReader.EXTENDS_TYPE_PREFIX_PATTERN.test(source.slice(0, offset)) ||
+            this.importClauseFinder.findClauses(source).some(clause => clause.typeRange?.start === offset) ||
+            this.catchClauseFinder.findTypeReferenceRanges(source).some(range => range.start === offset) ||
+            this.throwsClauseFinder.findTypeReferenceRanges(source).some(range => range.start === offset)
+        );
+    }
 
     public readTypeReference(
         document: vscode.TextDocument,

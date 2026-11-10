@@ -910,6 +910,87 @@ test("resolves a transitive type with one provider slot", async context => {
     });
 });
 
+test("uses a full JDT document range for an explicit type reference", async context => {
+    const declaration = "public class RuntimeException extends Exception {}";
+    const parent = createFixture(
+        "package java.lang;\n\npublic class |RuntimeException extends Exception {}\n",
+        "jdt://contents/java.base/java.lang/RuntimeException.java"
+    );
+
+    const parentSymbol = createDocumentSymbol(
+        parent.document,
+        vscode.SymbolKind.Class,
+        "RuntimeException",
+        declaration
+    );
+    const fullRange = rangeOf(parent.document, parent.document.getText());
+    const definition = new vscode.Location(parent.document.uri, fullRange);
+
+    const scenarios = [
+        {
+            name: "superclass reference",
+            source: "class |LibraryException extends RuntimeException {}",
+            expected: true
+        },
+        {
+            name: "same-name method invocation",
+            source: "class Usage { void run() { |RuntimeException(); } }",
+            expected: false
+        },
+        {
+            name: "direct reference in a qualified extends clause",
+            source: "class LibraryException\n    extends java.lang.|RuntimeException {}",
+            expected: true
+        },
+        {
+            name: "import reference",
+            source: "import java.lang.|RuntimeException;",
+            expected: true
+        },
+        {
+            name: "catch reference",
+            source: "class Usage { void run() { try {} catch (java.lang.|RuntimeException exception) {} } }",
+            expected: true
+        },
+        {
+            name: "throws reference",
+            source: "class Usage {\n    void run() throws java.lang.|RuntimeException {}\n}",
+            expected: true
+        }
+    ] as const;
+
+    for (const scenario of scenarios) {
+        await context.test(scenario.name, async current => {
+            const usage = createFixture(scenario.source);
+            const provider = current.mock.method(vscode.commands, "executeCommand", async (command: string) => {
+                if (command === "vscode.executeDefinitionProvider") {
+                    return [definition];
+                }
+
+                if (command === "vscode.executeDocumentSymbolProvider") {
+                    return [parentSymbol];
+                }
+
+                throw new Error("Unexpected command: " + command);
+            });
+            mockDocumentProvider(current, [parent.document]);
+
+            const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask());
+            current.after(() => resolver.dispose());
+
+            assert.equal(await resolver.isThrowableType(usage.document, usage.range.start), scenario.expected);
+            assertMockCalls(provider, [
+                [
+                    "vscode.executeDefinitionProvider",
+                    usage.document.uri,
+                    rangeOf(usage.document, "RuntimeException").start
+                ],
+                ["vscode.executeDocumentSymbolProvider", parent.document.uri]
+            ]);
+        });
+    }
+});
+
 test("does not continue an obsolete hierarchy after opening its definition document", async context => {
     const usage = createFixture("class Usage { |CustomException value; }");
     const custom = createFixture(
@@ -1380,7 +1461,7 @@ function createFixture(
         ({start: positionAt(start), end: positionAt(end)}) as vscode.Range;
 
     const document = {
-        uri: {toString: () => uri},
+        uri: {scheme: uri.split(":")[0], toString: () => uri},
         version: 1,
         getText: (range?: vscode.Range): string =>
             range === undefined ? source : source.slice(offsetAt(range.start), offsetAt(range.end)),

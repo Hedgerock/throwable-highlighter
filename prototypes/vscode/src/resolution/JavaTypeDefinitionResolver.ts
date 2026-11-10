@@ -333,14 +333,16 @@ export class JavaTypeDefinitionResolver {
             sourceOffset
         );
 
-        if (classNameRange === undefined) {
+        const classNamePosition =
+            classNameRange === undefined
+                ? this.findFullJdtTypeNamePosition(document, definitionRange, sourceReference, symbols ?? [], context)
+                : document.positionAt(classNameRange.start);
+
+        if (classNamePosition === undefined) {
             return undefined;
         }
 
-        const classReference = this.classDeclarationReader.readTypeReference(
-            document,
-            document.positionAt(classNameRange.start)
-        );
+        const classReference = this.classDeclarationReader.readTypeReference(document, classNamePosition);
 
         if (classReference?.name !== sourceReference.name) {
             return undefined;
@@ -394,6 +396,42 @@ export class JavaTypeDefinitionResolver {
         }
 
         return result;
+    }
+
+    private findFullJdtTypeNamePosition(
+        document: vscode.TextDocument,
+        definitionRange: vscode.Range,
+        sourceReference: VsCodeTypeReference,
+        symbols: readonly (vscode.DocumentSymbol | vscode.SymbolInformation)[],
+        context: JavaTypeResolutionContext
+    ): vscode.Position | undefined {
+        if (
+            document.uri.scheme !== "jdt" ||
+            definitionRange.start.line !== 0 ||
+            definitionRange.start.character !== 0
+        ) {
+            return undefined;
+        }
+
+        const documentEnd = document.positionAt(document.getText().length);
+
+        if (definitionRange.end.line !== documentEnd.line || definitionRange.end.character !== documentEnd.character) {
+            return undefined;
+        }
+
+        if (
+            context.visitedDeclarations.size === 0 &&
+            !this.classDeclarationReader.isExplicitTypeReference(sourceReference)
+        ) {
+            return undefined;
+        }
+
+        const matches = symbols.filter(
+            (symbol): symbol is vscode.DocumentSymbol =>
+                "children" in symbol && symbol.kind === vscode.SymbolKind.Class && symbol.name === sourceReference.name
+        );
+
+        return matches.length === 1 ? matches[0].selectionRange.start : undefined;
     }
 
     private toLocation(definition: vscode.Location | vscode.LocationLink): vscode.Location {
