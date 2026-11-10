@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 
 import * as vscode from "vscode";
 
-const EXTENSION_ID = "hedgerock.throwable-highlighter-vscode-prototype";
+const EXTENSION_ID = "hedgerock.throwable-highlighter";
 
 const COMMAND_IDS = [
-    "throwableHighlighter.prototype.inspectDefinition",
-    "throwableHighlighter.prototype.openColorSettings",
-    "throwableHighlighter.prototype.openDiagnostics"
+    "throwableHighlighter.inspectDefinition",
+    "throwableHighlighter.openColorSettings",
+    "throwableHighlighter.openDiagnostics"
 ] as const;
 
 suite("Extension activation", () => {

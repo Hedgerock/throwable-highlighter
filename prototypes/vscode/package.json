@@ -1,7 +1,7 @@
 {
-  "name": "throwable-highlighter-vscode-prototype",
-  "displayName": "Throwable Highlighter VS Code Prototype",
-  "description": "Technical prototype of Throwable Highlighter for VS Code.",
+  "name": "throwable-highlighter",
+  "displayName": "Throwable Highlighter",
+  "description": "Throwable Highlighter for VS Code.",
   "version": "0.0.0",
   "private": true,
   "publisher": "hedgerock",
@@ -14,66 +14,66 @@
   ],
   "activationEvents": [
     "onLanguage:java",
-    "onCommand:throwableHighlighter.prototype.inspectDefinition",
-    "onCommand:throwableHighlighter.prototype.openColorSettings",
-    "onCommand:throwableHighlighter.prototype.openDiagnostics"
+    "onCommand:throwableHighlighter.inspectDefinition",
+    "onCommand:throwableHighlighter.openColorSettings",
+    "onCommand:throwableHighlighter.openDiagnostics"
   ],
   "main": "./out/extension.js",
   "web-types": "./web-types.json",
   "contributes": {
     "commands": [
       {
-        "command": "throwableHighlighter.prototype.inspectDefinition",
-        "title": "Throwable Highlighter Prototype: Inspect Definition"
+        "command": "throwableHighlighter.inspectDefinition",
+        "title": "Throwable Highlighter: Inspect Definition"
       },
       {
-        "command": "throwableHighlighter.prototype.openColorSettings",
-        "title": "Throwable Highlighter Prototype: Open Color Settings"
+        "command": "throwableHighlighter.openColorSettings",
+        "title": "Throwable Highlighter: Open Color Settings"
       },
       {
-        "command": "throwableHighlighter.prototype.openDiagnostics",
-        "title": "Throwable Highlighter Prototype: Open Diagnostics"
+        "command": "throwableHighlighter.openDiagnostics",
+        "title": "Throwable Highlighter: Open Diagnostics"
       }
     ],
     "menus": {
       "commandPalette": [
         {
-          "command": "throwableHighlighter.prototype.inspectDefinition",
+          "command": "throwableHighlighter.inspectDefinition",
           "when": "editorLangId == java"
         }
       ],
       "extension/context": [
         {
-          "command": "throwableHighlighter.prototype.openColorSettings",
-          "when": "extension == 'hedgerock.throwable-highlighter-vscode-prototype'",
+          "command": "throwableHighlighter.openColorSettings",
+          "when": "extension == 'hedgerock.throwable-highlighter'",
           "group": "2_configure@1"
         }
       ]
     },
     "configuration": {
-      "title": "Throwable Highlighter Prototype",
+      "title": "Throwable Highlighter",
       "properties": {
-        "throwableHighlighter.prototype.classColor": {
+        "throwableHighlighter.classColor": {
           "type": "string",
           "default": "",
           "description": "Stored foreground color for Throwable types in the class context. Custom sources require HEX. With no explicit source, an empty value preserves native Java highlighting."
         },
-        "throwableHighlighter.prototype.importColor": {
+        "throwableHighlighter.importColor": {
           "type": "string",
           "default": "",
           "description": "Stored foreground color for Throwable types in explicit imports. Custom sources require HEX. With no explicit source, an empty value inherits the class color."
         },
-        "throwableHighlighter.prototype.catchColor": {
+        "throwableHighlighter.catchColor": {
           "type": "string",
           "default": "",
           "description": "Stored foreground color for Throwable types in catch parameters. Custom sources require HEX. With no explicit source, an empty value inherits the class color."
         },
-        "throwableHighlighter.prototype.throwsColor": {
+        "throwableHighlighter.throwsColor": {
           "type": "string",
           "default": "",
           "description": "Stored foreground color for Throwable types in throws clauses. Custom sources require HEX. With no explicit source, an empty value inherits the class color."
         },
-        "throwableHighlighter.prototype.classColorSource": {
+        "throwableHighlighter.classColorSource": {
           "type": [
             "string",
             "null"
@@ -87,7 +87,7 @@
           "scope": "window",
           "description": "Color source for Throwable types in the class context. Null preserves the existing classColor rules."
         },
-        "throwableHighlighter.prototype.importColorSource": {
+        "throwableHighlighter.importColorSource": {
           "type": [
             "string",
             "null"
@@ -102,7 +102,7 @@
           "scope": "window",
           "description": "Color source for Throwable types in explicit imports. Null preserves the existing importColor rules."
         },
-        "throwableHighlighter.prototype.catchColorSource": {
+        "throwableHighlighter.catchColorSource": {
           "type": [
             "string",
             "null"
@@ -117,7 +117,7 @@
           "scope": "window",
           "description": "Color source for Throwable types in catch parameters. Null preserves the existing catchColor rules."
         },
-        "throwableHighlighter.prototype.throwsColorSource": {
+        "throwableHighlighter.throwsColorSource": {
           "type": [
             "string",
             "null"

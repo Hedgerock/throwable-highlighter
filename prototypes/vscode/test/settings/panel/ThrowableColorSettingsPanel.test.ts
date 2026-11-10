@@ -24,12 +24,12 @@ test("opens the draft settings panel with restricted resource access", async con
     await fixture.settingsPanel.show();
 
     assert.deepEqual(fixture.createPanel.mock.calls[0].arguments, [
-        "throwableHighlighter.prototype.colorSettings",
+        "throwableHighlighter.colorSettings",
         "Throwable Highlighter",
         vscode.ViewColumn.Beside,
         {enableScripts: true, enableForms: false, enableCommandUris: false, localResourceRoots: [fixture.rootUri]}
     ]);
-    assert.equal(fixture.getConfiguration.mock.calls[0].arguments[0], "throwableHighlighter.prototype");
+    assert.equal(fixture.getConfiguration.mock.calls[0].arguments[0], "throwableHighlighter");
     assert.ok(fixture.panels[0].webview.html.includes("<code>#123456</code>"));
     assert.deepEqual(fixture.panels[0].webview.asWebviewUri.mock.calls[0].arguments, [fixture.stylesUri]);
     assert.deepEqual(fixture.panels[0].iconPath, fixture.iconPath);

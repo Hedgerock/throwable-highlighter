@@ -27,7 +27,7 @@ import type {ColorSettingsWriteResult} from "@throwable-highlighter/settings/Thr
 import type {ColorSettingsApplyResult} from "@throwable-highlighter/settings/ThrowableColorSettingsApplier";
 import type {ColorSettingsTarget} from "@throwable-highlighter/settings/ThrowableColorSettingsDraft";
 
-export const OPEN_COLOR_SETTINGS_COMMAND = "throwableHighlighter.prototype.openColorSettings";
+export const OPEN_COLOR_SETTINGS_COMMAND = "throwableHighlighter.openColorSettings";
 
 export class ThrowableColorSettingsPanel implements vscode.Disposable {
     private panel: vscode.WebviewPanel | undefined;
@@ -65,7 +65,7 @@ export class ThrowableColorSettingsPanel implements vscode.Disposable {
         }
 
         const panel = vscode.window.createWebviewPanel(
-            "throwableHighlighter.prototype.colorSettings",
+            "throwableHighlighter.colorSettings",
             "Throwable Highlighter",
             vscode.ViewColumn.Beside,
             {

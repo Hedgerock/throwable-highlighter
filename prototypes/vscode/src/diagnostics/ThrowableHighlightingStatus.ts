@@ -9,7 +9,7 @@ import type {
 type RefreshDiagnosticResult =
     {readonly outcome: "slow" | "applied"} | {readonly outcome: "failed"; readonly stage: RefreshFailureStage};
 
-export const OPEN_DIAGNOSTICS_COMMAND = "throwableHighlighter.prototype.openDiagnostics";
+export const OPEN_DIAGNOSTICS_COMMAND = "throwableHighlighter.openDiagnostics";
 
 const SLOW_REFRESH_THRESHOLD_MS = 2_000;
 
@@ -49,7 +49,7 @@ export class ThrowableHighlightingStatus implements vscode.Disposable {
         private readonly highlightingContext: ThrowableHighlightingContext,
         private readonly onDiagnostic: (diagnostic: RefreshDiagnostic) => void
     ) {
-        this.item = vscode.languages.createLanguageStatusItem("throwableHighlighter.prototype.highlightingStatus", {
+        this.item = vscode.languages.createLanguageStatusItem("throwableHighlighter.highlightingStatus", {
             language: "java",
             scheme: "file"
         });

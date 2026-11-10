@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/JetBrains/web-types/master/schema/web-types.json",
-  "name": "throwable-highlighter-vscode-prototype",
+  "name": "throwable-highlighter",
   "version": "0.0.0",
   "contributions": {
     "css": {

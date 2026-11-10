@@ -5,7 +5,7 @@ export type HighlightingContext = (typeof ThrowableHighlightingContext.HIGHLIGHT
 export type DecorationTypes = Record<HighlightingContext, vscode.TextEditorDecorationType>;
 
 export class ThrowableHighlightingContext {
-    public static CONFIGURATION_SECTION = "throwableHighlighter.prototype";
+    public static CONFIGURATION_SECTION = "throwableHighlighter";
 
     public static HIGHLIGHT_CONTEXTS = ["class", "import", "catch", "throws"] as const;
 

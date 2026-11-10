@@ -91,7 +91,7 @@ npm run check
 ## Локальная диагностика
 
 Language Status показывает состояние Throwable Highlighter для активного Java-файла со схемой `file`.
-Действие `Open Diagnostics` в статусе и команда `Throwable Highlighter Prototype: Open Diagnostics` в палитре
+Действие `Open Diagnostics` в статусе и команда `Throwable Highlighter: Open Diagnostics` в палитре
 открывают канал `Throwable Highlighter Diagnostics`.
 
 `Waiting for Java` отображается во время первоначальной проверки готовности Java. `Ready` и
@@ -745,7 +745,7 @@ Extension Development Host.
 
 Каждый контекст использует отдельное значение цвета и источник его получения.
 
-Все настройки находятся в разделе `throwableHighlighter.prototype`.
+Все настройки находятся в разделе `throwableHighlighter`.
 
 | Контекст | Значение цвета | Источник цвета      |
 |----------|----------------|---------------------|
@@ -809,14 +809,14 @@ Extension Development Host.
 
 ```json
 {
-  "throwableHighlighter.prototype.classColor": "#4EC9B0",
-  "throwableHighlighter.prototype.classColorSource": "custom",
-  "throwableHighlighter.prototype.importColor": "#CE9178",
-  "throwableHighlighter.prototype.importColorSource": "inherit",
-  "throwableHighlighter.prototype.catchColor": "#C586C0",
-  "throwableHighlighter.prototype.catchColorSource": "native",
-  "throwableHighlighter.prototype.throwsColor": "#DCDCAA",
-  "throwableHighlighter.prototype.throwsColorSource": "custom"
+  "throwableHighlighter.classColor": "#4EC9B0",
+  "throwableHighlighter.classColorSource": "custom",
+  "throwableHighlighter.importColor": "#CE9178",
+  "throwableHighlighter.importColorSource": "inherit",
+  "throwableHighlighter.catchColor": "#C586C0",
+  "throwableHighlighter.catchColorSource": "native",
+  "throwableHighlighter.throwsColor": "#DCDCAA",
+  "throwableHighlighter.throwsColorSource": "custom"
 }
 ```
 
@@ -827,10 +827,10 @@ Extension Development Host.
 
 ### Настройка цветов
 
-Команда `Throwable Highlighter Prototype: Open Color Settings` открывает webview-панель настройки цветов.
+Команда `Throwable Highlighter: Open Color Settings` открывает webview-панель настройки цветов.
 
-Панель также открывается из контекстного меню карточки `Throwable Highlighter VS Code Prototype` в Extensions.
-Пункт `Throwable Highlighter Prototype: Open Color Settings` доступен только для этого расширения.
+Панель также открывается из контекстного меню карточки `Throwable Highlighter` в Extensions.
+Пункт `Throwable Highlighter: Open Color Settings` доступен только для этого расширения.
 
 Оба способа открытия доступны без активного Java-файла и используют один экземпляр панели.
 
