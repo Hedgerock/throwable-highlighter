@@ -36,6 +36,11 @@ export const Uri = {
     }
 } satisfies Pick<typeof vscode.Uri, "joinPath">;
 
+export const ExtensionMode = {
+    Production: 1,
+    Development: 2
+} satisfies Pick<typeof vscode.ExtensionMode, "Production" | "Development">;
+
 export class Location {
     constructor(
         public uri: vscode.Uri,
@@ -135,6 +140,7 @@ export default {
     ConfigurationTarget,
     LanguageStatusSeverity,
     Uri,
+    ExtensionMode,
     ViewColumn,
     Location,
     Range,

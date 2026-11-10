@@ -39,7 +39,7 @@
       "commandPalette": [
         {
           "command": "throwableHighlighter.inspectDefinition",
-          "when": "editorLangId == java"
+          "when": "editorLangId == java && throwableHighlighter.inspectDefinitionAvailable"
         }
       ],
       "extension/context": [

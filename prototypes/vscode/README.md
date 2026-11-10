@@ -1160,7 +1160,8 @@ Editor decorations применяются поверх стандартной Ja
 
 ## Результат проверки Definition Provider
 
-Прототип предоставляет команду `Throwable Highlighter Prototype: Inspect Definition`.
+Прототип предоставляет команду `Throwable Highlighter: Inspect Definition`. Команда доступна в Extension Development Host
+для активного Java-файла.
 
 Команда вызывает документированную команду VS Code `vscode.executeDefinitionProvider` для символа под курсором и выводит
 результат в Output Channel `Throwable Highlighter Prototype`.

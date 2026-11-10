@@ -4,11 +4,7 @@ import * as vscode from "vscode";
 
 const EXTENSION_ID = "hedgerock.throwable-highlighter";
 
-const COMMAND_IDS = [
-    "throwableHighlighter.inspectDefinition",
-    "throwableHighlighter.openColorSettings",
-    "throwableHighlighter.openDiagnostics"
-] as const;
+const COMMAND_IDS = ["throwableHighlighter.openColorSettings", "throwableHighlighter.openDiagnostics"] as const;
 
 suite("Extension activation", () => {
     test("activates the extension and registers its commands", async () => {
@@ -25,5 +21,7 @@ suite("Extension activation", () => {
         for (const commandId of COMMAND_IDS) {
             assert.ok(registeredCommands.has(commandId), `Command ${commandId} is not registered.`);
         }
+
+        assert.equal(registeredCommands.has("throwableHighlighter.inspectDefinition"), false);
     });
 });

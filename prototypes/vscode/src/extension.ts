@@ -75,7 +75,6 @@ export function activate(context: vscode.ExtensionContext): void {
 
     outputChannel.appendLine("Decoration controller activated.");
 
-    const definitionProbe = new DefinitionProbe(outputChannel, definitionResolver);
     const colorSettingsPanel = new ThrowableColorSettingsPanel(
         new ThrowableColorSettingsResources(context.extensionUri)
     );
@@ -108,10 +107,23 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.workspace.onDidRenameFiles(() => invalidateTypeResolutionCache("deferred", "workspace-change")),
         vscode.workspace.onDidChangeWorkspaceFolders(onDidChangeWorkspaceFolders),
         vscode.workspace.onDidChangeConfiguration(onDidChangeConfigurationHandler),
-        vscode.commands.registerCommand(INSPECT_DEFINITION_COMMAND, () => definitionProbe.inspectActiveSelection()),
         vscode.commands.registerCommand(OPEN_COLOR_SETTINGS_COMMAND, () => colorSettingsPanel.show()),
         vscode.commands.registerCommand(OPEN_DIAGNOSTICS_COMMAND, () => diagnosticOutputChannel.show(true))
     );
+
+    if (context.extensionMode === vscode.ExtensionMode.Development) {
+        const definitionProbe = new DefinitionProbe(outputChannel, definitionResolver);
+
+        context.subscriptions.push(
+            vscode.commands.registerCommand(INSPECT_DEFINITION_COMMAND, () => definitionProbe.inspectActiveSelection())
+        );
+
+        void vscode.commands
+            .executeCommand("setContext", "throwableHighlighter.inspectDefinitionAvailable", true)
+            .then(undefined, () => {
+                outputChannel.appendLine("Could not show Inspect Definition in the command palette.");
+            });
+    }
 
     controller.refresh("urgent", "activation");
     javaSupportReadiness.start();

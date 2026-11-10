@@ -8,7 +8,9 @@ import {ThrowableHighlightingFinder} from "@throwable-highlighter/decorations/hi
 import {ThrowableDecorationController} from "@throwable-highlighter/decorations/ThrowableDecorationController";
 import {OPEN_DIAGNOSTICS_COMMAND} from "@throwable-highlighter/diagnostics/ThrowableHighlightingStatus";
 import {activate} from "@throwable-highlighter/extension";
+import {INSPECT_DEFINITION_COMMAND} from "@throwable-highlighter/resolution/DefinitionProbe";
 import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
+import {OPEN_COLOR_SETTINGS_COMMAND} from "@throwable-highlighter/settings/panel/ThrowableColorSettingsPanel";
 import type {ResourceMeasurementSnapshot} from "@throwable-highlighter/diagnostics/ThrowableResourceMeasurement";
 
 test("refreshes editors after late Java readiness without blocking activation", async context => {
@@ -249,7 +251,39 @@ test("opens the diagnostics channel from the Java language status command", cont
     );
 });
 
-function createFixture(context: TestContext, resourceMeasurementFlag?: string) {
+test("registers Inspect Definition in development mode", context => {
+    const fixture = createFixture(context, undefined, vscode.ExtensionMode.Development);
+    const executeCommand = context.mock.method(vscode.commands, "executeCommand", async () => undefined);
+
+    activate(fixture.extensionContext);
+
+    assert.deepEqual(
+        fixture.registerCommand.mock.calls.map(call => call.arguments[0]),
+        [OPEN_COLOR_SETTINGS_COMMAND, OPEN_DIAGNOSTICS_COMMAND, INSPECT_DEFINITION_COMMAND]
+    );
+
+    assert.deepEqual(
+        executeCommand.mock.calls.map(call => call.arguments),
+        [["setContext", "throwableHighlighter.inspectDefinitionAvailable", true]]
+    );
+});
+
+test("registers only public commands in production mode", context => {
+    const fixture = createFixture(context);
+
+    activate(fixture.extensionContext);
+
+    assert.deepEqual(
+        fixture.registerCommand.mock.calls.map(call => call.arguments[0]),
+        [OPEN_COLOR_SETTINGS_COMMAND, OPEN_DIAGNOSTICS_COMMAND]
+    );
+});
+
+function createFixture(
+    context: TestContext,
+    resourceMeasurementFlag?: string,
+    extensionMode: vscode.ExtensionContext["extensionMode"] = vscode.ExtensionMode.Production
+) {
     const previousResourceMeasurementFlag = process.env.THROWABLE_HIGHLIGHTER_MEASURE_RESOURCES;
 
     if (resourceMeasurementFlag === undefined) {
@@ -262,7 +296,7 @@ function createFixture(context: TestContext, resourceMeasurementFlag?: string) {
     const ready = createDeferred<boolean>();
     const subscriptions: vscode.Disposable[] = [];
     const extensionUri = {scheme: "file", path: "/extension"} as vscode.Uri;
-    const extensionContext = {subscriptions, extensionUri} as vscode.ExtensionContext;
+    const extensionContext = {subscriptions, extensionUri, extensionMode} as vscode.ExtensionContext;
     const javaExtension = {
         activate: async () => ({serverReady: () => ready.promise})
     };
