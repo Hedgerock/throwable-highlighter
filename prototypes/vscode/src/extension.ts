@@ -170,7 +170,15 @@ export function activate(context: vscode.ExtensionContext): void {
 function getRefreshMeasurementHandler(outputChannel: vscode.OutputChannel) {
     return process.env.THROWABLE_HIGHLIGHTER_MEASURE_REFRESH === "1"
         ? (measurement: RefreshMeasurement): void => {
-              outputChannel.appendLine("[refresh-measurement] " + JSON.stringify(measurement));
+              outputChannel.appendLine(
+                  "[refresh-measurement] " +
+                      JSON.stringify({
+                          ...measurement,
+                          waitMs: Number(measurement.waitMs.toFixed(3)),
+                          processingMs: Number(measurement.processingMs.toFixed(3)),
+                          totalMs: Number(measurement.totalMs.toFixed(3))
+                      })
+              );
           }
         : undefined;
 }

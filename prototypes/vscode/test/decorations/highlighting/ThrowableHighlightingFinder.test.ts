@@ -188,6 +188,18 @@ test("skips keywords, literals and numeric fragments", () => {
     ]);
 });
 
+test("excludes package declaration names from class candidates", () => {
+    const source =
+        "/* package ignored; */ package smoke.\nRuntimeException; " +
+        "import java.io.IOException; class Example extends RuntimeException {}";
+
+    assert.deepEqual(findContexts(source), [
+        ["IOException", "import"],
+        ["Example", "class"],
+        ["RuntimeException", "class"]
+    ]);
+});
+
 function findContexts(source: string) {
     return findCandidates(source).map(candidate => [candidate.typeName, candidate.context]);
 }
