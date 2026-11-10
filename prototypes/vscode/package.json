@@ -6,6 +6,10 @@
   "private": true,
   "publisher": "hedgerock",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hedgerock/throwable-highlighter.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -137,6 +141,7 @@
   },
   "scripts": {
     "compile": "node tooling/build/compile.cjs tsconfig.json",
+    "build": "npm run compile && node tooling/build/package-vsix.cjs",
     "compile:test": "node tooling/build/compile.cjs tsconfig.test.json",
     "watch": "node tooling/build/watch.cjs tsconfig.json",
     "test:build": "node --test \"tooling/build/test/*.test.cjs\"",
@@ -169,6 +174,7 @@
     "@types/vscode": "1.85.0",
     "@vscode/test-cli": "0.0.15",
     "@vscode/test-electron": "3.1.0",
+    "@vscode/vsce": "4.1.0",
     "echarts": "6.1.0",
     "prettier": "3.9.10",
     "tsc-alias": "1.9.7",
