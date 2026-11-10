@@ -73,6 +73,13 @@ export class JavaClassDeclarationReader {
         };
     }
 
+    public findTopLevelClassNamePosition(document: vscode.TextDocument, name: string): vscode.Position | undefined {
+        const source = this.codeMask.maskNonCode(document.getText());
+        const offset = this.classNameReader.findTopLevelClassNameOffset(source, name);
+
+        return offset === undefined ? undefined : document.positionAt(offset);
+    }
+
     public readClassDeclaration(reference: VsCodeTypeReference): ClassDeclaration<VsCodeTypeReference> | undefined {
         const document = reference.document;
         const source = this.codeMask.maskNonCode(document.getText());

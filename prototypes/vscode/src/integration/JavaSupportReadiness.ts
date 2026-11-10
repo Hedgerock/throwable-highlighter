@@ -17,6 +17,7 @@ export type JavaSupportReadinessResult = {
 export class JavaSupportReadiness implements vscode.Disposable {
     private hasStarted = false;
     private isDisposed = false;
+    private waitingForExtension = false;
 
     constructor(
         private readonly getJavaExtension: () => JavaExtension | undefined,
@@ -32,15 +33,27 @@ export class JavaSupportReadiness implements vscode.Disposable {
         void this.waitForServerReady();
     }
 
+    public onExtensionsChanged(): void {
+        if (this.isDisposed || !this.waitingForExtension) {
+            return;
+        }
+
+        void this.waitForServerReady(false);
+    }
+
     public dispose(): void {
         this.isDisposed = true;
     }
 
-    private async waitForServerReady(): Promise<void> {
+    private async waitForServerReady(reportMissingExtension = true): Promise<void> {
         const startedAt = performance.now();
         const outcome = await this.checkReadiness();
 
-        if (!this.isDisposed && outcome !== undefined) {
+        if (
+            !this.isDisposed &&
+            outcome !== undefined &&
+            (reportMissingExtension || outcome !== "extension-unavailable")
+        ) {
             this.onResult({outcome, elapsedMs: performance.now() - startedAt});
         }
     }
@@ -48,6 +61,7 @@ export class JavaSupportReadiness implements vscode.Disposable {
     private async checkReadiness(): Promise<JavaSupportReadinessOutcome | undefined> {
         try {
             const extension = this.getJavaExtension();
+            this.waitingForExtension = extension === undefined;
 
             if (extension === undefined) {
                 return "extension-unavailable";

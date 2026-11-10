@@ -322,21 +322,24 @@ export class JavaTypeDefinitionResolver {
             return undefined;
         }
 
-        const sourceOffset =
-            document.uri.toString() === sourceReference.document.uri.toString()
-                ? document.offsetAt(sourceReference.range.start)
-                : undefined;
+        let classNamePosition: vscode.Position | undefined;
 
-        const classNameRange = this.definitionClassLocator.findClassNameRange(
-            this.toDefinitionSymbols(document, symbols ?? []),
-            document.offsetAt(definitionRange.start),
-            sourceOffset
-        );
+        if (document.uri.scheme === "jdt" && this.isFullDocumentRange(document, definitionRange)) {
+            classNamePosition = this.findFullJdtTypeNamePosition(document, sourceReference, symbols ?? [], context);
+        } else {
+            const sourceOffset =
+                document.uri.toString() === sourceReference.document.uri.toString()
+                    ? document.offsetAt(sourceReference.range.start)
+                    : undefined;
 
-        const classNamePosition =
-            classNameRange === undefined
-                ? this.findFullJdtTypeNamePosition(document, definitionRange, sourceReference, symbols ?? [], context)
-                : document.positionAt(classNameRange.start);
+            const classNameRange = this.definitionClassLocator.findClassNameRange(
+                this.toDefinitionSymbols(document, symbols ?? []),
+                document.offsetAt(definitionRange.start),
+                sourceOffset
+            );
+
+            classNamePosition = classNameRange === undefined ? undefined : document.positionAt(classNameRange.start);
+        }
 
         if (classNamePosition === undefined) {
             return undefined;
@@ -398,27 +401,21 @@ export class JavaTypeDefinitionResolver {
         return result;
     }
 
+    private isFullDocumentRange(document: vscode.TextDocument, range: vscode.Range): boolean {
+        if (range.start.line !== 0 || range.start.character !== 0) {
+            return false;
+        }
+
+        const documentEnd = document.positionAt(document.getText().length);
+        return range.end.line === documentEnd.line && range.end.character === documentEnd.character;
+    }
+
     private findFullJdtTypeNamePosition(
         document: vscode.TextDocument,
-        definitionRange: vscode.Range,
         sourceReference: VsCodeTypeReference,
         symbols: readonly (vscode.DocumentSymbol | vscode.SymbolInformation)[],
         context: JavaTypeResolutionContext
     ): vscode.Position | undefined {
-        if (
-            document.uri.scheme !== "jdt" ||
-            definitionRange.start.line !== 0 ||
-            definitionRange.start.character !== 0
-        ) {
-            return undefined;
-        }
-
-        const documentEnd = document.positionAt(document.getText().length);
-
-        if (definitionRange.end.line !== documentEnd.line || definitionRange.end.character !== documentEnd.character) {
-            return undefined;
-        }
-
         if (
             context.visitedDeclarations.size === 0 &&
             !this.classDeclarationReader.isExplicitTypeReference(sourceReference)
@@ -431,7 +428,14 @@ export class JavaTypeDefinitionResolver {
                 "children" in symbol && symbol.kind === vscode.SymbolKind.Class && symbol.name === sourceReference.name
         );
 
-        return matches.length === 1 ? matches[0].selectionRange.start : undefined;
+        if (matches.length !== 1) {
+            return undefined;
+        }
+
+        const {selectionRange} = matches[0];
+        return this.isFullDocumentRange(document, selectionRange)
+            ? this.classDeclarationReader.findTopLevelClassNamePosition(document, sourceReference.name)
+            : selectionRange.start;
     }
 
     private toLocation(definition: vscode.Location | vscode.LocationLink): vscode.Location {

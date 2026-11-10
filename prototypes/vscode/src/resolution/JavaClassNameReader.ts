@@ -15,10 +15,7 @@ export class JavaClassNameReader {
             return undefined;
         }
 
-        const tokens = [...source.matchAll(JavaClassNameReader.TOKEN_PATTERN)].map(match => ({
-            text: match[0],
-            offset: match.index
-        }));
+        const tokens = this.tokenize(source);
 
         const scopes: (string | undefined)[] = [];
         let packageName = "";
@@ -103,6 +100,60 @@ export class JavaClassNameReader {
         }
 
         return undefined;
+    }
+
+    public findTopLevelClassNameOffset(source: string, expectedName: string): number | undefined {
+        if (source.includes("\\")) {
+            return undefined;
+        }
+
+        const tokens = this.tokenize(source);
+        let depth = 0;
+        let classNameOffset: number | undefined;
+
+        for (let index = 0; index < tokens.length; index++) {
+            const token = tokens[index];
+
+            if (token.text === "{") {
+                depth++;
+                continue;
+            }
+
+            if (token.text === "}") {
+                depth--;
+
+                if (depth < 0) {
+                    return undefined;
+                }
+
+                continue;
+            }
+
+            const name = tokens[index + 1];
+            if (
+                depth !== 0 ||
+                token.text !== "class" ||
+                tokens[index - 1]?.text === "." ||
+                name?.text !== expectedName
+            ) {
+                continue;
+            }
+
+            if (classNameOffset !== undefined || this.findTypeBody(tokens, index + 2) === undefined) {
+                return undefined;
+            }
+
+            classNameOffset = name.offset;
+        }
+
+        return depth === 0 ? classNameOffset : undefined;
+    }
+
+    private tokenize(source: string): JavaToken[] {
+        return [...source.matchAll(JavaClassNameReader.TOKEN_PATTERN)].map(match => ({
+            text: match[0],
+            offset: match.index
+        }));
     }
 
     private readPackage(

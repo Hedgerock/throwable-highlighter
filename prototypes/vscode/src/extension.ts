@@ -107,6 +107,7 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.workspace.onDidRenameFiles(() => invalidateTypeResolutionCache("deferred", "workspace-change")),
         vscode.workspace.onDidChangeWorkspaceFolders(onDidChangeWorkspaceFolders),
         vscode.workspace.onDidChangeConfiguration(onDidChangeConfigurationHandler),
+        vscode.extensions.onDidChange(() => javaSupportReadiness.onExtensionsChanged()),
         vscode.commands.registerCommand(OPEN_COLOR_SETTINGS_COMMAND, () => colorSettingsPanel.show()),
         vscode.commands.registerCommand(OPEN_DIAGNOSTICS_COMMAND, () => diagnosticOutputChannel.show(true))
     );

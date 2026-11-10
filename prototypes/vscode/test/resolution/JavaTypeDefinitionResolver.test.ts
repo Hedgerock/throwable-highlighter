@@ -956,6 +956,18 @@ test("uses a full JDT document range for an explicit type reference", async cont
             name: "throws reference",
             source: "class Usage {\n    void run() throws java.lang.|RuntimeException {}\n}",
             expected: true
+        },
+        {
+            name: "full document symbol range for an explicit import",
+            source: "import java.lang.|RuntimeException;",
+            fullSymbolRange: true,
+            expected: true
+        },
+        {
+            name: "full document symbol range for a same-name method invocation",
+            source: "class Usage { void run() { |RuntimeException(); } }",
+            fullSymbolRange: true,
+            expected: false
         }
     ] as const;
 
@@ -968,7 +980,11 @@ test("uses a full JDT document range for an explicit type reference", async cont
                 }
 
                 if (command === "vscode.executeDocumentSymbolProvider") {
-                    return [parentSymbol];
+                    return [
+                        "fullSymbolRange" in scenario
+                            ? {...parentSymbol, range: fullRange, selectionRange: fullRange}
+                            : parentSymbol
+                    ];
                 }
 
                 throw new Error("Unexpected command: " + command);

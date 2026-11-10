@@ -378,6 +378,7 @@ function createFixture(
     context.mock.method(vscode.workspace, "onDidRenameFiles", subscribe);
     context.mock.method(vscode.workspace, "onDidChangeWorkspaceFolders", subscribe);
     context.mock.method(vscode.workspace, "onDidChangeConfiguration", subscribe);
+    context.mock.method(vscode.extensions, "onDidChange", subscribe);
 
     const registerCommand = context.mock.method(
         vscode.commands,

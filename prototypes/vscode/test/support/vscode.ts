@@ -71,8 +71,9 @@ export const commands = {
 export const extensions = {
     getExtension<T = unknown>(_extensionId: string): vscode.Extension<T> | undefined {
         throw new Error("Unexpected extension lookup.");
-    }
-} satisfies Pick<typeof vscode.extensions, "getExtension">;
+    },
+    onDidChange: unexpectedEvent<void>("extensions.onDidChange")
+} satisfies Pick<typeof vscode.extensions, "getExtension" | "onDidChange">;
 
 function unexpectedEvent<T>(name: string): vscode.Event<T> {
     return () => {
