@@ -10,3 +10,8 @@ Highlights Java types derived from `Throwable` in class declarations and referen
 3. Open a Java file. Set separate colors for imports, catch parameters, and throws clauses as needed.
 
 Run **Throwable Highlighter: Open Diagnostics** to open the local log.
+
+## Requirements
+
+- Visual Studio Code `1.101.0` or later on Windows.
+- Language Support for Java by Red Hat (`redhat.java`) in Standard mode for Java highlighting.

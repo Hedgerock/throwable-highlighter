@@ -2,7 +2,7 @@
   "name": "throwable-highlighter",
   "displayName": "Throwable Highlighter",
   "description": "Throwable Highlighter for VS Code.",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "publisher": "hedgerock",
   "license": "Apache-2.0",
