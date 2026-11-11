@@ -3,6 +3,12 @@
 Highlights Java types derived from `Throwable` in class declarations and references, imports, `catch` parameters, and
 `throws` clauses.
 
+## Preview
+
+![Throwable types highlighted in Java code](https://raw.githubusercontent.com/Hedgerock/throwable-highlighter/master/docs/images/vs-code/title.png)
+
+![Throwable Highlighter color settings](https://raw.githubusercontent.com/Hedgerock/throwable-highlighter/master/docs/images/vs-code/settings.png)
+
 ## Getting started
 
 1. Install **Language Support for Java by Red Hat** (`redhat.java`) and use Standard mode.
