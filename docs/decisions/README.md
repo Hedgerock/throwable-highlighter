@@ -146,6 +146,7 @@ NNNN-краткое-название.md
 - [ADR-0031: Проверка бюджетов производительности VS Code перед выпуском](0031-vscode-release-performance-budgets.md)
 - [ADR-0032: Локальная диагностика подсветки VS Code](0032-vscode-local-highlighting-diagnostics.md)
 - [ADR-0033: Определить границы первого публичного выпуска VS Code](0033-vscode-first-public-release.md)
+- [ADR-0034: Уточнить состояние рабочей области для релизных замеров VS Code](0034-vscode-release-java-workspace-state.md)
 
 ---
 

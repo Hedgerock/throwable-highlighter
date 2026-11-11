@@ -1,0 +1,716 @@
+﻿{
+  "variant": "enabled",
+  "extensionHostProcessId": 8536,
+  "javaProcessId": 15972,
+  "javaStartedAtUtc": "2026-11-11T16:32:36.1454899Z",
+  "samples": [
+    {
+      "capturedAtUtc": "2026-11-11T16:32:36.5621991Z",
+      "javaAgeMs": 417,
+      "workingSetMiB": 78.5,
+      "privateMiB": 215.27
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:37.0739588Z",
+      "javaAgeMs": 928,
+      "workingSetMiB": 102.48,
+      "privateMiB": 225.43
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:37.5887360Z",
+      "javaAgeMs": 1443,
+      "workingSetMiB": 136.42,
+      "privateMiB": 251.3
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:38.1059695Z",
+      "javaAgeMs": 1960,
+      "workingSetMiB": 174.34,
+      "privateMiB": 281.51
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:38.6210667Z",
+      "javaAgeMs": 2476,
+      "workingSetMiB": 244.74,
+      "privateMiB": 345.07
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:39.1376365Z",
+      "javaAgeMs": 2992,
+      "workingSetMiB": 234.71,
+      "privateMiB": 333.3
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:39.6537858Z",
+      "javaAgeMs": 3508,
+      "workingSetMiB": 244.48,
+      "privateMiB": 342.21
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:40.1723732Z",
+      "javaAgeMs": 4027,
+      "workingSetMiB": 280.62,
+      "privateMiB": 362.86
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:40.6888271Z",
+      "javaAgeMs": 4543,
+      "workingSetMiB": 285.75,
+      "privateMiB": 362.91
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:41.2046092Z",
+      "javaAgeMs": 5059,
+      "workingSetMiB": 347.79,
+      "privateMiB": 451.32
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:41.7197557Z",
+      "javaAgeMs": 5574,
+      "workingSetMiB": 384.82,
+      "privateMiB": 460.62
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:42.2313547Z",
+      "javaAgeMs": 6086,
+      "workingSetMiB": 358.92,
+      "privateMiB": 432.57
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:42.7406161Z",
+      "javaAgeMs": 6595,
+      "workingSetMiB": 358.92,
+      "privateMiB": 432.57
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:43.2507349Z",
+      "javaAgeMs": 7105,
+      "workingSetMiB": 358.92,
+      "privateMiB": 432.57
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:43.7618545Z",
+      "javaAgeMs": 7616,
+      "workingSetMiB": 358.92,
+      "privateMiB": 432.57
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:44.2785520Z",
+      "javaAgeMs": 8133,
+      "workingSetMiB": 358.92,
+      "privateMiB": 432.57
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:44.7926442Z",
+      "javaAgeMs": 8647,
+      "workingSetMiB": 358.92,
+      "privateMiB": 432.57
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:45.3068664Z",
+      "javaAgeMs": 9161,
+      "workingSetMiB": 358.92,
+      "privateMiB": 432.57
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:45.8222059Z",
+      "javaAgeMs": 9677,
+      "workingSetMiB": 361.25,
+      "privateMiB": 434.79
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:46.3420962Z",
+      "javaAgeMs": 10197,
+      "workingSetMiB": 368.53,
+      "privateMiB": 442.68
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:46.8471913Z",
+      "javaAgeMs": 10702,
+      "workingSetMiB": 322.02,
+      "privateMiB": 396.64
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:47.3544298Z",
+      "javaAgeMs": 11209,
+      "workingSetMiB": 322.02,
+      "privateMiB": 396.64
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:47.8610537Z",
+      "javaAgeMs": 11716,
+      "workingSetMiB": 322.02,
+      "privateMiB": 396.64
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:48.3614635Z",
+      "javaAgeMs": 12216,
+      "workingSetMiB": 322.02,
+      "privateMiB": 396.64
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:48.8683882Z",
+      "javaAgeMs": 12723,
+      "workingSetMiB": 322.02,
+      "privateMiB": 396.64
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:49.3749977Z",
+      "javaAgeMs": 13230,
+      "workingSetMiB": 322.02,
+      "privateMiB": 396.64
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:49.8819719Z",
+      "javaAgeMs": 13736,
+      "workingSetMiB": 322.02,
+      "privateMiB": 396.64
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:50.3888148Z",
+      "javaAgeMs": 14243,
+      "workingSetMiB": 322.02,
+      "privateMiB": 396.64
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:50.8957876Z",
+      "javaAgeMs": 14750,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:51.4044092Z",
+      "javaAgeMs": 15259,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:51.9095893Z",
+      "javaAgeMs": 15764,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:52.4166545Z",
+      "javaAgeMs": 16271,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:52.9236249Z",
+      "javaAgeMs": 16778,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:53.4308928Z",
+      "javaAgeMs": 17285,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:53.9378368Z",
+      "javaAgeMs": 17792,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:54.4444803Z",
+      "javaAgeMs": 18299,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:54.9448082Z",
+      "javaAgeMs": 18799,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:55.4513479Z",
+      "javaAgeMs": 19306,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:55.9514039Z",
+      "javaAgeMs": 19806,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:56.4583383Z",
+      "javaAgeMs": 20313,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:56.9657734Z",
+      "javaAgeMs": 20820,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:57.4721866Z",
+      "javaAgeMs": 21327,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:57.9722304Z",
+      "javaAgeMs": 21827,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:58.4792350Z",
+      "javaAgeMs": 22334,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:58.9805816Z",
+      "javaAgeMs": 22835,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:59.4822507Z",
+      "javaAgeMs": 23337,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:32:59.9929763Z",
+      "javaAgeMs": 23847,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:00.4930520Z",
+      "javaAgeMs": 24348,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:00.9986697Z",
+      "javaAgeMs": 24853,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:01.5069543Z",
+      "javaAgeMs": 25361,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:02.0208917Z",
+      "javaAgeMs": 25875,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:02.5287232Z",
+      "javaAgeMs": 26383,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:03.0422340Z",
+      "javaAgeMs": 26897,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:03.5560867Z",
+      "javaAgeMs": 27411,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:04.0655492Z",
+      "javaAgeMs": 27920,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:04.5764834Z",
+      "javaAgeMs": 28431,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:05.0834532Z",
+      "javaAgeMs": 28938,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:05.5918420Z",
+      "javaAgeMs": 29446,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:06.0928904Z",
+      "javaAgeMs": 29947,
+      "workingSetMiB": 321.96,
+      "privateMiB": 396.55
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:06.5971914Z",
+      "javaAgeMs": 30452,
+      "workingSetMiB": 321.92,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:07.1041972Z",
+      "javaAgeMs": 30959,
+      "workingSetMiB": 321.92,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:07.6113013Z",
+      "javaAgeMs": 31466,
+      "workingSetMiB": 321.92,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:08.1134946Z",
+      "javaAgeMs": 31968,
+      "workingSetMiB": 321.92,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:08.6254164Z",
+      "javaAgeMs": 32480,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:09.1319282Z",
+      "javaAgeMs": 32986,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:09.6450019Z",
+      "javaAgeMs": 33500,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:10.1594443Z",
+      "javaAgeMs": 34014,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:10.6737383Z",
+      "javaAgeMs": 34528,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:11.1804351Z",
+      "javaAgeMs": 35035,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:11.6875941Z",
+      "javaAgeMs": 35542,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:12.1945239Z",
+      "javaAgeMs": 36049,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:12.7013032Z",
+      "javaAgeMs": 36556,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:13.2153596Z",
+      "javaAgeMs": 37070,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:13.7245219Z",
+      "javaAgeMs": 37579,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:14.2292262Z",
+      "javaAgeMs": 38084,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:14.7303905Z",
+      "javaAgeMs": 38585,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:15.2360545Z",
+      "javaAgeMs": 39091,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:15.7430591Z",
+      "javaAgeMs": 39598,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:16.2551296Z",
+      "javaAgeMs": 40110,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:16.7706387Z",
+      "javaAgeMs": 40625,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:17.2886460Z",
+      "javaAgeMs": 41143,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:17.7925251Z",
+      "javaAgeMs": 41647,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:18.2960191Z",
+      "javaAgeMs": 42151,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:18.8110539Z",
+      "javaAgeMs": 42666,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:19.3225618Z",
+      "javaAgeMs": 43177,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:19.8387880Z",
+      "javaAgeMs": 43693,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:20.3572310Z",
+      "javaAgeMs": 44212,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:20.8675719Z",
+      "javaAgeMs": 44722,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:21.3845697Z",
+      "javaAgeMs": 45239,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:21.8973848Z",
+      "javaAgeMs": 45752,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:22.4105950Z",
+      "javaAgeMs": 46265,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:22.9225649Z",
+      "javaAgeMs": 46777,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:23.4370459Z",
+      "javaAgeMs": 47292,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:23.9510046Z",
+      "javaAgeMs": 47806,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:24.4685442Z",
+      "javaAgeMs": 48323,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:24.9721031Z",
+      "javaAgeMs": 48827,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:25.4774752Z",
+      "javaAgeMs": 49332,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:25.9801160Z",
+      "javaAgeMs": 49835,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:26.4974713Z",
+      "javaAgeMs": 50352,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:27.0001300Z",
+      "javaAgeMs": 50855,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:27.5046671Z",
+      "javaAgeMs": 51359,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:28.0088592Z",
+      "javaAgeMs": 51863,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:28.5124363Z",
+      "javaAgeMs": 52367,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:29.0260014Z",
+      "javaAgeMs": 52881,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:29.5313859Z",
+      "javaAgeMs": 53386,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:30.0378576Z",
+      "javaAgeMs": 53892,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:30.5420922Z",
+      "javaAgeMs": 54397,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:31.0487064Z",
+      "javaAgeMs": 54903,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:31.5663149Z",
+      "javaAgeMs": 55421,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:32.0700071Z",
+      "javaAgeMs": 55925,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:32.5738093Z",
+      "javaAgeMs": 56428,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:33.0908720Z",
+      "javaAgeMs": 56945,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:33.6055279Z",
+      "javaAgeMs": 57460,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:34.1162617Z",
+      "javaAgeMs": 57971,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:34.6326550Z",
+      "javaAgeMs": 58487,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:35.1365864Z",
+      "javaAgeMs": 58991,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:35.6416211Z",
+      "javaAgeMs": 59496,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    },
+    {
+      "capturedAtUtc": "2026-11-11T16:33:36.1456502Z",
+      "javaAgeMs": 60000,
+      "workingSetMiB": 321.93,
+      "privateMiB": 396.48
+    }
+  ]
+}
