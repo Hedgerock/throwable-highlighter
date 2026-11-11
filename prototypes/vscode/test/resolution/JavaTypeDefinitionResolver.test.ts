@@ -968,6 +968,16 @@ test("uses a full JDT document range for an explicit type reference", async cont
             source: "class Usage { void run() { |RuntimeException(); } }",
             fullSymbolRange: true,
             expected: false
+        },
+        {
+            name: "constructor invocation",
+            source: "class Usage { void run() { throw new |RuntimeException(); } }",
+            expected: true
+        },
+        {
+            name: "qualified constructor invocation",
+            source: "class Usage { void run() { throw new java.lang.|RuntimeException(); } }",
+            expected: true
         }
     ] as const;
 

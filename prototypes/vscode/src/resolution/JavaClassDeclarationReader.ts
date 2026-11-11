@@ -36,6 +36,11 @@ export class JavaClassDeclarationReader {
         "u"
     );
 
+    private static readonly CONSTRUCTOR_TYPE_PREFIX_PATTERN = new RegExp(
+        String.raw`(?<![\p{ID_Continue}\p{Sc}\p{Cf}])new\s+(?:${JavaClassDeclarationReader.IDENTIFIER_PATTERN.source}\s*\.\s*)*$`,
+        "u"
+    );
+
     private static readonly KEYWORD_PATTERNS = {
         class: /(?<![\p{ID_Continue}\p{Sc}\p{Cf}])class(?![\p{ID_Continue}\p{Sc}\p{Cf}])/uy,
         extends: /(?<![\p{ID_Continue}\p{Sc}\p{Cf}])extends(?![\p{ID_Continue}\p{Sc}\p{Cf}])/uy
@@ -47,9 +52,12 @@ export class JavaClassDeclarationReader {
         const {document, range} = reference;
         const source = this.codeMask.maskNonCode(document.getText());
         const offset = document.offsetAt(range.start);
+        const prefix = source.slice(0, offset);
 
         return (
-            JavaClassDeclarationReader.EXTENDS_TYPE_PREFIX_PATTERN.test(source.slice(0, offset)) ||
+            JavaClassDeclarationReader.EXTENDS_TYPE_PREFIX_PATTERN.test(prefix) ||
+            (JavaClassDeclarationReader.CONSTRUCTOR_TYPE_PREFIX_PATTERN.test(prefix) &&
+                source.slice(document.offsetAt(range.end)).trimStart().startsWith("(")) ||
             this.importClauseFinder.findClauses(source).some(clause => clause.typeRange?.start === offset) ||
             this.catchClauseFinder.findTypeReferenceRanges(source).some(range => range.start === offset) ||
             this.throwsClauseFinder.findTypeReferenceRanges(source).some(range => range.start === offset)
