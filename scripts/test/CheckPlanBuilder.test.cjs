@@ -137,6 +137,25 @@ const cases = [
         changes: [{status: "A", path: "docs/research/figures/export.cjs"}],
         expected: {intellij: true, vscode: true, formatting: "all"}
     },
+    {
+        name: "skips platform checks for documentation images",
+        changes: [
+            {status: "A", path: "docs/images/vs-code/title.png"},
+            {status: "A", path: "docs/images/logo.svg"},
+            {status: "A", path: "docs/images/example.jpg"},
+            {status: "A", path: "docs/images/example.JPEG"},
+            {status: "A", path: "docs/research/figures/chart.webp"}
+        ],
+        expected: {intellij: false, vscode: false, formatting: "none"}
+    },
+    {
+        name: "checks only VS Code for a documentation screenshot and an extension icon",
+        changes: [
+            {status: "A", path: "docs/images/vs-code/title.png"},
+            {status: "M", path: "prototypes/vscode/icon.png"}
+        ],
+        expected: {intellij: false, vscode: true, formatting: "changed"}
+    },
 ];
 
 for (const scenario of cases) {

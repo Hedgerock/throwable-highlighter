@@ -1,5 +1,6 @@
 const VSCODE_DIRECTORY = "prototypes/vscode/";
 const SHARED_FIXTURES_DIRECTORY = "docs/specification/fixtures/";
+const DOCUMENTATION_IMAGE_EXTENSION = /\.(?:png|svg|jpe?g|webp)$/i;
 
 const INTELLIJ_FILES = new Set([
     "build.gradle.kts",
@@ -20,7 +21,9 @@ function isDocumentation(path) {
         path === VSCODE_DIRECTORY + "README.md" ||
         (path.startsWith("docs/") && path.endsWith(".md")) ||
         (path.startsWith("docs/research/data/") && path.endsWith(".json")) ||
-        (path.startsWith("docs/research/figures/") && path.endsWith(".svg"))
+        (path.startsWith("docs/research/data/") && path.endsWith(".json")) ||
+        ((path.startsWith("docs/images/") || path.startsWith("docs/research/figures/")) &&
+            DOCUMENTATION_IMAGE_EXTENSION.test(path))
     );
 }
 
