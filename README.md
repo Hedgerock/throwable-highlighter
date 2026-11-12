@@ -1,15 +1,18 @@
 # Throwable Highlighter
 
 [![Build](https://github.com/Hedgerock/throwable-highlighter/actions/workflows/build.yml/badge.svg)](https://github.com/Hedgerock/throwable-highlighter/actions/workflows/build.yml)
-[![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/34660-throwable-highlighter.svg?label=Marketplace)](https://plugins.jetbrains.com/plugin/34660-throwable-highlighter)
+[![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/34660-throwable-highlighter.svg?label=JetBrains%20Marketplace)](https://plugins.jetbrains.com/plugin/34660-throwable-highlighter)
+[![VS Code Marketplace](https://img.shields.io/badge/VS%20Code%20Marketplace-v0.1.0-blue)](https://marketplace.visualstudio.com/items?itemName=hedgerock.throwable-highlighter)
 
 Highlights Throwable and Java classes that inherit from it.
+
+Also available for [VS Code on Windows](https://marketplace.visualstudio.com/items?itemName=hedgerock.throwable-highlighter).
 
 ## Preview
 
 ![Throwable Highlighter preview](docs/images/throwable-highlighting.png)
 
-## Features
+## IntelliJ Platform Features
 
 - Highlights Throwable types in `catch` clauses with a separate configurable color.
 - Highlights Throwable types in `throws` clauses with a separate configurable color.
@@ -24,7 +27,7 @@ Highlights Throwable and Java classes that inherit from it.
 - Uses the `Throwable class` color as the default for `Throwable import`, `Throwable catch`, `Throwable throws`
   and `Throwable Javadoc`.
 
-## Configuration
+## IntelliJ Platform Configuration
 
 Configure highlighting under:
 
@@ -63,7 +66,7 @@ Project documentation is available in Russian:
 - [Java highlighting contract](docs/specification/java-highlighting-contract.md)
 - [Local checks](docs/local-checks.md)
 
-## Requirements
+## IntelliJ Platform Requirements
 
 - IntelliJ IDEA
 - Java support enabled
@@ -87,9 +90,19 @@ You can also install it directly from the
 4. Select the downloaded ZIP.
 5. Restart IntelliJ IDEA.
 
+### Visual Studio Marketplace
+
+Throwable Highlighter for VS Code highlights `Throwable` and its subclasses in Java
+declarations and references, explicit imports, `catch` parameters, and `throws` clauses.
+
+1. Install [Throwable Highlighter](https://marketplace.visualstudio.com/items?itemName=hedgerock.throwable-highlighter)
+   in VS Code `1.101.0` or later on Windows.
+2. Install **Language Support for Java by Red Hat** (`redhat.java`) and use Standard mode.
+3. Run **Throwable Highlighter: Open Color Settings** and choose a custom color for **Throwable class**.
+
 ## Development
 
-The project requires JDK 25.
+Building the IntelliJ Platform plugin requires JDK 25.
 
 ### Run tests
 
