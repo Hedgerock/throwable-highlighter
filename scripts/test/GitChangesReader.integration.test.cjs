@@ -79,7 +79,7 @@ test("detects a rename between platforms and selects both check groups", context
     // Arrange
     const {root, env, git, write, commit} = createRepository(context);
     const previousPath = "src/main/resources/moved.txt";
-    const path = "prototypes/vscode/webview/moved.txt";
+    const path = "extensions/vscode/webview/moved.txt";
     write(previousPath, "unchanged file content\n");
     commit();
     fs.mkdirSync(dirname(join(root, path)), {recursive: true});
@@ -99,7 +99,7 @@ test("detects a rename between platforms and selects both check groups", context
 test("detects deletion and excludes the deleted file from tracked paths", context => {
     // Arrange
     const {root, env, git, write, commit} = createRepository(context);
-    const path = "prototypes/vscode/src/removed.ts";
+    const path = "extensions/vscode/src/removed.ts";
     write(path, "export const value = 1;\n");
     commit();
     git(["rm", "--", path]);
@@ -148,7 +148,7 @@ test("reads an alternative index without modifying either index", context => {
 test("preserves a real file name containing spaces, brackets and Unicode", context => {
     // Arrange
     const {root, env, git, write} = createRepository(context);
-    const path = "prototypes/vscode/src/имя файла [draft].ts";
+    const path = "extensions/vscode/src/имя файла [draft].ts";
     write(path, "export const value = 1;\n");
     git(["add", "--all"]);
     const reader = new GitChangesReader(root, {env});

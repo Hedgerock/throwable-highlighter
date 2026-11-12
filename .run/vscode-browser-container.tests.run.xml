@@ -2,7 +2,7 @@
     <configuration default="false"
                    name="VS Code: Browser and visual (Docker)"
                    type="js.build_tools.npm">
-        <package-json value="$PROJECT_DIR$/prototypes/vscode/package.json" />
+        <package-json value="$PROJECT_DIR$/extensions/vscode/package.json" />
         <command value="run" />
         <scripts>
             <script value="test:browser:container" />

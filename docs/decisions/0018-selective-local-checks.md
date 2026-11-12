@@ -161,5 +161,5 @@ GitHub Actions сохраняет полный прогон обеих плат�
 
 - [ADR-0016: Локальная проверка подготовленного коммита](0016-local-pre-commit-checks.md)
 - [Локальная проверка подготовленного коммита](../local-checks.md)
-- [Документация прототипа VS Code](../../prototypes/vscode/README.md)
+- [Документация прототипа VS Code](../../extensions/vscode/README.md)
 - [Workflow CI](../../.github/workflows/build.yml)

@@ -145,7 +145,7 @@ test("rejects an unavailable Git executable", context => {
 test("uses the frozen index after the original index changes", context => {
     // Arrange
     const {root, env, git, write} = createRepository(context);
-    const path = "prototypes/vscode/src/value.ts";
+    const path = "extensions/vscode/src/value.ts";
     const added = "src/main/java/Added.java";
     write(path, "staged content\n");
     git(["add", "--all"]);

@@ -55,7 +55,7 @@ test("does not load Prettier for an empty selection", async context => {
 test("passes the selection and checks the selected files", async context => {
     // Arrange
     const files = [resolve("first.ts"), resolve("second.ts")];
-    const selection = {mode: "all", trackedPaths: ["prototypes/vscode/src/value.ts"]};
+    const selection = {mode: "all", trackedPaths: ["extensions/vscode/src/value.ts"]};
     const {root, runner, select, loadPrettier, check} = createRunner(context, files);
 
     // Act
@@ -72,7 +72,7 @@ test("passes the selection and checks the selected files", async context => {
 test("shares one Prettier instance between selection and checking", async context => {
     // Arrange
     const root = resolve("repository with spaces");
-    const path = "prototypes/vscode/src/value.ts";
+    const path = "extensions/vscode/src/value.ts";
     context.mock.method(fs, "lstatSync", () => ({isFile: () => true}));
     context.mock.method(fs, "realpathSync", file => file);
     context.mock.method(fs, "readFileSync", () => "const value = 1;\n");
@@ -97,7 +97,7 @@ test("shares one Prettier instance between selection and checking", async contex
 test("loads Prettier relative to the prototype package", async context => {
     // Arrange
     const root = resolve("repository with spaces");
-    const files = [join(root, "prototypes", "vscode", "src", "value.ts")];
+    const files = [join(root, "extensions", "vscode", "src", "value.ts")];
     createRunner(context, files);
     const loader = context.mock.fn(() => ({}));
     const createRequire = context.mock.method(moduleApi, "createRequire", () => loader);
@@ -107,7 +107,7 @@ test("loads Prettier relative to the prototype package", async context => {
     await runner.run({mode: "all", trackedPaths: []});
 
     // Assert
-    assert.deepEqual(createRequire.mock.calls[0].arguments, [join(root, "prototypes", "vscode", "package.json")]);
+    assert.deepEqual(createRequire.mock.calls[0].arguments, [join(root, "extensions", "vscode", "package.json")]);
     assert.deepEqual(loader.mock.calls[0].arguments, ["prettier"]);
 });
 

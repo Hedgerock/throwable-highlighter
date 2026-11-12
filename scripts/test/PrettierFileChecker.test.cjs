@@ -7,7 +7,7 @@ const {test} = require("node:test");
 const {PrettierFileChecker} = require("../local-checks/PrettierFileChecker.cjs");
 
 function createChecker(context) {
-    const file = resolve("repository with spaces", "prototypes", "vscode", "src", "value.ts");
+    const file = resolve("repository with spaces", "extensions", "vscode", "src", "value.ts");
     const read = context.mock.method(fs, "readFileSync", () => "const value = 1;\n");
     const write = context.mock.method(fs, "writeFileSync", () => assert.fail("Unexpected file write."));
     const prettier = {

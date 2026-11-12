@@ -116,7 +116,7 @@ refresh не считается завершением асинхронной р
 
 Режим локальных замеров реализован в коммите `fb63435` согласно ADR-0025.
 
-Для запуска расширение собирается командой `npm run compile` из каталога `prototypes/vscode`. В конфигурации Extension
+Для запуска расширение собирается командой `npm run compile` из каталога `extensions/vscode`. В конфигурации Extension
 Development Host задаётся `THROWABLE_HIGHLIGHTER_MEASURE_REFRESH=1`. Записи `[refresh-measurement]` выводятся в канал
 `Throwable Highlighter Prototype`.
 
@@ -407,7 +407,7 @@ VS Code `1.145.0`, `redhat.java` `1.58.0`, Java `25.0.4.1`.
 
 ### Построение графиков
 
-Графики формируются командой `npm run research:charts` из каталога `prototypes/vscode`.
+Графики формируются командой `npm run research:charts` из каталога `extensions/vscode`.
 
 Источниками служат архивы `vscode-resources-limit-16.json` и `vscode-resources-limit-32.json`.
 Результаты сохраняются в `docs/research/figures/vscode-provider-concurrency`.
@@ -640,7 +640,7 @@ Java-провайдеров и карта незавершённых опред�
 
 ## Запуск контролируемых измерений
 
-Команда выполняется из каталога prototypes/vscode:
+Команда выполняется из каталога extensions/vscode:
 
 ```powershell
 npm run benchmark:refresh

@@ -127,6 +127,6 @@ JavaScript-файлы, source maps и другие включённые резу
 ## Связанные решения
 
 - [ADR-0016: Локальная проверка подготовленного коммита](0016-local-pre-commit-checks.md)
-- [Документация прототипа VS Code](../../prototypes/vscode/README.md)
-- [Основная конфигурация TypeScript](../../prototypes/vscode/tsconfig.json)
-- [Тестовая конфигурация TypeScript](../../prototypes/vscode/tsconfig.test.json)
+- [Документация прототипа VS Code](../../extensions/vscode/README.md)
+- [Основная конфигурация TypeScript](../../extensions/vscode/tsconfig.json)
+- [Тестовая конфигурация TypeScript](../../extensions/vscode/tsconfig.test.json)

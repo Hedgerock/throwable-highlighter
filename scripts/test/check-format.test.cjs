@@ -20,15 +20,15 @@ function createCheck(context, changes = [], trackedPaths = []) {
 }
 
 for (const [name, path, mode] of [
-    ["prototype sources", "prototypes/vscode/src/extension.ts", "changed"],
-    ["formatting configuration", "prototypes/vscode/.prettierrc.json", "all"],
-    ["prototype dependencies", "prototypes/vscode/package.json", "all"],
+    ["extension sources", "extensions/vscode/src/extension.ts", "changed"],
+    ["formatting configuration", "extensions/vscode/.prettierrc.json", "all"],
+    ["extension dependencies", "extensions/vscode/package.json", "all"],
     ["common infrastructure", "scripts/check-staged.cjs", "all"]
 ]) {
     test("selects " + mode + " formatting for " + name, async context => {
         // Arrange
         const changes = [{status: "M", path}];
-        const trackedPaths = ["prototypes/vscode/src/extension.ts"];
+        const trackedPaths = ["extensions/vscode/src/extension.ts"];
         const {root, local, tracked, run} = createCheck(context, changes, trackedPaths);
 
         // Act
@@ -56,7 +56,7 @@ test("skips tracked path discovery for documentation-only changes", async contex
 
 test("checks all tracked files explicitly without reading local changes", async context => {
     // Arrange
-    const trackedPaths = ["prototypes/vscode/src/extension.ts"];
+    const trackedPaths = ["extensions/vscode/src/extension.ts"];
     const {root, local, run} = createCheck(context, [], trackedPaths);
 
     // Act
@@ -70,7 +70,7 @@ test("checks all tracked files explicitly without reading local changes", async 
 for (const phase of ["local", "tracked"]) {
     test("propagates Git " + phase + " discovery errors", async context => {
         // Arrange
-        const fixture = createCheck(context, [{status: "M", path: "prototypes/vscode/src/value.ts"}]);
+        const fixture = createCheck(context, [{status: "M", path: "extensions/vscode/src/value.ts"}]);
         const error = new Error("Unable to read Git state.");
         fixture[phase].mock.mockImplementation(() => {
             throw error;
@@ -129,7 +129,7 @@ test("reports an empty selection as success", async context => {
 test("reports formatting violations with repository-relative paths", async context => {
     // Arrange
     const root = resolve("repository with spaces");
-    const file = join(root, "prototypes", "vscode", "src", "value.ts");
+    const file = join(root, "extensions", "vscode", "src", "value.ts");
     const {log, error, options} = createMain(context, {checked: 1, unformatted: [file]});
 
     // Act
@@ -140,7 +140,7 @@ test("reports formatting violations with repository-relative paths", async conte
     assert.equal(log.mock.calls.length, 0);
     assert.deepEqual(
         error.mock.calls.map(call => call.arguments[0]),
-        ["[format-check] Unformatted files:", "  prototypes/vscode/src/value.ts"]
+        ["[format-check] Unformatted files:", "  extensions/vscode/src/value.ts"]
     );
 });
 
@@ -192,8 +192,8 @@ test("reads the formatting selection file", async context => {
     // Arrange
     const selection = {
         mode: "changed",
-        changes: [{status: "M", path: "prototypes/vscode/src/value.ts"}],
-        trackedPaths: ["prototypes/vscode/src/value.ts"]
+        changes: [{status: "M", path: "extensions/vscode/src/value.ts"}],
+        trackedPaths: ["extensions/vscode/src/value.ts"]
     };
     const selectionFile = resolve("format selection.json");
     const read = context.mock.method(fs, "readFileSync", () =>

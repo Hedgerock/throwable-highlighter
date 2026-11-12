@@ -10,7 +10,7 @@ const cases = [
             {status: "M", path: "README.md"},
             {status: "M", path: "CHANGELOG.md"},
             {status: "A", path: "docs/decisions/0018-selective-local-checks.md"},
-            {status: "M", path: "prototypes/vscode/README.md"}
+            {status: "M", path: "extensions/vscode/README.md"}
         ],
         expected: {intellij: false, vscode: false, formatting: "none"}
     },
@@ -27,9 +27,9 @@ const cases = [
     {
         name: "checks only VS Code for prototype sources",
         changes: [
-            {status: "M", path: "prototypes/vscode/src/extension.ts"},
-            {status: "A", path: "prototypes/vscode/test/NewFeature.test.ts"},
-            {status: "M", path: "prototypes/vscode/webview/color-settings/styles.css"}
+            {status: "M", path: "extensions/vscode/src/extension.ts"},
+            {status: "A", path: "extensions/vscode/test/NewFeature.test.ts"},
+            {status: "M", path: "extensions/vscode/webview/color-settings/styles.css"}
         ],
         expected: {intellij: false, vscode: true, formatting: "changed"}
     },
@@ -37,7 +37,7 @@ const cases = [
         name: "combines checks for both platforms",
         changes: [
             {status: "M", path: "src/main/java/example/ThrowableAnnotator.java"},
-            {status: "M", path: "prototypes/vscode/src/extension.ts"}
+            {status: "M", path: "extensions/vscode/src/extension.ts"}
         ],
         expected: {intellij: true, vscode: true, formatting: "changed"}
     },
@@ -69,7 +69,7 @@ const cases = [
         changes: [
             {
                 status: "R",
-                previousPath: "prototypes/vscode/src/OldFeature.ts",
+                previousPath: "extensions/vscode/src/OldFeature.ts",
                 path: "docs/old-feature.md"
             }
         ],
@@ -81,14 +81,14 @@ const cases = [
             {
                 status: "R",
                 previousPath: "src/main/resources/example.txt",
-                path: "prototypes/vscode/webview/example.txt"
+                path: "extensions/vscode/webview/example.txt"
             }
         ],
         expected: {intellij: true, vscode: true, formatting: "changed"}
     },
     {
         name: "checks a platform after deleting its source",
-        changes: [{status: "D", path: "prototypes/vscode/src/OldFeature.ts"}],
+        changes: [{status: "D", path: "extensions/vscode/src/OldFeature.ts"}],
         expected: {intellij: false, vscode: true, formatting: "changed"}
     },
     {
@@ -128,7 +128,7 @@ const cases = [
         name: "checks only VS Code for a research figure and a webview icon",
         changes: [
             {status: "M", path: "docs/research/figures/vscode-provider-concurrency/resolution-cache.svg"},
-            {status: "M", path: "prototypes/vscode/webview/color-settings/icon-dark.svg"}
+            {status: "M", path: "extensions/vscode/webview/color-settings/icon-dark.svg"}
         ],
         expected: {intellij: false, vscode: true, formatting: "changed"}
     },
@@ -152,7 +152,7 @@ const cases = [
         name: "checks only VS Code for a documentation screenshot and an extension icon",
         changes: [
             {status: "A", path: "docs/images/vs-code/title.png"},
-            {status: "M", path: "prototypes/vscode/icon.png"}
+            {status: "M", path: "extensions/vscode/icon.png"}
         ],
         expected: {intellij: false, vscode: true, formatting: "changed"}
     },
@@ -172,12 +172,12 @@ for (const scenario of cases) {
 }
 
 for (const path of [
-    "prototypes/vscode/.prettierrc.json",
-    "prototypes/vscode/.prettierignore",
-    "prototypes/vscode/.editorconfig",
-    "prototypes/vscode/prettier.config.cjs",
-    "prototypes/vscode/package.json",
-    "prototypes/vscode/package-lock.json"
+    "extensions/vscode/.prettierrc.json",
+    "extensions/vscode/.prettierignore",
+    "extensions/vscode/.editorconfig",
+    "extensions/vscode/prettier.config.cjs",
+    "extensions/vscode/package.json",
+    "extensions/vscode/package-lock.json"
 ]) {
     test("checks all prototype formatting after changing " + path, () => {
         // Arrange
@@ -199,8 +199,8 @@ test("retains full formatting when its configuration is renamed", () => {
     const actual = builder.build([
         {
             status: "R",
-            previousPath: "prototypes/vscode/.prettierrc.json",
-            path: "prototypes/vscode/old-config.json"
+            previousPath: "extensions/vscode/.prettierrc.json",
+            path: "extensions/vscode/old-config.json"
         }
     ]);
 

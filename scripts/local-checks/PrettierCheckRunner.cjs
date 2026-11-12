@@ -4,8 +4,8 @@ const {join, resolve} = require("node:path");
 const {PrettierFileChecker} = require("./PrettierFileChecker.cjs");
 const {PrettierFileSelector} = require("./PrettierFileSelector.cjs");
 
-function loadPrototypePrettier(repositoryRoot) {
-    const loader = moduleApi.createRequire(join(repositoryRoot, "prototypes", "vscode", "package.json"));
+function loadExtensionPrettier(repositoryRoot) {
+    const loader = moduleApi.createRequire(join(repositoryRoot, "extensions", "vscode", "package.json"));
     return loader("prettier");
 }
 
@@ -13,7 +13,7 @@ class PrettierCheckRunner {
     #root;
     #loadPrettier;
 
-    constructor(repositoryRoot, {loadPrettier = loadPrototypePrettier} = {}) {
+    constructor(repositoryRoot, {loadPrettier = loadExtensionPrettier} = {}) {
         this.#root = resolve(repositoryRoot);
         this.#loadPrettier = loadPrettier;
     }

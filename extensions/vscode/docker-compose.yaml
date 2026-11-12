@@ -6,7 +6,7 @@ services:
         platform: linux/amd64
         init: true
         ipc: host
-        working_dir: /workspace/prototypes/vscode
+        working_dir: /workspace/extensions/vscode
         volumes:
             - type: bind
               source: ../..
@@ -14,7 +14,7 @@ services:
               bind:
                   create_host_path: false
             - type: volume
-              target: /workspace/prototypes/vscode/node_modules
+              target: /workspace/extensions/vscode/node_modules
               volume:
                   nocopy: true
         command:

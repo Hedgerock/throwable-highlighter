@@ -62,16 +62,16 @@ function runProjectChecks(snapshot, env, {plan, selectionFile}) {
     }
 
     if (plan.vscode) {
-        const prototype = join(snapshot, "prototypes", "vscode");
-        runNpm(["ci"], prototype, env);
+        const extension = join(snapshot, "extensions", "vscode");
+        runNpm(["ci"], extension, env);
         runCommand(
             process.execPath,
             [join(snapshot, "scripts", "check-format.cjs"), "--selection", selectionFile],
-            prototype,
+            extension,
             env
         );
-        runNpm(["run", "compile"], prototype, env);
-        runNpm(["test"], prototype, env);
+        runNpm(["run", "compile"], extension, env);
+        runNpm(["test"], extension, env);
     }
 }
 

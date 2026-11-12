@@ -51,7 +51,7 @@ test("retains both paths of renames and copies", context => {
 
 test("preserves spaces, tabs, line breaks and Unicode in paths", context => {
     // Arrange
-    const path = "prototypes/vscode/src/имя файла\tс\nпереносом.ts";
+    const path = "extensions/vscode/src/имя файла\tс\nпереносом.ts";
     mockGit(context, "M\0" + path + "\0");
     const reader = new GitChangesReader(resolve("repository"));
 

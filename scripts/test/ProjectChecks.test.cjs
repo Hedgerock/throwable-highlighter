@@ -78,7 +78,7 @@ for (const [name, plan, expected] of [
             assert.ok(
                 commands
                     .slice(plan.intellij ? 2 : 1)
-                    .every(command => command.cwd === join(snapshot, "prototypes", "vscode"))
+                    .every(command => command.cwd === join(snapshot, "extensions", "vscode"))
             );
         }
     });

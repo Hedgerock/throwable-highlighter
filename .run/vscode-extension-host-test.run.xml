@@ -2,7 +2,7 @@
     <configuration default="false"
                    name="VS Code: Extension Host"
                    type="js.build_tools.npm">
-        <package-json value="$PROJECT_DIR$/prototypes/vscode/package.json" />
+        <package-json value="$PROJECT_DIR$/extensions/vscode/package.json" />
         <command value="run" />
         <scripts>
             <script value="test:extension-host" />

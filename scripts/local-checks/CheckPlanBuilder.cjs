@@ -1,4 +1,4 @@
-const VSCODE_DIRECTORY = "prototypes/vscode/";
+const VSCODE_DIRECTORY = "extensions/vscode/";
 const SHARED_FIXTURES_DIRECTORY = "docs/specification/fixtures/";
 const DOCUMENTATION_IMAGE_EXTENSION = /\.(?:png|svg|jpe?g|webp)$/i;
 

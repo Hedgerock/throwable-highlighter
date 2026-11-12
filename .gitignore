@@ -13,17 +13,17 @@ out/
 
 ### VS Code ###
 .vscode/
-!prototypes/vscode/.vscode/
-!prototypes/vscode/.vscode/launch.json
+!extensions/vscode/.vscode/
+!extensions/vscode/.vscode/launch.json
 
 ### VS Code prototype ###
-prototypes/vscode/node_modules/
-prototypes/vscode/.vscode-test/
-prototypes/vscode/*.vsix
-prototypes/vscode/out-test/
-prototypes/vscode/test-results/
-prototypes/vscode/playwright-report/
-!prototypes/vscode/tooling/build/
+extensions/vscode/node_modules/
+extensions/vscode/.vscode-test/
+extensions/vscode/*.vsix
+extensions/vscode/out-test/
+extensions/vscode/test-results/
+extensions/vscode/playwright-report/
+!extensions/vscode/tooling/build/
 
 ### OS ###
 .DS_Store

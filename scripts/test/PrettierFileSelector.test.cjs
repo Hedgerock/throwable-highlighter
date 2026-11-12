@@ -58,10 +58,10 @@ function createSelector(context, files = {}) {
 
 test("selects only changed tracked prototype files and removes duplicates", async context => {
     // Arrange
-    const first = "prototypes/vscode/src/first.ts";
-    const second = "prototypes/vscode/src/second.ts";
-    const unchanged = "prototypes/vscode/src/unchanged.ts";
-    const untracked = "prototypes/vscode/src/untracked.ts";
+    const first = "extensions/vscode/src/first.ts";
+    const second = "extensions/vscode/src/second.ts";
+    const unchanged = "extensions/vscode/src/unchanged.ts";
+    const untracked = "extensions/vscode/src/untracked.ts";
     const outside = "src/main/java/Example.java";
     const {selector, absolute, getFileInfo} = createSelector(context, {
         [first]: {},
@@ -91,8 +91,8 @@ test("selects only changed tracked prototype files and removes duplicates", asyn
 
 test("selects unchanged tracked files in all mode and excludes untracked files", async context => {
     // Arrange
-    const tracked = "prototypes/vscode/src/tracked.ts";
-    const untracked = "prototypes/vscode/src/untracked.ts";
+    const tracked = "extensions/vscode/src/tracked.ts";
+    const untracked = "extensions/vscode/src/untracked.ts";
     const {selector, absolute} = createSelector(context, {[tracked]: {}, [untracked]: {}});
 
     // Act
@@ -104,8 +104,8 @@ test("selects unchanged tracked files in all mode and excludes untracked files",
 
 test("selects only the destination of a copied file", async context => {
     // Arrange
-    const previousPath = "prototypes/vscode/src/original.ts";
-    const path = "prototypes/vscode/src/copied.ts";
+    const previousPath = "extensions/vscode/src/original.ts";
+    const path = "extensions/vscode/src/copied.ts";
     const {selector, absolute} = createSelector(context, {[previousPath]: {}, [path]: {}});
 
     // Act
@@ -121,7 +121,7 @@ test("selects only the destination of a copied file", async context => {
 
 test("excludes deleted changes before reading files", async context => {
     // Arrange
-    const path = "prototypes/vscode/src/deleted.ts";
+    const path = "extensions/vscode/src/deleted.ts";
     const {selector, lstat, getFileInfo} = createSelector(context, {[path]: {}});
 
     // Act
@@ -139,14 +139,14 @@ test("excludes deleted changes before reading files", async context => {
 
 for (const [name, files] of [
     ["a missing file", {}],
-    ["a directory", {"prototypes/vscode/src/value.ts": {kind: "directory"}}],
-    ["a symbolic link", {"prototypes/vscode/src/value.ts": {kind: "symlink"}}],
-    ["an ignored file", {"prototypes/vscode/src/value.ts": {ignored: true}}],
-    ["an unsupported file", {"prototypes/vscode/src/value.ts": {parser: null}}]
+    ["a directory", {"extensions/vscode/src/value.ts": {kind: "directory"}}],
+    ["a symbolic link", {"extensions/vscode/src/value.ts": {kind: "symlink"}}],
+    ["an ignored file", {"extensions/vscode/src/value.ts": {ignored: true}}],
+    ["an unsupported file", {"extensions/vscode/src/value.ts": {parser: null}}]
 ]) {
     test("excludes " + name, async context => {
         // Arrange
-        const path = "prototypes/vscode/src/value.ts";
+        const path = "extensions/vscode/src/value.ts";
         const {selector} = createSelector(context, files);
 
         // Act
@@ -159,7 +159,7 @@ for (const [name, files] of [
 
 test("uses prototype ignore files and allows configuration-based parser selection", async context => {
     // Arrange
-    const path = "prototypes/vscode/src/имя файла [draft].ts";
+    const path = "extensions/vscode/src/имя файла [draft].ts";
     const {selector, absolute, getFileInfo} = createSelector(context, {[path]: {}});
 
     // Act
@@ -170,7 +170,7 @@ test("uses prototype ignore files and allows configuration-based parser selectio
     assert.deepEqual(getFileInfo.mock.calls[0].arguments, [
         absolute(path),
         {
-            ignorePath: [absolute("prototypes/vscode/.gitignore"), absolute("prototypes/vscode/.prettierignore")],
+            ignorePath: [absolute("extensions/vscode/.gitignore"), absolute("extensions/vscode/.prettierignore")],
             withNodeModules: false,
             resolveConfig: true
         }
@@ -179,7 +179,7 @@ test("uses prototype ignore files and allows configuration-based parser selectio
 
 test("does not access files or Prettier in none mode", async context => {
     // Arrange
-    const path = "prototypes/vscode/src/value.ts";
+    const path = "extensions/vscode/src/value.ts";
     const {selector, lstat, getFileInfo} = createSelector(context, {[path]: {}});
 
     // Act
@@ -218,22 +218,22 @@ test("rejects an unknown mode", async context => {
     await assert.rejects(act, /Unknown formatting mode/);
 });
 
-test("rejects a path leaving the prototype directory", async context => {
+test("rejects a path leaving the extension directory", async context => {
     // Arrange
-    const path = "prototypes/vscode/../../outside.ts";
+    const path = "extensions/vscode/../../outside.ts";
     const {selector, lstat} = createSelector(context);
 
     // Act
     const act = () => selector.select({mode: "all", trackedPaths: [path]});
 
     // Assert
-    await assert.rejects(act, /leaves the prototype directory/);
+    await assert.rejects(act, /leaves the extension directory/);
     assert.equal(lstat.mock.calls.length, 0);
 });
 
-test("excludes a file resolved outside the prototype directory", async context => {
+test("excludes a file resolved outside the extension directory", async context => {
     // Arrange
-    const path = "prototypes/vscode/src/value.ts";
+    const path = "extensions/vscode/src/value.ts";
     const {selector, getFileInfo} = createSelector(context, {
         [path]: {realPath: resolve("another directory", "value.ts")}
     });
@@ -248,7 +248,7 @@ test("excludes a file resolved outside the prototype directory", async context =
 
 test("skips a file removed before resolving its real path", async context => {
     // Arrange
-    const path = "prototypes/vscode/src/value.ts";
+    const path = "extensions/vscode/src/value.ts";
     const error = Object.assign(new Error("Removed file."), {code: "ENOENT"});
     const {selector} = createSelector(context, {[path]: {realpathError: error}});
 
@@ -262,7 +262,7 @@ test("skips a file removed before resolving its real path", async context => {
 for (const field of ["statError", "realpathError", "infoError"]) {
     test("propagates " + field, async context => {
         // Arrange
-        const path = "prototypes/vscode/src/value.ts";
+        const path = "extensions/vscode/src/value.ts";
         const error = Object.assign(new Error("Unable to inspect file."), {code: "EACCES"});
         const {selector} = createSelector(context, {[path]: {[field]: error}});
 
