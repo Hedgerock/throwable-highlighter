@@ -48,11 +48,11 @@ jobs:
           assert.match(version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/);
           assert.equal(lock.version, version, "Lockfile version must match package.json");
           assert.equal(lock.packages?.[""]?.version, version, "Root package version in lockfile must match package.json");
-          
+
           if (process.env.GITHUB_EVENT_NAME === "push") {
             assert.equal(process.env.GITHUB_REF_NAME, "vscode-v" + version, "Release tag must match package.json");
           }
-          
+
           appendFileSync(process.env.GITHUB_OUTPUT, "version=" + version + "\n");
           NODE
 
@@ -93,9 +93,6 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: '22'
-
-      - name: Install dependencies
-        run: npm ci
 
       - name: Install dependencies
         run: npm ci

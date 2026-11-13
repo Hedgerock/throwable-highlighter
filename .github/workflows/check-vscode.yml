@@ -28,7 +28,7 @@ jobs:
           cache-dependency-path: extensions/vscode/package-lock.json
 
       - name: Test local check runner
-        run: node --test scripts/test/*.test.cjs
+        run: node --test ".ci/test/*.test.cjs"
         working-directory: .
 
       - name: Install dependencies
