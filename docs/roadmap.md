@@ -107,8 +107,11 @@ Throwable Highlighter поддерживает IntelliJ Platform и настол
 
 Плагин для IntelliJ Platform версии `1.5.0` опубликован в JetBrains Marketplace.
 
-Следующая платформенная итерация — автоматизация выпуска VS Code согласно
-[ADR-0035](decisions/0035-independent-platform-releases.md).
+Независимые workflows выпуска IntelliJ Platform и VS Code реализованы согласно [ADR-0035](decisions/0035-independent-platform-releases.md)
+и [ADR-0036](decisions/0036-platform-extension-layout.md).
+
+Ручной запуск **Release VS Code** на коммите `d054bfb` подтвердил прохождение трёх групп проверок и сборку VSIX. Trusted
+Publishing настроен. Публикация через OIDC проверяется при первом выпуске по тегу VS Code.
 
 Размер кэша подтверждённых результатов ограничен согласно
 [ADR-0029](decisions/0029-vscode-bounded-resolution-cache.md).

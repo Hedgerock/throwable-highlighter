@@ -606,7 +606,11 @@ Job `vscode-extension-host` успешно выполнена в GitHub Actions.
 
 Визуальное применение decorations проверяется вручную в Extension Development Host.
 
-Сборка VSIX и публикация расширения VS Code в текущий workflow не входят.
+Workflow [Release VS Code](../../.github/workflows/release-vscode.yml) использует те же проверки. Ручной запуск собирает
+VSIX и сохраняет его как артефакт. Отправка релизного тега запускает публикацию в Visual Studio Marketplace после успешных
+проверок и сборки.
+
+Порядок подготовки кандидата и публикации описан в [инструкции выпуска](../../docs/release-process.md#выпуск-vs-code).
 
 ---
 
