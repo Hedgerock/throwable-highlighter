@@ -78,7 +78,7 @@ test("retains staged changes when the working file matches HEAD", context => {
 test("detects a rename between platforms and selects both check groups", context => {
     // Arrange
     const {root, env, git, write, commit} = createRepository(context);
-    const previousPath = "src/main/resources/moved.txt";
+    const previousPath = "extensions/intellij/src/main/resources/moved.txt";
     const path = "extensions/vscode/webview/moved.txt";
     write(previousPath, "unchanged file content\n");
     commit();

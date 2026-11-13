@@ -52,12 +52,17 @@ function runProjectChecks(snapshot, env, {plan, selectionFile}) {
         if (process.platform === "win32") {
             runCommand(
                 env.ComSpec || "cmd.exe",
-                ["/d", "/s", "/c", "gradlew.bat test verifyPlugin buildPlugin --no-daemon"],
+                ["/d", "/s", "/c", "gradlew.bat -p extensions/intellij test verifyPlugin buildPlugin --no-daemon"],
                 snapshot,
                 env
             );
         } else {
-            runCommand("sh", ["./gradlew", "test", "verifyPlugin", "buildPlugin", "--no-daemon"], snapshot, env);
+            runCommand(
+                "sh",
+                ["./gradlew", "-p", "extensions/intellij", "test", "verifyPlugin", "buildPlugin", "--no-daemon"],
+                snapshot,
+                env
+            );
         }
     }
 

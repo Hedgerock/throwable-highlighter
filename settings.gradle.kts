@@ -1,1 +1,5 @@
-rootProject.name = "throwable-highlighter"
+rootProject.name = "throwable-highlighter-workspace"
+
+includeBuild("extensions/intellij") {
+    name = "intellij"
+}

@@ -30,9 +30,9 @@ v1.2.0
 
 Перед созданием тега необходимо:
 
-1. Обновить `version` в `build.gradle.kts`.
-2. Перенести изменения из раздела `Unreleased` в `CHANGELOG.md` в новый раздел с номером версии и датой.
-3. Добавить краткие change notes для новой версии в `plugin.xml`.
+1. Обновить `version` в `extensions/intellij/build.gradle.kts`.
+2. Перенести изменения из раздела `Unreleased` в `extensions/intellij/CHANGELOG.md` в новый раздел с номером версии и датой.
+3. Добавить краткие change notes для новой версии в `extensions/intellij/src/main/resources/META-INF/plugin.xml`.
 4. Обновить `README.md`, описание плагина или документацию, если изменение влияет на поведение пользователя.
 5. Убедиться, что CI для `master` завершился успешно.
 6. Выполнить локальную проверку:
@@ -46,7 +46,7 @@ buildPlugin
 Для Windows можно использовать:
 
 ```powershell
-.\gradlew.bat test verifyPlugin buildPlugin
+.\gradlew.bat -p extensions/intellij test verifyPlugin buildPlugin
 ```
 
 Подключение проверок перед коммитом и ручной запуск проверки описаны в документе
@@ -59,13 +59,13 @@ buildPlugin
 После подготовки версии создается и отправляется тег:
 
 ```powershell
-git tag -a v<version> -m "Release v<version>"
-git push origin v<version>
+git tag -a intellij-v<version> -m "Release intellij-v<version>"
+git push origin intellij-v<version>
 ```
 
-Версия в теге должна совпадать со значением `version` в `build.gradle.kts`.
+Версия в теге должна совпадать со значением `version` в `extensions/intellij/build.gradle.kts`.
 
-Например, для версии `1.2.0` используется тег `v1.2.0`.
+Например, для версии `1.2.0` используется тег `intellij-v1.2.0`.
 
 ---
 

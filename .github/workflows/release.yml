@@ -2,7 +2,7 @@ name: Release
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "intellij-v[0-9]+.[0-9]+.[0-9]+"
 
 permissions:
   contents: write
@@ -27,12 +27,12 @@ jobs:
 
       - name: Ensure tag matches plugin version
         run: |
-          version="$(sed -nE 's/^version[[:space:]]*=[[:space:]]*"([^"]+)"/\1/p' build.gradle.kts)"
+          version="$(sed -nE 's/^version[[:space:]]*=[[:space:]]*"([^"]+)"/\1/p' extensions/intellij/build.gradle.kts)"
           test -n "$version"
-          test "v$version" = "$GITHUB_REF_NAME"
+          test "intellij-v$version" = "$GITHUB_REF_NAME"
 
       - name: Test, verify, and build
-        run: ./gradlew test verifyPlugin buildPlugin --no-daemon
+        run: ./gradlew -p extensions/intellij test verifyPlugin buildPlugin --no-daemon
 
       - name: Publish to JetBrains Marketplace
         env:
@@ -40,12 +40,12 @@ jobs:
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
           CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
-        run: ./gradlew publishPlugin --no-daemon
+        run: ./gradlew -p extensions/intellij publishPlugin --no-daemon
 
       - name: Create Github Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" build/distributions/*.zip \
+          gh release create "$GITHUB_REF_NAME" extensions/intellij/build/distributions/*.zip \
           --title "$GITHUB_REF_NAME" \
           --generate-notes

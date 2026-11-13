@@ -8,7 +8,7 @@ const cases = [
         name: "skips platform checks for declared documentation",
         changes: [
             {status: "M", path: "README.md"},
-            {status: "M", path: "CHANGELOG.md"},
+            {status: "M", path: "extensions/intellij/CHANGELOG.md"},
             {status: "A", path: "docs/decisions/0018-selective-local-checks.md"},
             {status: "M", path: "extensions/vscode/README.md"}
         ],
@@ -17,9 +17,9 @@ const cases = [
     {
         name: "checks only IntelliJ for plugin sources and Gradle configuration",
         changes: [
-            {status: "M", path: "src/main/java/example/ThrowableAnnotator.java"},
-            {status: "M", path: "src/main/resources/META-INF/plugin.xml"},
-            {status: "M", path: "build.gradle.kts"},
+            {status: "M", path: "extensions/intellij/src/main/java/example/ThrowableAnnotator.java"},
+            {status: "M", path: "extensions/intellij/src/main/resources/META-INF/plugin.xml"},
+            {status: "M", path: "extensions/intellij/build.gradle.kts"},
             {status: "M", path: "gradle/wrapper/gradle-wrapper.properties"}
         ],
         expected: {intellij: true, vscode: false, formatting: "none"}
@@ -36,7 +36,7 @@ const cases = [
     {
         name: "combines checks for both platforms",
         changes: [
-            {status: "M", path: "src/main/java/example/ThrowableAnnotator.java"},
+            {status: "M", path: "extensions/intellij/src/main/java/example/ThrowableAnnotator.java"},
             {status: "M", path: "extensions/vscode/src/extension.ts"}
         ],
         expected: {intellij: true, vscode: true, formatting: "changed"}
@@ -80,7 +80,7 @@ const cases = [
         changes: [
             {
                 status: "R",
-                previousPath: "src/main/resources/example.txt",
+                previousPath: "extensions/intellij/src/main/resources/example.txt",
                 path: "extensions/vscode/webview/example.txt"
             }
         ],
@@ -120,7 +120,7 @@ const cases = [
         name: "checks only IntelliJ for a research figure and a plugin icon",
         changes: [
             {status: "M", path: "docs/research/figures/vscode-provider-concurrency/resolution-cache.svg"},
-            {status: "M", path: "src/main/resources/META-INF/pluginIcon.svg"}
+            {status: "M", path: "extensions/intellij/src/main/resources/META-INF/pluginIcon.svg"}
         ],
         expected: {intellij: true, vscode: false, formatting: "none"}
     },

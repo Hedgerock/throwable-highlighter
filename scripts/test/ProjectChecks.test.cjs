@@ -63,8 +63,8 @@ for (const [name, plan, expected] of [
             assert.deepEqual(
                 gradle.args,
                 process.platform === "win32"
-                    ? ["/d", "/s", "/c", "gradlew.bat test verifyPlugin buildPlugin --no-daemon"]
-                    : ["./gradlew", "test", "verifyPlugin", "buildPlugin", "--no-daemon"]
+                    ? ["/d", "/s", "/c", "gradlew.bat -p extensions/intellij test verifyPlugin buildPlugin --no-daemon"]
+                    : ["./gradlew", "-p", "extensions/intellij", "test", "verifyPlugin", "buildPlugin", "--no-daemon"]
             );
         }
 

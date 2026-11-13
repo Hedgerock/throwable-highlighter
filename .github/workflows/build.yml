@@ -27,13 +27,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Test, verify, and build
-        run: ./gradlew test verifyPlugin buildPlugin --no-daemon
+        run: ./gradlew -p extensions/intellij test verifyPlugin buildPlugin --no-daemon
 
       - name: Upload plugin archive
         uses: actions/upload-artifact@v4
         with:
           name: throwable-highlighter
-          path: build/distributions/*.zip
+          path: extensions/intellij/build/distributions/*.zip
           if-no-files-found: error
           retention-days: 14
 

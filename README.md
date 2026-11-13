@@ -104,34 +104,36 @@ declarations and references, explicit imports, `catch` parameters, and `throws` 
 
 Building the IntelliJ Platform plugin requires JDK 25.
 
+Open the repository root in IntelliJ IDEA and sync Gradle to load the IntelliJ Platform plugin project.
+
 ### Run tests
 
 ```shell
-./gradlew test
+./gradlew -p extensions/intellij test
 ```
 
 ### Run in the IntelliJ Platform sandbox
 
 ```shell
-./gradlew runIde
+./gradlew -p extensions/intellij runIde
 ```
 
 ### Verify plugin
 
 ```shell
-./gradlew verifyPlugin
+./gradlew -p extensions/intellij verifyPlugin
 ```
 
 ### Build plugin
 
 ```shell
-./gradlew buildPlugin
+./gradlew -p extensions/intellij buildPlugin
 ```
 
-The plugin distribution will be created under:
+The IntelliJ plugin distribution will be created under:
 
 ```text
-build/distributions/
+extensions/intellij/build/distributions/
 ```
 
 ## License

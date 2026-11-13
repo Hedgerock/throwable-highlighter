@@ -61,18 +61,18 @@ Hook запускает `scripts/check-staged.cjs`.
 
 План проверок строится по следующим правилам:
 
-| Пути                                                                                   | Проверки платформ  |
-|----------------------------------------------------------------------------------------|--------------------|
-| `README.md`, `CHANGELOG.md`, `extensions/vscode/README.md`                             | Не выполняются     |
-| Markdown-файлы в `docs`, кроме `docs/specification/fixtures`                           | Не выполняются     |
-| `src/**`, `gradle/**`                                                                  | IntelliJ-плагин    |
-| `build.gradle.kts`, `settings.gradle.kts`, `gradle.properties`                         | IntelliJ-плагин    |
-| `gradlew`, `gradlew.bat`                                                               | IntelliJ-плагин    |
-| Остальные файлы в `extensions/vscode/**`                                               | Расширение VS Code |
-| `docs/specification/fixtures/**`, `.githooks/**`, `scripts/**`, `.github/workflows/**` | Обе платформы      |
-| Путь без отдельного правила                                                            | Обе платформы      |
-| JSON-отчёты в docs/research/data                                                       | Не выполняются     |
-| Изображения PNG, SVG, JPG, JPEG и WebP в `docs/images/` и `docs/research/figures/`     | Не выполняются     |
+| Пути                                                                                                                                               | Проверки платформ  |
+|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|
+| `README.md`, `extensions/intellij/CHANGELOG.md`, `extensions/vscode/README.md`                                                                     | Не выполняются     |
+| Markdown-файлы в `docs`, кроме `docs/specification/fixtures`                                                                                       | Не выполняются     |
+| `extensions/intellij/src/**`, `gradle/**`                                                                                                          | IntelliJ-плагин    |
+| `extensions/intellij/build.gradle.kts`, `extensions/intellij/settings.gradle.kts`, `gradle.properties`                                             | IntelliJ-плагин    |
+| `gradlew`, `gradlew.bat`                                                                                                                           | IntelliJ-плагин    |
+| Остальные файлы в `extensions/vscode/**`                                                                                                           | Расширение VS Code |
+| `docs/specification/fixtures/**`, `.githooks/**`, `scripts/**`, `.github/workflows/**`                                                             | Обе платформы      |
+| Путь без отдельного правила                                                                                                                        | Обе платформы      |
+| JSON-отчёты в docs/research/data                                                                                                                   | Не выполняются     |
+| Изображения PNG, SVG, JPG, JPEG и WebP в `docs/images/` и `docs/research/figures/`                                                                 | Не выполняются     |
 
 Для смешанного набора изменений группы проверок объединяются.
 

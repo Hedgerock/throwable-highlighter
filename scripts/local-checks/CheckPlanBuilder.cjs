@@ -1,10 +1,9 @@
 const VSCODE_DIRECTORY = "extensions/vscode/";
+const INTELLIJ_DIRECTORY = "extensions/intellij/";
 const SHARED_FIXTURES_DIRECTORY = "docs/specification/fixtures/";
 const DOCUMENTATION_IMAGE_EXTENSION = /\.(?:png|svg|jpe?g|webp)$/i;
 
 const INTELLIJ_FILES = new Set([
-    "build.gradle.kts",
-    "settings.gradle.kts",
     "gradle.properties",
     "gradlew",
     "gradlew.bat"
@@ -17,7 +16,7 @@ function isDocumentation(path) {
 
     return (
         path === "README.md" ||
-        path === "CHANGELOG.md" ||
+        path === INTELLIJ_DIRECTORY + "CHANGELOG.md" ||
         path === VSCODE_DIRECTORY + "README.md" ||
         (path.startsWith("docs/") && path.endsWith(".md")) ||
         (path.startsWith("docs/research/data/") && path.endsWith(".json")) ||
@@ -58,7 +57,7 @@ class CheckPlanBuilder {
                     continue;
                 }
 
-                if (path.startsWith("src/") || path.startsWith("gradle/") || INTELLIJ_FILES.has(path)) {
+                if (path.startsWith(INTELLIJ_DIRECTORY) || path.startsWith("gradle/") || INTELLIJ_FILES.has(path)) {
                     intellij = true;
                 } else if (path.startsWith(VSCODE_DIRECTORY)) {
                     vscode = true;
