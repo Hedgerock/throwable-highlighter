@@ -54,7 +54,7 @@ const cases = [
     {
         name: "checks both platforms for common infrastructure",
         changes: [
-            {status: "M", path: "scripts/check-staged.cjs"},
+            {status: "M", path: ".ci/check-staged.cjs"},
             {status: "M", path: ".github/workflows/build.yml"}
         ],
         expected: {intellij: true, vscode: true, formatting: "all"}

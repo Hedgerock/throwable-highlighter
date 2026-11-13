@@ -44,7 +44,7 @@ function runNpm(args, cwd, env) {
 
 function runProjectChecks(snapshot, env, {plan, selectionFile}) {
     console.log("[local-ci] Checking the local runner.");
-    runCommand(process.execPath, ["--test", "scripts/test/*.test.cjs"], snapshot, env);
+    runCommand(process.execPath, ["--test", ".ci/test/*.test.cjs"], snapshot, env);
 
     if (plan.intellij) {
         console.log("[local-ci] Checking the IntelliJ plugin.");
@@ -71,7 +71,7 @@ function runProjectChecks(snapshot, env, {plan, selectionFile}) {
         runNpm(["ci"], extension, env);
         runCommand(
             process.execPath,
-            [join(snapshot, "scripts", "check-format.cjs"), "--selection", selectionFile],
+            [join(snapshot, ".ci", "check-format.cjs"), "--selection", selectionFile],
             extension,
             env
         );

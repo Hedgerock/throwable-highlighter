@@ -55,24 +55,24 @@ git config --local --get core.hooksPath
 
 ## Состав проверок
 
-Hook запускает `scripts/check-staged.cjs`.
+Hook запускает `.ci/check-staged.cjs`.
 
 Список изменений определяется относительно `HEAD`. До первого коммита учитываются все файлы, добавленные в индекс.
 
 План проверок строится по следующим правилам:
 
-| Пути                                                                                                                                               | Проверки платформ  |
-|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|
-| `README.md`, `extensions/intellij/CHANGELOG.md`, `extensions/vscode/README.md`                                                                     | Не выполняются     |
-| Markdown-файлы в `docs`, кроме `docs/specification/fixtures`                                                                                       | Не выполняются     |
-| `extensions/intellij/src/**`, `gradle/**`                                                                                                          | IntelliJ-плагин    |
-| `extensions/intellij/build.gradle.kts`, `extensions/intellij/settings.gradle.kts`, `gradle.properties`                                             | IntelliJ-плагин    |
-| `gradlew`, `gradlew.bat`                                                                                                                           | IntelliJ-плагин    |
-| Остальные файлы в `extensions/vscode/**`                                                                                                           | Расширение VS Code |
-| `docs/specification/fixtures/**`, `.githooks/**`, `scripts/**`, `.github/workflows/**`                                                             | Обе платформы      |
-| Путь без отдельного правила                                                                                                                        | Обе платформы      |
-| JSON-отчёты в docs/research/data                                                                                                                   | Не выполняются     |
-| Изображения PNG, SVG, JPG, JPEG и WebP в `docs/images/` и `docs/research/figures/`                                                                 | Не выполняются     |
+| Пути                                                                                                   | Проверки платформ  |
+|--------------------------------------------------------------------------------------------------------|--------------------|
+| `README.md`, `extensions/intellij/CHANGELOG.md`, `extensions/vscode/README.md`                         | Не выполняются     |
+| Markdown-файлы в `docs`, кроме `docs/specification/fixtures`                                           | Не выполняются     |
+| `extensions/intellij/src/**`, `gradle/**`                                                              | IntelliJ-плагин    |
+| `extensions/intellij/build.gradle.kts`, `extensions/intellij/settings.gradle.kts`, `gradle.properties` | IntelliJ-плагин    |
+| `gradlew`, `gradlew.bat`                                                                               | IntelliJ-плагин    |
+| Остальные файлы в `extensions/vscode/**`                                                               | Расширение VS Code |
+| `docs/specification/fixtures/**`, `.githooks/**`, `.ci/**`, `.github/workflows/**`                     | Обе платформы      |
+| Путь без отдельного правила                                                                            | Обе платформы      |
+| JSON-отчёты в docs/research/data                                                                       | Не выполняются     |
+| Изображения PNG, SVG, JPG, JPEG и WebP в `docs/images/` и `docs/research/figures/`                     | Не выполняются     |
 
 Для смешанного набора изменений группы проверок объединяются.
 
@@ -159,13 +159,13 @@ Hook запускает `scripts/check-staged.cjs`.
 Проверка индекса с выбором групп по изменениям:
 
 ```powershell
-node scripts/check-staged.cjs
+node .ci/check-staged.cjs
 ```
 
 Полная проверка обеих платформ и всех отслеживаемых файлов расширения, подходящих для форматирования:
 
 ```powershell
-node scripts/check-staged.cjs --all
+node .ci/check-staged.cjs --all
 ```
 
 Полный режим сохраняет проверку снимка индекса. Незастейдженные и неотслеживаемые файлы рабочей копии в него не включаются.
@@ -185,7 +185,7 @@ git hook run pre-commit
 Отдельный запуск всех тестов механизма проверки:
 
 ```powershell
-node --test "scripts/test/*.test.cjs"
+node --test ".ci/test/*.test.cjs"
 ```
 
 Тесты покрывают классификацию путей, чтение изменений Git, выбор файлов форматирования, выполнение команд и обработку ошибок.

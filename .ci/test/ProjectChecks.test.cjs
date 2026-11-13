@@ -53,7 +53,7 @@ for (const [name, plan, expected] of [
 
         // Assert
         assert.deepEqual(commands.map(describeCommand), expected);
-        assert.deepEqual(commands[0].args, ["--test", "scripts/test/*.test.cjs"]);
+        assert.deepEqual(commands[0].args, ["--test", ".ci/test/*.test.cjs"]);
         assert.equal(commands[0].cwd, snapshot);
         assert.ok(commands.every(command => command.env === env));
 
@@ -71,7 +71,7 @@ for (const [name, plan, expected] of [
         if (plan.vscode) {
             const format = commands.find(command => describeCommand(command) === "format");
             assert.deepEqual(format.args, [
-                join(snapshot, "scripts", "check-format.cjs"),
+                join(snapshot, ".ci", "check-format.cjs"),
                 "--selection",
                 options.selectionFile
             ]);

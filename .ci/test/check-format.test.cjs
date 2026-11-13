@@ -23,7 +23,7 @@ for (const [name, path, mode] of [
     ["extension sources", "extensions/vscode/src/extension.ts", "changed"],
     ["formatting configuration", "extensions/vscode/.prettierrc.json", "all"],
     ["extension dependencies", "extensions/vscode/package.json", "all"],
-    ["common infrastructure", "scripts/check-staged.cjs", "all"]
+    ["common infrastructure", ".ci/check-staged.cjs", "all"]
 ]) {
     test("selects " + mode + " formatting for " + name, async context => {
         // Arrange

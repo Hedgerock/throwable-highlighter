@@ -89,7 +89,7 @@ async function main(
         const modes = [values.changed === true, values.all === true, values.selection !== undefined];
 
         if (modes.filter(Boolean).length !== 1 || values.selection === "") {
-            throw new Error("Usage: node scripts/check-format.cjs <--changed|--all|--selection file>");
+            throw new Error("Usage: node .ci/check-format.cjs <--changed|--all|--selection file>");
         }
 
         const options = {repositoryRoot, env, full: values.all === true};

@@ -1,2 +1,2 @@
 #!/bin/sh
-exec node scripts/check-staged.cjs
+exec node .ci/check-staged.cjs
