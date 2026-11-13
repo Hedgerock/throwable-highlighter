@@ -148,6 +148,7 @@ NNNN-краткое-название.md
 - [ADR-0033: Определить границы первого публичного выпуска VS Code](0033-vscode-first-public-release.md)
 - [ADR-0034: Уточнить состояние рабочей области для релизных замеров VS Code](0034-vscode-release-java-workspace-state.md)
 - [ADR-0035: Разделить процессы выпуска IntelliJ Platform и VS Code](0035-independent-platform-releases.md)
+- [ADR-0036: Организовать расширения по платформам](0036-platform-extension-layout.md)
 
 ---
 
