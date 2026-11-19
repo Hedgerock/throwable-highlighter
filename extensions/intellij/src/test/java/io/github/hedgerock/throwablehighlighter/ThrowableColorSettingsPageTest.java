@@ -61,12 +61,15 @@ public final class ThrowableColorSettingsPageTest extends TestCase {
     public void testShouldExposeThrowableHighlightingDescriptor() {
         AttributesDescriptor[] descriptors = page.getAttributeDescriptors();
 
-        assertEquals(5, descriptors.length);
+        assertEquals(8, descriptors.length);
         assertEquals(ThrowableHighlighting.THROWABLE_CLASS, descriptors[0].getKey());
         assertEquals(ThrowableHighlighting.THROWABLE_IMPORT, descriptors[1].getKey());
         assertEquals(ThrowableHighlighting.THROWABLE_CATCH, descriptors[2].getKey());
         assertEquals(ThrowableHighlighting.THROWABLE_THROWS, descriptors[3].getKey());
         assertEquals(ThrowableHighlighting.THROWABLE_JAVADOC, descriptors[4].getKey());
+        assertEquals(ThrowableHighlighting.THROWABLE_CHECKED, descriptors[5].getKey());
+        assertEquals(ThrowableHighlighting.THROWABLE_RUNTIME_EXCEPTION, descriptors[6].getKey());
+        assertEquals(ThrowableHighlighting.THROWABLE_ERROR, descriptors[7].getKey());
     }
 
     public void testShouldContainThrowableCatchTagInDemoText() {
@@ -82,17 +85,39 @@ public final class ThrowableColorSettingsPageTest extends TestCase {
         assertEquals(ThrowableHighlighting.THROWABLE_CATCH, highlighting.get("throwableCatch"));
     }
 
-    public void testShouldMapDemoTagToThrowableHighlighting() {
+    public void testShouldMapDemoTagsToThrowableCategories() {
         Map<String, TextAttributesKey> highlighting = page.getAdditionalHighlightingTagToDescriptorMap();
 
-        assertNotNull(highlighting);
-        assertEquals(ThrowableHighlighting.THROWABLE_CLASS, highlighting.get("throwable"));
+        assertEquals(ThrowableHighlighting.THROWABLE_CHECKED, highlighting.get("throwableChecked"));
+
+        assertEquals(ThrowableHighlighting.THROWABLE_RUNTIME_EXCEPTION, highlighting.get("throwableRuntimeException"));
+
+        assertEquals(ThrowableHighlighting.THROWABLE_ERROR, highlighting.get("throwableError"));
     }
 
-    public void testShouldContainThrowableTagInDemoText() {
+    public void testShouldPreviewCheckedClassDeclaration() {
         String demoText = page.getDemoText();
 
-        assertTrue(demoText.contains("<throwable>"));
-        assertTrue(demoText.contains("</throwable>"));
+        assertTrue(demoText.contains("class <throwableChecked>CheckedException</throwableChecked>"));
+
+        assertTrue(demoText.contains("extends <throwableChecked>IOException</throwableChecked>"));
+    }
+
+    public void testShouldPreviewRuntimeExceptionClassDeclaration() {
+        String demoText = page.getDemoText();
+
+        assertTrue(
+                demoText.contains("class <throwableRuntimeException>ApplicationException</throwableRuntimeException>"));
+
+        assertTrue(
+                demoText.contains("extends <throwableRuntimeException>RuntimeException</throwableRuntimeException>"));
+    }
+
+    public void testShouldPreviewErrorClassDeclaration() {
+        String demoText = page.getDemoText();
+
+        assertTrue(demoText.contains("class <throwableError>ApplicationError</throwableError>"));
+
+        assertTrue(demoText.contains("extends <throwableError>Error</throwableError>"));
     }
 }

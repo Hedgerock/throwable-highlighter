@@ -719,14 +719,26 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
         assertOnlyContextUsesJavaSource(ThrowableHighlightingContext.JAVADOC);
     }
 
-    public void testShouldUseJavaSourceForThrowableClassDeclaration() {
+    public void testShouldUseJavaSourceForAllThrowableCategories() {
         ThrowableHighlightingSettings.getInstance()
                 .setHighlightingSource(ThrowableHighlightingContext.CLASS, ThrowableHighlightingSource.JAVA);
 
         configureJava("""
-                class ExampleException extends RuntimeException {
-                }
-                """);
+            class CheckedException extends Exception {
+            }
+
+            class ApplicationException extends RuntimeException {
+            }
+
+            class ApplicationError extends Error {
+            }
+
+            class Example {
+                private CheckedException checked;
+                private ApplicationException runtime;
+                private ApplicationError error;
+            }
+            """);
 
         assertEquals(0, countClassHighlights());
     }
@@ -750,6 +762,18 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
         assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_ERROR, "Error"));
 
         assertEquals(0, countHighlights(ThrowableHighlighting.THROWABLE_CLASS));
+    }
+
+    public void testShouldUseCheckedKeyForClassDeclarationAndReference() {
+        assertClassCategory("java.io.IOException", ThrowableHighlighting.THROWABLE_CHECKED);
+    }
+
+    public void testShouldUseRuntimeExceptionKeyForClassDeclarationAndReference() {
+        assertClassCategory("java.lang.RuntimeException", ThrowableHighlighting.THROWABLE_RUNTIME_EXCEPTION);
+    }
+
+    public void testShouldUseErrorKeyForClassDeclarationAndReference() {
+        assertClassCategory("java.lang.Error", ThrowableHighlighting.THROWABLE_ERROR);
     }
 
     private void configureJava(String text) {
@@ -806,6 +830,21 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
             }
         }
         """);
+    }
+
+    private void assertClassCategory(String superclassName, TextAttributesKey expectedKey) {
+        configureJava("""
+            class CustomThrowable extends %s {
+            }
+
+            class Example {
+                private CustomThrowable exception;
+            }
+            """.formatted(superclassName));
+
+        assertEquals(2, countHighlights(expectedKey, "CustomThrowable"));
+
+        assertEquals(2, countClassHighlights("CustomThrowable"));
     }
 
     private void assertOnlyContextUsesJavaSource(ThrowableHighlightingContext selectedContext) {

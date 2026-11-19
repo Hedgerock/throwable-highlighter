@@ -9,6 +9,7 @@ import com.intellij.openapi.options.colors.ColorSettingsPage;
 import com.intellij.openapi.util.NlsContexts;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Stream;
 import javax.swing.*;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
@@ -16,8 +17,13 @@ import org.jetbrains.annotations.Nullable;
 
 public final class ThrowableColorSettingsPage implements ColorSettingsPage {
 
-    private static final AttributesDescriptor[] DESCRIPTIONS = Arrays.stream(ThrowableHighlightingContext.values())
-            .map(context -> new AttributesDescriptor(context.getDisplayName(), context.getTextAttributesKey()))
+    private static final AttributesDescriptor[] DESCRIPTIONS = Stream.concat(
+                    Arrays.stream(ThrowableHighlightingContext.values())
+                            .map(context ->
+                                    new AttributesDescriptor(context.getDisplayName(), context.getTextAttributesKey())),
+                    Arrays.stream(ThrowableCategory.values())
+                            .map(category -> new AttributesDescriptor(
+                                    category.getDisplayName(), category.getTextAttributesKey())))
             .toArray(AttributesDescriptor[]::new);
 
     @Override
@@ -35,13 +41,23 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
         return """
             import java.io.<throwableImport>IOException</throwableImport>;
 
-            public final class <throwable>ApplicationException</throwable>
-                    extends <throwable>RuntimeException</throwable> {
+            final class <throwableChecked>CheckedException</throwableChecked>
+                    extends <throwableChecked>IOException</throwableChecked> {
+            }
+
+            public final class <throwableRuntimeException>ApplicationException</throwableRuntimeException>
+                    extends <throwableRuntimeException>RuntimeException</throwableRuntimeException> {
+            }
+
+            final class <throwableError>ApplicationError</throwableError>
+                    extends <throwableError>Error</throwableError> {
             }
 
             public final class Example {
 
-                private <throwable>ApplicationException</throwable> exception;
+                private <throwableChecked>CheckedException</throwableChecked> checkedException;
+                private <throwableRuntimeException>ApplicationException</throwableRuntimeException> exception;
+                private <throwableError>ApplicationError</throwableError> error;
 
                 /**
                  * Executes the operation.
@@ -51,7 +67,7 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
                  */
                 public void execute() throws <throwableThrows>ApplicationException</throwableThrows> {
                     try {
-                        throw new <throwable>ApplicationException</throwable>();
+                        throw new <throwableRuntimeException>ApplicationException</throwableRuntimeException>();
                     } catch (<throwableCatch>ApplicationException</throwableCatch> exception) {
                         // Handle exception
                     }
@@ -63,7 +79,9 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
     @Override
     public @NotNull Map<String, TextAttributesKey> getAdditionalHighlightingTagToDescriptorMap() {
         return Map.of(
-                "throwable", ThrowableHighlighting.THROWABLE_CLASS,
+                "throwableChecked", ThrowableHighlighting.THROWABLE_CHECKED,
+                "throwableRuntimeException", ThrowableHighlighting.THROWABLE_RUNTIME_EXCEPTION,
+                "throwableError", ThrowableHighlighting.THROWABLE_ERROR,
                 "throwableImport", ThrowableHighlighting.THROWABLE_IMPORT,
                 "throwableCatch", ThrowableHighlighting.THROWABLE_CATCH,
                 "throwableThrows", ThrowableHighlighting.THROWABLE_THROWS,
