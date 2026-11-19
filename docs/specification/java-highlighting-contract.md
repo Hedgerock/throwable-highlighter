@@ -178,9 +178,11 @@ void execute() throws IOException {
 
 Выбор источников относится к платформенному расширению IntelliJ Platform.
 
-По умолчанию применяются атрибуты плагина в соответствии с базовыми
-правилами цветов. При выборе `Java highlighting` дополнительная
-аннотация `CATCH` не создаётся.
+В контексте `CLASS` IntelliJ Platform различает checked-типы, наследников `RuntimeException`
+и наследников `Error` согласно [ADR-0037](../decisions/0037-intellij-throwable-categories.md).
+
+Ключи категорий по умолчанию наследуют атрибуты `THROWABLE_CLASS`.
+Контексты `IMPORT`, `CATCH`, `THROWS` и `JAVADOC` используют собственные ключи.
 
 ---
 

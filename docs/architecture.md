@@ -69,8 +69,8 @@ Java-ссылка извлекается из `PsiDocReferenceHolder` внутр
 
 Перед проверкой наследования аннотатор запрашивает источник определённого контекста.
 
-При источнике `PLUGIN` аннотатор проверяет принадлежность типа к `Throwable` и применяет атрибуты контекста.
-При источнике `JAVA` обработка завершается в определённом контексте. IDE использует стандартное оформление элемента.
+При источнике `PLUGIN` аннотатор проверяет принадлежность типа к `Throwable`.
+Для `CLASS` выбирается ключ категории, для остальных контекстов — ключ контекста.
 
 ### `ThrowableHighlightingContext`
 
@@ -84,33 +84,50 @@ Java-ссылка извлекается из `PsiDocReferenceHolder` внутр
 
 Текущие контексты:
 
-| Контекст | Severity          | Цветовой ключ      |
-|----------|-------------------|--------------------|
-| `CLASS`  | `INFORMATION`     | `THROWABLE_CLASS`  |
-| `IMPORT` | `TEXT_ATTRIBUTES` | `THROWABLE_IMPORT` |
-| `CATCH`  | `INFORMATION`     | `THROWABLE_CATCH`  |
-| `THROWS` | `INFORMATION`     | `THROWABLE_THROWS` |
-| `JAVADOC` | `INFORMATION` | `THROWABLE_JAVADOC` |
+| Контекст | Severity          | Базовый цветовой ключ    |
+|----------|-------------------|--------------------------|
+| `CLASS`  | `INFORMATION`     | `THROWABLE_CLASS`        |
+| `IMPORT` | `TEXT_ATTRIBUTES` | `THROWABLE_IMPORT`       |
+| `CATCH`  | `INFORMATION`     | `THROWABLE_CATCH`        |
+| `THROWS` | `INFORMATION`     | `THROWABLE_THROWS`       |
+| `JAVADOC` | `INFORMATION` | `THROWABLE_JAVADOC`      |
+
+Для `CLASS` аннотатор выбирает применяемый ключ через категорию типа.
+`THROWABLE_CLASS` задаёт родительские атрибуты категорий.
 
 Форма выбора источников и страница цветовой схемы используют отображаемые имена из `ThrowableHighlightingContext`.
 
-Контекст не определяет тип PSI-элемента и не проверяет отношение типа к `Throwable`. Эти задачи остаются в
-`ThrowableAnnotator`.
+Определение PSI-сценария и контекста выполняет `ThrowableAnnotator`.
+Для классификации типов в контексте `CLASS` он использует `ThrowableTypeClassifier`.
+
+### `ThrowableCategory`
+
+Перечисление содержит категории `CHECKED`, `RUNTIME_EXCEPTION` и `ERROR`.
+Каждая категория хранит отображаемое имя и цветовой ключ.
+
+### `ThrowableTypeClassifier`
+
+Компонент определяет категорию разрешённого `PsiClass` через `InheritanceUtil.isInheritor`.
+Проверяется принадлежность к `Throwable`, затем к ветвям `RuntimeException` и `Error`.
+Остальные типы иерархии относятся к `CHECKED`.
+
+Для обычного класса возвращается `null`.
 
 ### `ThrowableHighlighting`
 
 `ThrowableHighlighting` объявляет цветовые ключи плагина:
 
-- `THROWABLE_CLASS` — основной ключ для классов и ссылок;
-- `THROWABLE_IMPORT` — ключ для явных импортов;
-- `THROWABLE_CATCH` — ключ для типов в параметрах `catch`;
-- `THROWABLE_THROWS` — ключ для типов в списках `throws`;
-- `THROWABLE_JAVADOC` — ключ для имён классов в Javadoc `@throws` и `@exception`.
+- `THROWABLE_CLASS` — родительские атрибуты категорий и контекстов;
+- `THROWABLE_CHECKED` — checked-типы в `CLASS`;
+- `THROWABLE_RUNTIME_EXCEPTION` — `RuntimeException` и его наследники в `CLASS`;
+- `THROWABLE_ERROR` — `Error` и его наследники в `CLASS`;
+- `THROWABLE_IMPORT` — явные импорты;
+- `THROWABLE_CATCH` — типы в параметрах `catch`;
+- `THROWABLE_THROWS` — типы в списках `throws`;
+- `THROWABLE_JAVADOC` — имена классов в Javadoc `@throws` и `@exception`.
 
-`THROWABLE_CLASS` наследует стандартный цвет Java-класса.
-
-`THROWABLE_IMPORT`, `THROWABLE_CATCH`, `THROWABLE_THROWS` и `THROWABLE_JAVADOC`
-наследуют атрибуты `THROWABLE_CLASS`.
+`THROWABLE_CLASS` наследует стандартные атрибуты Java-класса.
+Остальные ключи наследуют атрибуты `THROWABLE_CLASS`.
 
 Изменение `THROWABLE_CLASS` применяется к наследуемым атрибутам этих ключей,
 пока для соответствующего ключа не задано отдельное значение.
@@ -119,14 +136,16 @@ Java-ссылка извлекается из `PsiDocReferenceHolder` внутр
 
 `ThrowableColorSettingsPage` добавляет раздел `Throwable Highlighter` в настройки цветовой схемы IDE.
 
-Страница предоставляет настройку пяти цветовых ключей и демонстрационный код, содержащий объявления, ссылки, явный импорт,
+Страница предоставляет настройку восьми цветовых ключей и демонстрационный код, содержащий объявления, ссылки, явный импорт,
 параметр `catch`, список `throws` и Javadoc-теги `@throws` и `@exception`.
+
+Пример показывает отдельные атрибуты checked-типов, наследников `RuntimeException` и `Error`.
 
 ### `ThrowableHighlightingSource`
 
 Перечисление задаёт общий источник для каждого контекста подсветки.
 
-- `PLUGIN` применяет атрибуты цветового ключа контекста.
+- `PLUGIN` применяет ключ категории для `CLASS` и ключ контекста для остальных элементов.
 - `JAVA` использует стандартное оформление IDE.
 
 ### `ThrowableHighlightingSettings`
@@ -170,8 +189,9 @@ PSI-элемент Java
     → определение поддерживаемого PSI-сценария
     → получение класса, контекста и диапазона
     → проверка необходимости аннотации для выбранного источника
-    → проверка типа Throwable или наследования от него
-    → аннотация с severity и цветовым ключом контекста
+    → проверка типа Throwable и определение категории для CLASS
+    → выбор цветового ключа
+    → аннотация с severity контекста
     → отображение по текущей цветовой схеме
 ```
 

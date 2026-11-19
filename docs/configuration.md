@@ -8,9 +8,12 @@
 Settings | Editor | Color Scheme | Throwable Highlighter
 ```
 
-Раздел содержит пять цветовых ключей:
+Раздел содержит восемь цветовых ключей:
 
 - `Throwable class`;
+- `Throwable checked`;
+- `Throwable runtime exception`;
+- `Throwable error`;
 - `Throwable import`;
 - `Throwable catch`;
 - `Throwable throws`;
@@ -20,11 +23,26 @@ Settings | Editor | Color Scheme | Throwable Highlighter
 
 Ключ `Throwable class` соответствует `THROWABLE_CLASS`.
 
-`THROWABLE_CLASS` применяется к объявлениям и ссылкам на `Throwable` и его наследников.
+`THROWABLE_CLASS` задаёт родительские атрибуты категорий типов и остальных контекстов подсветки.
 
 По умолчанию ключ наследует стандартный цвет Java-класса из активной цветовой схемы IDE.
 
 ![Настройка цвета Throwable class](images/throwable-class-color.png)
+
+### Категории типов
+
+Объявления и ссылки контекста `CLASS` используют цветовой ключ категории разрешённого Java-класса.
+
+| Настройка                     | Цветовой ключ                 | Типы                                                                 |
+|-------------------------------|-------------------------------|----------------------------------------------------------------------|
+| `Throwable checked`           | `THROWABLE_CHECKED`           | `Throwable` и его наследники вне ветвей `RuntimeException` и `Error` |
+| `Throwable runtime exception` | `THROWABLE_RUNTIME_EXCEPTION` | `RuntimeException` и его наследники                                  |
+| `Throwable error`             | `THROWABLE_ERROR`             | `Error` и его наследники                                             |
+
+Все три ключа по умолчанию наследуют атрибуты `THROWABLE_CLASS`.
+
+Собственные атрибуты категории применяются к объявлениям и ссылкам контекста `CLASS`.
+При выборе `Java highlighting` для `CLASS` используется стандартное оформление IDE.
 
 ### `Throwable import`
 
@@ -99,7 +117,8 @@ void execute() throws java.io.IOException {
 
 Источник каждого контекста выбирается отдельно в `Settings | Tools | Throwable Highlighter`.
 
-- Вариант с именем контекста, например `Throwable throws`, применяет атрибуты соответствующего ключа цветовой схемы.
+- Вариант с именем контекста, например `Throwable throws`, использует атрибуты плагина.
+  Для `CLASS` применяется ключ категории типа.
 - `Java highlighting` использует стандартное оформление IDE для элементов этого контекста.
 
 По умолчанию все контексты используют источник плагина. При обновлении с версии 1.4.0
@@ -120,13 +139,15 @@ void execute() throws java.io.IOException {
 
 ## Наследование цвета
 
-По умолчанию `Throwable import`, `Throwable catch`, `Throwable throws`
-и `Throwable Javadoc` наследуют цвет от `Throwable class`.
+По умолчанию ключи категорий `Throwable checked`, `Throwable runtime exception` и `Throwable error`,
+а также контексты `Throwable import`, `Throwable catch`, `Throwable throws` и `Throwable Javadoc`
+наследуют атрибуты `Throwable class`.
 
-Изменение цвета `Throwable class` применяется к наследуемым атрибутам этих ключей, пока для соответствующего
-ключа не задано отдельное значение.
+Изменение атрибутов `Throwable class` применяется ко всем наследующим ключам,
+пока для соответствующего атрибута сохраняется наследование.
 
-Отдельная настройка ключа влияет только на соответствующий контекст.
+Собственные атрибуты категории применяются в контексте `CLASS`.
+Остальные контексты используют свои ключи и наследуют атрибуты непосредственно от `THROWABLE_CLASS`.
 
 Чтобы вернуть наследование, необходимо сбросить явно заданные атрибуты
 соответствующего ключа в настройках цветовой схемы.
