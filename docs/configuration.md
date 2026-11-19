@@ -8,7 +8,7 @@
 Settings | Editor | Color Scheme | Throwable Highlighter
 ```
 
-Раздел содержит восемь цветовых ключей:
+Раздел содержит одиннадцать цветовых ключей:
 
 - `Throwable class`;
 - `Throwable checked`;
@@ -16,6 +16,9 @@ Settings | Editor | Color Scheme | Throwable Highlighter
 - `Throwable error`;
 - `Throwable import`;
 - `Throwable catch`;
+- `Throwable catch checked`;
+- `Throwable catch runtime exception`;
+- `Throwable catch error`;
 - `Throwable throws`;
 - `Throwable Javadoc`.
 
@@ -29,7 +32,7 @@ Settings | Editor | Color Scheme | Throwable Highlighter
 
 ![Настройка цвета Throwable class](images/throwable-class-color.png)
 
-### Категории типов
+### Категории CLASS
 
 Объявления и ссылки контекста `CLASS` используют цветовой ключ категории разрешённого Java-класса.
 
@@ -61,9 +64,26 @@ import java.io.IOException;
 
 ### `Throwable catch`
 
-Ключ `Throwable catch` соответствует `THROWABLE_CATCH`.
+Ключ `Throwable catch` соответствует `THROWABLE_CATCH` и задаёт родительские атрибуты
+категорий контекста `CATCH`.
 
-При источнике `Throwable catch` ключ применяется к `Throwable` и его наследникам в параметре `catch`.
+При источнике `Throwable catch` типы в параметрах `catch` используют ключи своих категорий.
+
+| Настройка                           | Цветовой ключ                       |
+|-------------------------------------|-------------------------------------|
+| `Throwable catch checked`           | `THROWABLE_CATCH_CHECKED`           |
+| `Throwable catch runtime exception` | `THROWABLE_CATCH_RUNTIME_EXCEPTION` |
+| `Throwable catch error`             | `THROWABLE_CATCH_ERROR`             |
+
+Категории определяются по тем же правилам, что и для `CLASS`.
+В multi-catch каждый тип классифицируется и подсвечивается отдельно.
+
+Все три ключа по умолчанию наследуют атрибуты `THROWABLE_CATCH`.
+Ранее настроенное оформление `Throwable catch` применяется к категориям,
+пока для них сохраняется наследование.
+
+При выборе `Java highlighting` для `CATCH` все категории параметров `catch`
+получают стандартное оформление IDE.
 
 ```java
 catch (IOException exception) {
@@ -118,7 +138,7 @@ void execute() throws java.io.IOException {
 Источник каждого контекста выбирается отдельно в `Settings | Tools | Throwable Highlighter`.
 
 - Вариант с именем контекста, например `Throwable throws`, использует атрибуты плагина.
-  Для `CLASS` применяется ключ категории типа.
+  Для `CLASS` и `CATCH` применяется ключ категории типа.
 - `Java highlighting` использует стандартное оформление IDE для элементов этого контекста.
 
 По умолчанию все контексты используют источник плагина. При обновлении с версии 1.4.0
@@ -139,18 +159,17 @@ void execute() throws java.io.IOException {
 
 ## Наследование цвета
 
-По умолчанию ключи категорий `Throwable checked`, `Throwable runtime exception` и `Throwable error`,
-а также контексты `Throwable import`, `Throwable catch`, `Throwable throws` и `Throwable Javadoc`
-наследуют атрибуты `Throwable class`.
+Ключи категорий `CLASS` и базовые ключи контекстов `IMPORT`, `CATCH`, `THROWS` и `JAVADOC`
+по умолчанию наследуют атрибуты `THROWABLE_CLASS`.
 
-Изменение атрибутов `Throwable class` применяется ко всем наследующим ключам,
-пока для соответствующего атрибута сохраняется наследование.
+Ключи категорий `CATCH` по умолчанию наследуют атрибуты `THROWABLE_CATCH`.
+Сам `THROWABLE_CATCH` наследует атрибуты `THROWABLE_CLASS`.
 
-Собственные атрибуты категории применяются в контексте `CLASS`.
-Остальные контексты используют свои ключи и наследуют атрибуты непосредственно от `THROWABLE_CLASS`.
+Собственные атрибуты категорий `CLASS` применяются к объявлениям и обычным ссылкам.
+Собственные атрибуты категорий `CATCH` применяются к типам в параметрах `catch`.
 
-Чтобы вернуть наследование, необходимо сбросить явно заданные атрибуты
-соответствующего ключа в настройках цветовой схемы.
+Изменение родительских атрибутов применяется к наследующим ключам,
+пока для них сохраняется наследование.
 
 ![Наследование цвета Throwable import](images/throwable-import-inheritance.png)
 

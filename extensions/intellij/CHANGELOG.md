@@ -6,6 +6,17 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+### Added
+
+- Separate color scheme attributes for checked types, runtime exceptions, and errors
+  in class declarations and references.
+- Separate category attributes for catch parameters, including mixed multi-catch.
+  Existing `Throwable catch` attributes are inherited by default.
+
+### Changed
+
+- The color scheme preview demonstrates all three categories in class and catch contexts.
+
 ## [1.5.0] - 2026-11-07
 
 ### Added

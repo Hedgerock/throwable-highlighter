@@ -26,6 +26,8 @@ Also available for [VS Code on Windows](https://marketplace.visualstudio.com/ite
 - Uses the standard Java class color as the default for `Throwable class`.
 - Uses the `Throwable class` color as the default for `Throwable import`, `Throwable catch`, `Throwable throws`
   and `Throwable Javadoc`.
+- Provides separate attributes for checked types, runtime exceptions, and errors
+  in class declarations, references, and `catch` parameters.
 
 ## IntelliJ Platform Configuration
 
@@ -33,16 +35,22 @@ Configure highlighting under:
 
 `Settings | Editor | Color Scheme | Throwable Highlighter`
 
-The color scheme provides five keys:
+The color scheme provides five base keys:
 
-- `Throwable class` for class declarations and references;
+- `Throwable class` for the default attributes of class categories and other contexts;
 - `Throwable import` for class names in explicit imports;
-- `Throwable catch` for Throwable types in `catch` clauses;
+- `Throwable catch` for the default attributes of catch categories;
 - `Throwable throws` for Throwable types in `throws` clauses;
 - `Throwable Javadoc` for class names in Javadoc `@throws` and `@exception` tags on methods and constructors.
 
 `Throwable import`, `Throwable catch`, `Throwable throws` and `Throwable Javadoc` inherit
 the `Throwable class` color until they receive explicit color settings.
+
+Class declarations and references use `Throwable checked`, `Throwable runtime exception`, and `Throwable error`.
+These category keys inherit `Throwable class`.
+
+Catch parameters use `Throwable catch checked`, `Throwable catch runtime exception`, and `Throwable catch error`.
+These category keys inherit `Throwable catch`. Each type in a multi-catch parameter receives its category's attributes.
 
 Choose a source for each context under `Settings | Tools | Throwable Highlighter`.
 

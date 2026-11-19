@@ -180,9 +180,16 @@ void execute() throws IOException {
 
 В контексте `CLASS` IntelliJ Platform различает checked-типы, наследников `RuntimeException`
 и наследников `Error` согласно [ADR-0037](../decisions/0037-intellij-throwable-categories.md).
-
 Ключи категорий по умолчанию наследуют атрибуты `THROWABLE_CLASS`.
-Контексты `IMPORT`, `CATCH`, `THROWS` и `JAVADOC` используют собственные ключи.
+
+В контексте `CATCH` используются отдельные ключи тех же категорий согласно
+[ADR-0038](../decisions/0038-intellij-catch-throwable-categories.md).
+В multi-catch каждый тип классифицируется и подсвечивается отдельно.
+Ключи категорий наследуют атрибуты `THROWABLE_CATCH`,
+который по умолчанию наследует атрибуты `THROWABLE_CLASS`.
+
+Контексты `IMPORT`, `THROWS` и `JAVADOC` используют собственные ключи.
+Категории `CLASS` и `CATCH` относятся к платформенному расширению IntelliJ Platform.
 
 ---
 

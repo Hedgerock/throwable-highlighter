@@ -70,7 +70,7 @@ Java-ссылка извлекается из `PsiDocReferenceHolder` внутр
 Перед проверкой наследования аннотатор запрашивает источник определённого контекста.
 
 При источнике `PLUGIN` аннотатор проверяет принадлежность типа к `Throwable`.
-Для `CLASS` выбирается ключ категории, для остальных контекстов — ключ контекста.
+Для CLASS и CATCH выбирается ключ категории, для остальных контекстов — ключ контекста.
 
 ### `ThrowableHighlightingContext`
 
@@ -92,18 +92,19 @@ Java-ссылка извлекается из `PsiDocReferenceHolder` внутр
 | `THROWS` | `INFORMATION`     | `THROWABLE_THROWS`       |
 | `JAVADOC` | `INFORMATION` | `THROWABLE_JAVADOC`      |
 
-Для `CLASS` аннотатор выбирает применяемый ключ через категорию типа.
-`THROWABLE_CLASS` задаёт родительские атрибуты категорий.
+Для `CLASS` и `CATCH` аннотатор выбирает применяемый ключ через категорию типа.
+Родительские атрибуты категорий задаются ключами `THROWABLE_CLASS` и `THROWABLE_CATCH` соответственно.
 
 Форма выбора источников и страница цветовой схемы используют отображаемые имена из `ThrowableHighlightingContext`.
 
 Определение PSI-сценария и контекста выполняет `ThrowableAnnotator`.
-Для классификации типов в контексте `CLASS` он использует `ThrowableTypeClassifier`.
+Для классификации типов в контекстах `CLASS` и `CATCH` использует `ThrowableTypeClassifier`.
 
 ### `ThrowableCategory`
 
 Перечисление содержит категории `CHECKED`, `RUNTIME_EXCEPTION` и `ERROR`.
-Каждая категория хранит отображаемое имя и цветовой ключ.
+Каждая категория хранит отдельные отображаемые имена и цветовые ключи для `CLASS` и `CATCH`.
+Выбор имени и ключа учитывает контекст.
 
 ### `ThrowableTypeClassifier`
 
@@ -122,22 +123,24 @@ Java-ссылка извлекается из `PsiDocReferenceHolder` внутр
 - `THROWABLE_RUNTIME_EXCEPTION` — `RuntimeException` и его наследники в `CLASS`;
 - `THROWABLE_ERROR` — `Error` и его наследники в `CLASS`;
 - `THROWABLE_IMPORT` — явные импорты;
-- `THROWABLE_CATCH` — типы в параметрах `catch`;
+- `THROWABLE_CATCH` — родительские атрибуты категорий `CATCH`;
+- `THROWABLE_CATCH_CHECKED` — checked-типы в параметрах `catch`;
+- `THROWABLE_CATCH_RUNTIME_EXCEPTION` — `RuntimeException` и его наследники в параметрах `catch`;
+- `THROWABLE_CATCH_ERROR` — `Error` и его наследники в параметрах `catch`;
 - `THROWABLE_THROWS` — типы в списках `throws`;
 - `THROWABLE_JAVADOC` — имена классов в Javadoc `@throws` и `@exception`.
 
 `THROWABLE_CLASS` наследует стандартные атрибуты Java-класса.
-Остальные ключи наследуют атрибуты `THROWABLE_CLASS`.
 
-Изменение `THROWABLE_CLASS` применяется к наследуемым атрибутам этих ключей,
-пока для соответствующего ключа не задано отдельное значение.
+Ключи категорий `CLASS` и базовые ключи остальных контекстов наследуют атрибуты `THROWABLE_CLASS`.
+Ключи категорий `CATCH` наследуют атрибуты `THROWABLE_CATCH`.
 
 ### `ThrowableColorSettingsPage`
 
 `ThrowableColorSettingsPage` добавляет раздел `Throwable Highlighter` в настройки цветовой схемы IDE.
 
-Страница предоставляет настройку восьми цветовых ключей и демонстрационный код, содержащий объявления, ссылки, явный импорт,
-параметр `catch`, список `throws` и Javadoc-теги `@throws` и `@exception`.
+Страница предоставляет настройку одиннадцати цветовых ключей и демонстрационный код, содержащий объявления, ссылки, явный импорт,
+параметр `catch` и `multi-catch`, список `throws` и Javadoc-теги `@throws` и `@exception`.
 
 Пример показывает отдельные атрибуты checked-типов, наследников `RuntimeException` и `Error`.
 
@@ -145,7 +148,7 @@ Java-ссылка извлекается из `PsiDocReferenceHolder` внутр
 
 Перечисление задаёт общий источник для каждого контекста подсветки.
 
-- `PLUGIN` применяет ключ категории для `CLASS` и ключ контекста для остальных элементов.
+- `PLUGIN` применяет ключ категории для `CLASS`, `CATCH` и ключ контекста для остальных элементов.
 - `JAVA` использует стандартное оформление IDE.
 
 ### `ThrowableHighlightingSettings`
@@ -189,7 +192,7 @@ PSI-элемент Java
     → определение поддерживаемого PSI-сценария
     → получение класса, контекста и диапазона
     → проверка необходимости аннотации для выбранного источника
-    → проверка типа Throwable и определение категории для CLASS
+    → проверка типа Throwable и определение категории для CLASS и CATCH
     → выбор цветового ключа
     → аннотация с severity контекста
     → отображение по текущей цветовой схеме
