@@ -23,6 +23,15 @@ public final class ThrowableHighlighting {
     public static final TextAttributesKey THROWABLE_CATCH =
             TextAttributesKey.createTextAttributesKey("THROWABLE_CATCH", THROWABLE_CLASS);
 
+    public static final TextAttributesKey THROWABLE_CATCH_CHECKED =
+            TextAttributesKey.createTextAttributesKey("THROWABLE_CATCH_CHECKED", THROWABLE_CATCH);
+
+    public static final TextAttributesKey THROWABLE_CATCH_RUNTIME_EXCEPTION =
+            TextAttributesKey.createTextAttributesKey("THROWABLE_CATCH_RUNTIME_EXCEPTION", THROWABLE_CATCH);
+
+    public static final TextAttributesKey THROWABLE_CATCH_ERROR =
+            TextAttributesKey.createTextAttributesKey("THROWABLE_CATCH_ERROR", THROWABLE_CATCH);
+
     public static final TextAttributesKey THROWABLE_THROWS =
             TextAttributesKey.createTextAttributesKey("THROWABLE_THROWS", THROWABLE_CLASS);
 

@@ -12,7 +12,6 @@ public final class ThrowableColorSettingsPageTest extends TestCase {
 
     public void testShouldMapTagToThrowableJavadocHighlighting() {
         Map<String, TextAttributesKey> highlighting = page.getAdditionalHighlightingTagToDescriptorMap();
-
         assertEquals(ThrowableHighlighting.THROWABLE_JAVADOC, highlighting.get("throwableJavadoc"));
     }
 
@@ -61,7 +60,7 @@ public final class ThrowableColorSettingsPageTest extends TestCase {
     public void testShouldExposeThrowableHighlightingDescriptor() {
         AttributesDescriptor[] descriptors = page.getAttributeDescriptors();
 
-        assertEquals(8, descriptors.length);
+        assertEquals(11, descriptors.length);
         assertEquals(ThrowableHighlighting.THROWABLE_CLASS, descriptors[0].getKey());
         assertEquals(ThrowableHighlighting.THROWABLE_IMPORT, descriptors[1].getKey());
         assertEquals(ThrowableHighlighting.THROWABLE_CATCH, descriptors[2].getKey());
@@ -70,19 +69,38 @@ public final class ThrowableColorSettingsPageTest extends TestCase {
         assertEquals(ThrowableHighlighting.THROWABLE_CHECKED, descriptors[5].getKey());
         assertEquals(ThrowableHighlighting.THROWABLE_RUNTIME_EXCEPTION, descriptors[6].getKey());
         assertEquals(ThrowableHighlighting.THROWABLE_ERROR, descriptors[7].getKey());
+        assertEquals(ThrowableHighlighting.THROWABLE_CATCH_CHECKED, descriptors[8].getKey());
+        assertEquals(ThrowableHighlighting.THROWABLE_CATCH_RUNTIME_EXCEPTION, descriptors[9].getKey());
+        assertEquals(ThrowableHighlighting.THROWABLE_CATCH_ERROR, descriptors[10].getKey());
+
+        assertEquals("Throwable catch checked", descriptors[8].getDisplayName());
+        assertEquals("Throwable catch runtime exception", descriptors[9].getDisplayName());
+        assertEquals("Throwable catch error", descriptors[10].getDisplayName());
     }
 
-    public void testShouldContainThrowableCatchTagInDemoText() {
+    public void testShouldPreviewMixedCatchCategories() {
         String demoText = page.getDemoText();
 
-        assertTrue(demoText.contains("<throwableCatch>"));
-        assertTrue(demoText.contains("</throwableCatch>"));
+        assertTrue(demoText.contains("catch (<throwableCatchChecked>CheckedException</throwableCatchChecked>"));
+
+        assertTrue(demoText.contains(
+                "| <throwableCatchRuntimeException>ApplicationException</throwableCatchRuntimeException>"));
     }
 
-    public void testShouldMapDemoTagToThrowableCatchHighlighting() {
+    public void testShouldPreviewErrorCatch() {
+        assertTrue(page.getDemoText().contains("catch (<throwableCatchError>ApplicationError</throwableCatchError>"));
+    }
+
+    public void testShouldMapDemoTagsToCatchCategories() {
         Map<String, TextAttributesKey> highlighting = page.getAdditionalHighlightingTagToDescriptorMap();
 
-        assertEquals(ThrowableHighlighting.THROWABLE_CATCH, highlighting.get("throwableCatch"));
+        assertEquals(ThrowableHighlighting.THROWABLE_CATCH_CHECKED, highlighting.get("throwableCatchChecked"));
+
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_CATCH_RUNTIME_EXCEPTION,
+                highlighting.get("throwableCatchRuntimeException"));
+
+        assertEquals(ThrowableHighlighting.THROWABLE_CATCH_ERROR, highlighting.get("throwableCatchError"));
     }
 
     public void testShouldMapDemoTagsToThrowableCategories() {

@@ -9,6 +9,21 @@ import org.junit.Test;
 public final class ThrowableHighlightingTest {
 
     @Test
+    public void testCatchCategoryKeysShouldFallbackToThrowableCatch() {
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_CATCH,
+                ThrowableHighlighting.THROWABLE_CATCH_CHECKED.getFallbackAttributeKey());
+
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_CATCH,
+                ThrowableHighlighting.THROWABLE_CATCH_RUNTIME_EXCEPTION.getFallbackAttributeKey());
+
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_CATCH,
+                ThrowableHighlighting.THROWABLE_CATCH_ERROR.getFallbackAttributeKey());
+    }
+
+    @Test
     public void testCategoryKeysShouldFallbackToThrowableClass() {
         assertEquals(
                 ThrowableHighlighting.THROWABLE_CLASS,

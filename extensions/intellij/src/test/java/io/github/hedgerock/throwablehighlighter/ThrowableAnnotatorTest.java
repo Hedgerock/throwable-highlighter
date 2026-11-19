@@ -18,6 +18,11 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
             ThrowableHighlighting.THROWABLE_RUNTIME_EXCEPTION,
             ThrowableHighlighting.THROWABLE_ERROR);
 
+    private static final List<TextAttributesKey> CATCH_HIGHLIGHT_KEYS = List.of(
+            ThrowableHighlighting.THROWABLE_CATCH_CHECKED,
+            ThrowableHighlighting.THROWABLE_CATCH_RUNTIME_EXCEPTION,
+            ThrowableHighlighting.THROWABLE_CATCH_ERROR);
+
     @Override
     protected @NotNull LightProjectDescriptor getProjectDescriptor() {
         return JAVA_21;
@@ -35,6 +40,24 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
         settings.loadState(new ThrowableHighlightingSettings.SettingsState());
     }
 
+    public void testShouldKeepResolvedCatchAlternativeWhenAnotherTypeIsUnresolved() {
+        myFixture.configureByText("Example.java", """
+        class Example {
+            void execute() {
+                try {
+                } catch (MissingException | RuntimeException exception) {
+                }
+            }
+        }
+        """);
+
+        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_CATCH_RUNTIME_EXCEPTION, "RuntimeException"));
+
+        assertEquals(0, countCatchHighlights("MissingException"));
+        assertEquals(1, countCatchHighlights());
+        assertEquals(0, countHighlights(ThrowableHighlighting.THROWABLE_CATCH));
+    }
+
     public void testShouldKeepCatchBodyHighlightingWithJavaSource() {
         ThrowableHighlightingSettings.getInstance().setCatchSource(CatchHighlightingSource.JAVA);
 
@@ -49,7 +72,7 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
         }
         """);
 
-        assertEquals(0, countHighlights(ThrowableHighlighting.THROWABLE_CATCH));
+        assertEquals(0, countCatchHighlights());
 
         assertEquals(1, countClassHighlights("RuntimeException"));
     }
@@ -58,21 +81,25 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
         ThrowableHighlightingSettings.getInstance().setCatchSource(CatchHighlightingSource.JAVA);
 
         configureJava("""
+        import java.io.IOException;
+
         class Example {
             void execute() {
                 try {
-                } catch (
-                        IllegalArgumentException
-                        | IllegalStateException exception
-                ) {
+                    throw new IOException();
+                } catch (IOException | RuntimeException | Error exception) {
                 }
             }
         }
         """);
 
+        assertEquals(0, countCatchHighlights());
         assertEquals(0, countHighlights(ThrowableHighlighting.THROWABLE_CATCH));
 
-        assertEquals(0, countClassHighlights());
+        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_CHECKED, "IOException"));
+
+        assertEquals(1, countClassHighlights());
+        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_IMPORT, "IOException"));
     }
 
     public void testShouldRestoreCatchHighlightingWithoutChangingOtherContexts() {
@@ -82,7 +109,7 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
 
         configureIOExceptionContexts();
 
-        assertEquals(0, countHighlights(ThrowableHighlighting.THROWABLE_CATCH));
+        assertEquals(0, countCatchHighlights());
 
         assertEquals(3, countClassHighlights("IOException"));
 
@@ -97,7 +124,7 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
         DaemonCodeAnalyzer.getInstance(getProject())
                 .restart(myFixture.getFile(), "Throwable Highlighter: catch highlighting source changed");
 
-        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_CATCH, "IOException"));
+        assertEquals(1, countCatchHighlights("IOException"));
 
         assertEquals(3, countClassHighlights("IOException"));
     }
@@ -170,7 +197,7 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
 
         assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_THROWS, "IOException"));
 
-        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_CATCH, "IOException"));
+        assertEquals(1, countCatchHighlights("IOException"));
     }
 
     public void testShouldNotHighlightNonThrowableJavadocType() {
@@ -459,9 +486,9 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
         }
         """);
 
-        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_CATCH, "IllegalArgumentException"));
+        assertEquals(1, countCatchHighlights("IllegalArgumentException"));
 
-        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_CATCH, "IllegalStateException"));
+        assertEquals(1, countCatchHighlights("IllegalStateException"));
 
         assertEquals(0, countClassHighlights("IllegalArgumentException"));
 
@@ -481,7 +508,7 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
         }
         """);
 
-        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_CATCH, "RuntimeException"));
+        assertEquals(1, countCatchHighlights("RuntimeException"));
         assertEquals(1, countClassHighlights("RuntimeException"));
     }
 
@@ -608,7 +635,7 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
 
         assertEquals(5, countClassHighlights("CustomException"));
 
-        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_CATCH, "CustomException"));
+        assertEquals(1, countCatchHighlights("CustomException"));
 
         assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_THROWS, "CustomException"));
     }
@@ -625,7 +652,7 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
                         }
                         """);
 
-        assertEquals(0, countHighlights(ThrowableHighlighting.THROWABLE_CATCH, "String"));
+        assertEquals(0, countCatchHighlights("String"));
 
         assertEquals(0, countClassHighlights("String"));
     }
@@ -650,7 +677,7 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
 
         assertEquals(4, countClassHighlights("java.lang.RuntimeException"));
 
-        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_CATCH, "java.lang.IllegalArgumentException"));
+        assertEquals(1, countCatchHighlights("java.lang.IllegalArgumentException"));
 
         assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_THROWS, "java.lang.IllegalStateException"));
 
@@ -684,9 +711,9 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
         }
         """);
 
-        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_CATCH, "IllegalArgumentException"));
+        assertEquals(1, countCatchHighlights("IllegalArgumentException"));
 
-        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_CATCH, "SecurityException"));
+        assertEquals(1, countCatchHighlights("SecurityException"));
 
         assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_THROWS, "IllegalStateException"));
 
@@ -764,6 +791,30 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
         assertEquals(0, countHighlights(ThrowableHighlighting.THROWABLE_CLASS));
     }
 
+    public void testShouldUseCategoryKeysForMixedMultiCatch() {
+        configureJava("""
+            import java.io.IOException;
+
+            class Example {
+                void execute() {
+                    try {
+                        throw new IOException();
+                    } catch (IOException | RuntimeException | Error exception) {
+                    }
+                }
+            }
+            """);
+
+        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_CATCH_CHECKED, "IOException"));
+
+        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_CATCH_RUNTIME_EXCEPTION, "RuntimeException"));
+
+        assertEquals(1, countHighlights(ThrowableHighlighting.THROWABLE_CATCH_ERROR, "Error"));
+
+        assertEquals(3, countCatchHighlights());
+        assertEquals(0, countHighlights(ThrowableHighlighting.THROWABLE_CATCH));
+    }
+
     public void testShouldUseCheckedKeyForClassDeclarationAndReference() {
         assertClassCategory("java.io.IOException", ThrowableHighlighting.THROWABLE_CHECKED);
     }
@@ -780,6 +831,30 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
         myFixture.configureByText("Example.java", text);
 
         myFixture.checkHighlighting();
+    }
+
+    public void testShouldUseCheckedCatchKeyForThrowableAndTransitiveSubtype() {
+        assertCatchCategory("java.lang.Throwable", ThrowableHighlighting.THROWABLE_CATCH_CHECKED);
+    }
+
+    public void testShouldUseCheckedCatchKeyForExceptionAndTransitiveSubtype() {
+        assertCatchCategory("java.lang.Exception", ThrowableHighlighting.THROWABLE_CATCH_CHECKED);
+    }
+
+    public void testShouldUseRuntimeCatchKeyForBaseTypeAndTransitiveSubtype() {
+        assertCatchCategory("java.lang.RuntimeException", ThrowableHighlighting.THROWABLE_CATCH_RUNTIME_EXCEPTION);
+    }
+
+    public void testShouldUseErrorCatchKeyForBaseTypeAndTransitiveSubtype() {
+        assertCatchCategory("java.lang.Error", ThrowableHighlighting.THROWABLE_CATCH_ERROR);
+    }
+
+    private long countCatchHighlights() {
+        return countCatchHighlights(null);
+    }
+
+    private long countCatchHighlights(@Nullable String text) {
+        return countHighlights(CATCH_HIGHLIGHT_KEYS, text, null);
     }
 
     private long countClassHighlights() {
@@ -855,9 +930,11 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
         List<HighlightInfo> highlights = myFixture.doHighlighting();
 
         for (ThrowableHighlightingContext context : ThrowableHighlightingContext.values()) {
-            List<TextAttributesKey> keys = context == ThrowableHighlightingContext.CLASS
-                    ? CLASS_HIGHLIGHT_KEYS
-                    : List.of(context.getTextAttributesKey());
+            List<TextAttributesKey> keys = switch (context) {
+                case CLASS -> CLASS_HIGHLIGHT_KEYS;
+                case CATCH -> CATCH_HIGHLIGHT_KEYS;
+                default -> List.of(context.getTextAttributesKey());
+            };
 
             long enabledCount = context == ThrowableHighlightingContext.CLASS ? 3 : 1;
             long actualCount = highlights.stream()
@@ -866,5 +943,33 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
 
             assertEquals(context.name(), context == selectedContext ? 0 : enabledCount, actualCount);
         }
+    }
+
+    private void assertCatchCategory(String baseTypeName, TextAttributesKey expectedKey) {
+        configureJava("""
+        class BaseThrowable extends %s {
+        }
+
+        class CustomThrowable extends BaseThrowable {
+        }
+
+        class Example {
+            void execute() {
+                try {
+                    throw new %s();
+                } catch (%s direct) {
+                }
+
+                try {
+                    throw new CustomThrowable();
+                } catch (CustomThrowable inherited) {
+                }
+            }
+        }
+        """.formatted(baseTypeName, baseTypeName, baseTypeName));
+
+        assertEquals(1, countHighlights(expectedKey, baseTypeName));
+        assertEquals(1, countHighlights(expectedKey, "CustomThrowable"));
+        assertEquals(2, countCatchHighlights());
     }
 }

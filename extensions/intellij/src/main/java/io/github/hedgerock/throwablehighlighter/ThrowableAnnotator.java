@@ -192,14 +192,14 @@ public final class ThrowableAnnotator implements Annotator {
 
         TextAttributesKey textAttributesKey;
 
-        if (context == ThrowableHighlightingContext.CLASS) {
+        if (context == ThrowableHighlightingContext.CLASS || context == ThrowableHighlightingContext.CATCH) {
             ThrowableCategory category = ThrowableTypeClassifier.classify(psiClass);
 
             if (category == null) {
                 return;
             }
 
-            textAttributesKey = category.getTextAttributesKey();
+            textAttributesKey = category.getTextAttributesKey(context);
         } else {
             if (!isThrowableType(psiClass)) {
                 return;
