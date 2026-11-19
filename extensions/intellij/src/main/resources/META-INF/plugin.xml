@@ -46,6 +46,24 @@
 
     <change-notes>
         <![CDATA[
+    <h3>1.6.0</h3>
+    <ul>
+        <li>
+            Adds separate attributes for checked types, runtime exceptions,
+            and errors in class declarations, references, and catch parameters.
+        </li>
+        <li>
+            Each type in a multi-catch parameter receives its category's attributes.
+        </li>
+        <li>
+            Groups Class and Catch color settings into base and category attributes.
+        </li>
+        <li>
+            Preserves existing color keys, configured attributes,
+            and highlighting source selections.
+        </li>
+    </ul>
+
     <h3>1.5.0</h3>
     <ul>
         <li>

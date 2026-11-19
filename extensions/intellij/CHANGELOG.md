@@ -6,6 +6,8 @@ The project follows Semantic Versioning.
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-20
+
 ### Added
 
 - Separate color scheme attributes for checked types, runtime exceptions, and errors
@@ -90,7 +92,8 @@ The project follows Semantic Versioning.
 - Support for custom exception classes and transitive inheritance.
 - Configurable highlighting through the IntelliJ IDEA color scheme.
 
-[Unreleased]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/Hedgerock/throwable-highlighter/compare/intellij-v1.6.0...HEAD
+[1.6.0]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.5.0...intellij-v1.6.0
 [1.5.0]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Hedgerock/throwable-highlighter/compare/v1.2.0...v1.3.0
