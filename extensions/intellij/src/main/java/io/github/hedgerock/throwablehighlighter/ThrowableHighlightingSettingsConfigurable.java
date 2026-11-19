@@ -5,13 +5,11 @@ import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.util.NlsContexts;
+import javax.swing.JComponent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.swing.JComponent;
-
-public final class ThrowableHighlightingSettingsConfigurable
-        implements Configurable {
+public final class ThrowableHighlightingSettingsConfigurable implements Configurable {
 
     private @Nullable ThrowableHighlightingSettingsComponent settingsComponent;
 
@@ -26,8 +24,7 @@ public final class ThrowableHighlightingSettingsConfigurable
         if (component == null) {
             component = new ThrowableHighlightingSettingsComponent();
             component.setSelectedSources(
-                    ThrowableHighlightingSettings.getInstance().getHighlightingSources()
-            );
+                    ThrowableHighlightingSettings.getInstance().getHighlightingSources());
             settingsComponent = component;
         }
 
@@ -38,17 +35,16 @@ public final class ThrowableHighlightingSettingsConfigurable
     public @Nullable JComponent getPreferredFocusedComponent() {
         ThrowableHighlightingSettingsComponent component = settingsComponent;
 
-        return component == null
-                ? null
-                : component.getPreferredFocusedComponent();
+        return component == null ? null : component.getPreferredFocusedComponent();
     }
 
     @Override
     public boolean isModified() {
         ThrowableHighlightingSettingsComponent component = settingsComponent;
-        return component != null && !component.getSelectedSources().equals(
-                ThrowableHighlightingSettings.getInstance().getHighlightingSources()
-        );
+        return component != null
+                && !component
+                        .getSelectedSources()
+                        .equals(ThrowableHighlightingSettings.getInstance().getHighlightingSources());
     }
 
     @Override
@@ -58,17 +54,14 @@ public final class ThrowableHighlightingSettingsConfigurable
             return;
         }
 
-        ThrowableHighlightingSettings settings =
-                ThrowableHighlightingSettings.getInstance();
+        ThrowableHighlightingSettings settings = ThrowableHighlightingSettings.getInstance();
         if (!settings.updateHighlightingSources(component.getSelectedSources())) {
             return;
         }
 
         for (Project project : ProjectManager.getInstance().getOpenProjects()) {
             if (!project.isDisposed()) {
-                DaemonCodeAnalyzer.getInstance(project).restart(
-                        "Throwable Highlighter: highlighting sources changed"
-                );
+                DaemonCodeAnalyzer.getInstance(project).restart("Throwable Highlighter: highlighting sources changed");
             }
         }
     }
@@ -78,8 +71,7 @@ public final class ThrowableHighlightingSettingsConfigurable
         ThrowableHighlightingSettingsComponent component = settingsComponent;
         if (component != null) {
             component.setSelectedSources(
-                    ThrowableHighlightingSettings.getInstance().getHighlightingSources()
-            );
+                    ThrowableHighlightingSettings.getInstance().getHighlightingSources());
         }
     }
 

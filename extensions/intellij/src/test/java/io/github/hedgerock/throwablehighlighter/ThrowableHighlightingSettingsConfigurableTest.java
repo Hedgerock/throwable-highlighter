@@ -4,11 +4,9 @@ import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import com.intellij.util.ui.UIUtil;
-
 import javax.swing.JComponent;
 
-public final class ThrowableHighlightingSettingsConfigurableTest
-        extends BasePlatformTestCase {
+public final class ThrowableHighlightingSettingsConfigurableTest extends BasePlatformTestCase {
 
     private final ThrowableHighlightingSettingsConfigurable configurable =
             new ThrowableHighlightingSettingsConfigurable();
@@ -22,20 +20,16 @@ public final class ThrowableHighlightingSettingsConfigurableTest
     protected void setUp() throws Exception {
         super.setUp();
 
-        ThrowableHighlightingSettings settings =
-                ThrowableHighlightingSettings.getInstance();
+        ThrowableHighlightingSettings settings = ThrowableHighlightingSettings.getInstance();
         ThrowableHighlightingSettings.SettingsState originalState = settings.getState();
 
-        Disposer.register(
-                getTestRootDisposable(),
-                () -> {
-                    try {
-                        configurable.disposeUIResources();
-                    } finally {
-                        settings.loadState(originalState);
-                    }
-                }
-        );
+        Disposer.register(getTestRootDisposable(), () -> {
+            try {
+                configurable.disposeUIResources();
+            } finally {
+                settings.loadState(originalState);
+            }
+        });
 
         settings.loadState(new ThrowableHighlightingSettings.SettingsState());
     }
@@ -49,10 +43,7 @@ public final class ThrowableHighlightingSettingsConfigurableTest
         assertFalse(configurable.isModified());
         assertNull(configurable.getPreferredFocusedComponent());
 
-        assertEquals(
-                ThrowableHighlightingSource.PLUGIN,
-                getSavedSource()
-        );
+        assertEquals(ThrowableHighlightingSource.PLUGIN, getSavedSource());
     }
 
     public void testShouldOfferBothCatchSources() {
@@ -62,27 +53,17 @@ public final class ThrowableHighlightingSettingsConfigurableTest
 
         assertEquals(2, comboBox.getItemCount());
 
-        assertEquals(
-                ThrowableHighlightingSource.PLUGIN,
-                comboBox.getItemAt(0)
-        );
+        assertEquals(ThrowableHighlightingSource.PLUGIN, comboBox.getItemAt(0));
 
-        assertEquals(
-                ThrowableHighlightingSource.JAVA,
-                comboBox.getItemAt(1)
-        );
+        assertEquals(ThrowableHighlightingSource.JAVA, comboBox.getItemAt(1));
     }
 
     public void testShouldLoadSavedSourceWhenCreatingUi() {
-        ThrowableHighlightingSettings.getInstance()
-                .setCatchSource(CatchHighlightingSource.JAVA);
+        ThrowableHighlightingSettings.getInstance().setCatchSource(CatchHighlightingSource.JAVA);
 
         configurable.createComponent();
 
-        assertEquals(
-                ThrowableHighlightingSource.JAVA,
-                getSourceComboBox().getSelectedItem()
-        );
+        assertEquals(ThrowableHighlightingSource.JAVA, getSourceComboBox().getSelectedItem());
 
         assertFalse(configurable.isModified());
     }
@@ -94,10 +75,7 @@ public final class ThrowableHighlightingSettingsConfigurableTest
 
         assertTrue(configurable.isModified());
 
-        assertEquals(
-                ThrowableHighlightingSource.PLUGIN,
-                getSavedSource()
-        );
+        assertEquals(ThrowableHighlightingSource.PLUGIN, getSavedSource());
     }
 
     public void testShouldApplySelectedSource() {
@@ -107,35 +85,23 @@ public final class ThrowableHighlightingSettingsConfigurableTest
 
         configurable.apply();
 
-        assertEquals(
-                ThrowableHighlightingSource.JAVA,
-                getSavedSource()
-        );
+        assertEquals(ThrowableHighlightingSource.JAVA, getSavedSource());
 
         assertFalse(configurable.isModified());
     }
 
     public void testShouldResetDraftToSavedSource() {
-        ThrowableHighlightingSettings.getInstance()
-                .setCatchSource(CatchHighlightingSource.JAVA);
+        ThrowableHighlightingSettings.getInstance().setCatchSource(CatchHighlightingSource.JAVA);
 
         configurable.createComponent();
 
-        getSourceComboBox().setSelectedItem(
-                ThrowableHighlightingSource.PLUGIN
-        );
+        getSourceComboBox().setSelectedItem(ThrowableHighlightingSource.PLUGIN);
 
         configurable.reset();
 
-        assertEquals(
-                ThrowableHighlightingSource.JAVA,
-                getSourceComboBox().getSelectedItem()
-        );
+        assertEquals(ThrowableHighlightingSource.JAVA, getSourceComboBox().getSelectedItem());
 
-        assertEquals(
-                ThrowableHighlightingSource.JAVA,
-                getSavedSource()
-        );
+        assertEquals(ThrowableHighlightingSource.JAVA, getSavedSource());
 
         assertFalse(configurable.isModified());
     }
@@ -155,15 +121,9 @@ public final class ThrowableHighlightingSettingsConfigurableTest
 
         assertNotSame(originalPanel, recreatedPanel);
 
-        assertEquals(
-                ThrowableHighlightingSource.PLUGIN,
-                getSourceComboBox().getSelectedItem()
-        );
+        assertEquals(ThrowableHighlightingSource.PLUGIN, getSourceComboBox().getSelectedItem());
 
-        assertEquals(
-                ThrowableHighlightingSource.PLUGIN,
-                getSavedSource()
-        );
+        assertEquals(ThrowableHighlightingSource.PLUGIN, getSavedSource());
 
         assertFalse(configurable.isModified());
     }
@@ -177,20 +137,12 @@ public final class ThrowableHighlightingSettingsConfigurableTest
 
         assertSame(originalPanel, requestedPanel);
 
-        assertEquals(
-                ThrowableHighlightingSource.JAVA,
-                getSourceComboBox().getSelectedItem()
-        );
+        assertEquals(ThrowableHighlightingSource.JAVA, getSourceComboBox().getSelectedItem());
 
-        assertEquals(
-                ThrowableHighlightingSource.PLUGIN,
-                getSavedSource()
-        );
+        assertEquals(ThrowableHighlightingSource.PLUGIN, getSavedSource());
 
         assertTrue(configurable.isModified());
     }
-
-
 
     public void testShouldOfferBothSourcesForEveryContext() {
         JComponent panel = configurable.createComponent();
@@ -206,8 +158,7 @@ public final class ThrowableHighlightingSettingsConfigurableTest
 
     public void testShouldApplySourcesForMultipleContexts() {
         JComponent panel = configurable.createComponent();
-        findSourceComboBox(panel, ThrowableHighlightingContext.CLASS)
-                .setSelectedItem(ThrowableHighlightingSource.JAVA);
+        findSourceComboBox(panel, ThrowableHighlightingContext.CLASS).setSelectedItem(ThrowableHighlightingSource.JAVA);
         findSourceComboBox(panel, ThrowableHighlightingContext.THROWS)
                 .setSelectedItem(ThrowableHighlightingSource.JAVA);
 
@@ -215,16 +166,14 @@ public final class ThrowableHighlightingSettingsConfigurableTest
 
         configurable.apply();
 
-        ThrowableHighlightingSettings settings =
-                ThrowableHighlightingSettings.getInstance();
+        ThrowableHighlightingSettings settings = ThrowableHighlightingSettings.getInstance();
         for (ThrowableHighlightingContext context : ThrowableHighlightingContext.values()) {
-            boolean useJava = context == ThrowableHighlightingContext.CLASS
-                    || context == ThrowableHighlightingContext.THROWS;
+            boolean useJava =
+                    context == ThrowableHighlightingContext.CLASS || context == ThrowableHighlightingContext.THROWS;
             assertEquals(
                     context.name(),
                     useJava ? ThrowableHighlightingSource.JAVA : ThrowableHighlightingSource.PLUGIN,
-                    settings.getHighlightingSource(context)
-            );
+                    settings.getHighlightingSource(context));
         }
 
         assertFalse(configurable.isModified());
@@ -234,10 +183,7 @@ public final class ThrowableHighlightingSettingsConfigurableTest
         return findSourceComboBox(configurable.createComponent(), ThrowableHighlightingContext.CATCH);
     }
 
-    private ComboBox<?> findSourceComboBox(
-            JComponent panel,
-            ThrowableHighlightingContext context
-    ) {
+    private ComboBox<?> findSourceComboBox(JComponent panel, ThrowableHighlightingContext context) {
         ComboBox<?> comboBox = UIUtil.uiTraverser(panel)
                 .filter(ComboBox.class)
                 .find(candidate -> context.name().equals(candidate.getName()));
@@ -246,7 +192,6 @@ public final class ThrowableHighlightingSettingsConfigurableTest
     }
 
     private ThrowableHighlightingSource getSavedSource() {
-        return ThrowableHighlightingSettings.getInstance()
-                .getHighlightingSource(ThrowableHighlightingContext.CATCH);
+        return ThrowableHighlightingSettings.getInstance().getHighlightingSource(ThrowableHighlightingContext.CATCH);
     }
 }

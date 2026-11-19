@@ -1,107 +1,89 @@
 package io.github.hedgerock.throwablehighlighter;
 
+import static org.junit.Assert.assertEquals;
+
 import com.intellij.lang.annotation.HighlightSeverity;
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-
 public final class ThrowableHighlightingTest {
+
+    @Test
+    public void testCategoryKeysShouldFallbackToThrowableClass() {
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_CLASS,
+                ThrowableHighlighting.THROWABLE_CHECKED.getFallbackAttributeKey());
+
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_CLASS,
+                ThrowableHighlighting.THROWABLE_RUNTIME_EXCEPTION.getFallbackAttributeKey());
+
+        assertEquals(
+                ThrowableHighlighting.THROWABLE_CLASS, ThrowableHighlighting.THROWABLE_ERROR.getFallbackAttributeKey());
+    }
 
     @Test
     public void testJavadocShouldFallbackToThrowableClassHighlighting() {
         assertEquals(
                 ThrowableHighlighting.THROWABLE_CLASS,
-                ThrowableHighlighting.THROWABLE_JAVADOC.getFallbackAttributeKey()
-        );
+                ThrowableHighlighting.THROWABLE_JAVADOC.getFallbackAttributeKey());
     }
 
     @Test
     public void testShouldUseJavadocStyleForJavadocContext() {
-        assertEquals(
-                HighlightSeverity.INFORMATION,
-                ThrowableHighlightingContext.JAVADOC.getSeverity()
-        );
+        assertEquals(HighlightSeverity.INFORMATION, ThrowableHighlightingContext.JAVADOC.getSeverity());
 
         assertEquals(
-                ThrowableHighlighting.THROWABLE_JAVADOC,
-                ThrowableHighlightingContext.JAVADOC.getTextAttributesKey()
-        );
+                ThrowableHighlighting.THROWABLE_JAVADOC, ThrowableHighlightingContext.JAVADOC.getTextAttributesKey());
     }
 
     @Test
     public void testShouldFallbackToThrowableClassHighlighting() {
         assertEquals(
                 ThrowableHighlighting.THROWABLE_CLASS,
-                ThrowableHighlighting.THROWABLE_THROWS.getFallbackAttributeKey()
-        );
+                ThrowableHighlighting.THROWABLE_THROWS.getFallbackAttributeKey());
     }
 
     @Test
     public void testShouldUseThrowsStyleForThrowsContext() {
-        assertEquals(
-                HighlightSeverity.INFORMATION,
-                ThrowableHighlightingContext.THROWS.getSeverity()
-        );
+        assertEquals(HighlightSeverity.INFORMATION, ThrowableHighlightingContext.THROWS.getSeverity());
 
         assertEquals(
-                ThrowableHighlighting.THROWABLE_THROWS,
-                ThrowableHighlightingContext.THROWS.getTextAttributesKey()
-        );
+                ThrowableHighlighting.THROWABLE_THROWS, ThrowableHighlightingContext.THROWS.getTextAttributesKey());
     }
 
     @Test
     public void testShouldUseCatchStyleForCatchContext() {
-        assertEquals(
-                HighlightSeverity.INFORMATION,
-                ThrowableHighlightingContext.CATCH.getSeverity()
-        );
+        assertEquals(HighlightSeverity.INFORMATION, ThrowableHighlightingContext.CATCH.getSeverity());
 
-        assertEquals(
-                ThrowableHighlighting.THROWABLE_CATCH,
-                ThrowableHighlightingContext.CATCH.getTextAttributesKey()
-        );
+        assertEquals(ThrowableHighlighting.THROWABLE_CATCH, ThrowableHighlightingContext.CATCH.getTextAttributesKey());
     }
 
     @Test
     public void testCatchShouldFallbackToThrowableClassHighlighting() {
         assertEquals(
-                ThrowableHighlighting.THROWABLE_CLASS,
-                ThrowableHighlighting.THROWABLE_CATCH.getFallbackAttributeKey()
-        );
+                ThrowableHighlighting.THROWABLE_CLASS, ThrowableHighlighting.THROWABLE_CATCH.getFallbackAttributeKey());
     }
 
     @Test
     public void testShouldUseClassStyleForClassContext() {
-        assertEquals(
-                HighlightSeverity.INFORMATION,
-                ThrowableHighlightingContext.CLASS.getSeverity()
-        );
+        assertEquals(HighlightSeverity.INFORMATION, ThrowableHighlightingContext.CLASS.getSeverity());
 
-        assertEquals(
-                ThrowableHighlighting.THROWABLE_CLASS,
-                ThrowableHighlightingContext.CLASS.getTextAttributesKey()
-        );
+        assertEquals(ThrowableHighlighting.THROWABLE_CLASS, ThrowableHighlightingContext.CLASS.getTextAttributesKey());
     }
 
     @Test
     public void testShouldUseImportStyleForImportContext() {
-        assertEquals(
-                HighlightSeverity.TEXT_ATTRIBUTES,
-                ThrowableHighlightingContext.IMPORT.getSeverity()
-        );
+        assertEquals(HighlightSeverity.TEXT_ATTRIBUTES, ThrowableHighlightingContext.IMPORT.getSeverity());
 
         assertEquals(
-                ThrowableHighlighting.THROWABLE_IMPORT,
-                ThrowableHighlightingContext.IMPORT.getTextAttributesKey()
-        );
+                ThrowableHighlighting.THROWABLE_IMPORT, ThrowableHighlightingContext.IMPORT.getTextAttributesKey());
     }
 
     @Test
     public void testShouldFallbackToClassHighlighting() {
         assertEquals(
                 DefaultLanguageHighlighterColors.CLASS_NAME,
-                ThrowableHighlighting.THROWABLE_CLASS.getFallbackAttributeKey()
-        );
+                ThrowableHighlighting.THROWABLE_CLASS.getFallbackAttributeKey());
     }
 }

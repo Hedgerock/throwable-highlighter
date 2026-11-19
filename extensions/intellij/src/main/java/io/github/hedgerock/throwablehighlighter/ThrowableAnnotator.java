@@ -2,6 +2,7 @@ package io.github.hedgerock.throwablehighlighter;
 
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
+import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.psi.PsiCatchSection;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiCodeBlock;
@@ -23,10 +24,7 @@ import org.jetbrains.annotations.NotNull;
 public final class ThrowableAnnotator implements Annotator {
 
     @Override
-    public void annotate(
-            @NotNull PsiElement psiElement,
-            @NotNull AnnotationHolder annotationHolder
-    ) {
+    public void annotate(@NotNull PsiElement psiElement, @NotNull AnnotationHolder annotationHolder) {
         if (psiElement instanceof PsiImportStatement importStatement) {
             annotateImport(importStatement, annotationHolder);
             return;
@@ -44,8 +42,7 @@ public final class ThrowableAnnotator implements Annotator {
                     PsiDocComment.class,
                     PsiCodeBlock.class,
                     PsiMethod.class,
-                    PsiClass.class
-            );
+                    PsiClass.class);
 
             if (parent instanceof PsiImportStatement || parent instanceof PsiDocComment) {
                 return;
@@ -60,10 +57,7 @@ public final class ThrowableAnnotator implements Annotator {
         }
     }
 
-    private void annotateImport(
-            PsiImportStatement importStatement,
-            AnnotationHolder annotationHolder
-    ) {
+    private void annotateImport(PsiImportStatement importStatement, AnnotationHolder annotationHolder) {
         if (importStatement.isOnDemand()) {
             return;
         }
@@ -74,8 +68,7 @@ public final class ThrowableAnnotator implements Annotator {
             return;
         }
 
-        PsiJavaCodeReferenceElement importReference =
-                importStatement.getImportReference();
+        PsiJavaCodeReferenceElement importReference = importStatement.getImportReference();
 
         if (importReference == null) {
             return;
@@ -87,59 +80,33 @@ public final class ThrowableAnnotator implements Annotator {
             return;
         }
 
-        annotateThrowableType(
-                psiClass,
-                className,
-                ThrowableHighlightingContext.IMPORT,
-                annotationHolder
-        );
+        annotateThrowableType(psiClass, className, ThrowableHighlightingContext.IMPORT, annotationHolder);
     }
 
-    private void annotateDeclaration(
-            PsiClass psiClass,
-            AnnotationHolder annotationHolder
-    ) {
+    private void annotateDeclaration(PsiClass psiClass, AnnotationHolder annotationHolder) {
         PsiIdentifier identifier = psiClass.getNameIdentifier();
 
         if (identifier == null) {
             return;
         }
 
-        annotateThrowableType(
-                psiClass,
-                identifier,
-                ThrowableHighlightingContext.CLASS,
-                annotationHolder
-        );
+        annotateThrowableType(psiClass, identifier, ThrowableHighlightingContext.CLASS, annotationHolder);
     }
 
-    private void annotateReference(
-            PsiJavaCodeReferenceElement referenceElement,
-            AnnotationHolder annotationHolder
-    ) {
+    private void annotateReference(PsiJavaCodeReferenceElement referenceElement, AnnotationHolder annotationHolder) {
         PsiElement resolved = referenceElement.resolve();
 
         if (!(resolved instanceof PsiClass psiClass)) {
             return;
         }
 
-        ThrowableHighlightingContext context =
-                getReferenceHighlightingContext(referenceElement);
+        ThrowableHighlightingContext context = getReferenceHighlightingContext(referenceElement);
 
-        annotateThrowableType(
-                psiClass,
-                referenceElement,
-                context,
-                annotationHolder
-        );
+        annotateThrowableType(psiClass, referenceElement, context, annotationHolder);
     }
 
-    private void annotateJavadocTag(
-            PsiDocTag docTag,
-            AnnotationHolder annotationHolder
-    ) {
-        if (docTag instanceof PsiInlineDocTag ||
-                !(docTag.getContainingComment().getOwner() instanceof PsiMethod)) {
+    private void annotateJavadocTag(PsiDocTag docTag, AnnotationHolder annotationHolder) {
+        if (docTag instanceof PsiInlineDocTag || !(docTag.getContainingComment().getOwner() instanceof PsiMethod)) {
             return;
         }
 
@@ -149,19 +116,15 @@ public final class ThrowableAnnotator implements Annotator {
             return;
         }
 
-        PsiDocReferenceHolder referenceHolder = PsiTreeUtil.getChildOfType(
-                docTag.getValueElement(),
-                PsiDocReferenceHolder.class
-        );
+        PsiDocReferenceHolder referenceHolder =
+                PsiTreeUtil.getChildOfType(docTag.getValueElement(), PsiDocReferenceHolder.class);
 
         if (referenceHolder == null) {
             return;
         }
 
-        PsiJavaCodeReferenceElement referenceElement = PsiTreeUtil.getChildOfType(
-                referenceHolder,
-                PsiJavaCodeReferenceElement.class
-        );
+        PsiJavaCodeReferenceElement referenceElement =
+                PsiTreeUtil.getChildOfType(referenceHolder, PsiJavaCodeReferenceElement.class);
 
         if (referenceElement == null) {
             return;
@@ -179,17 +142,10 @@ public final class ThrowableAnnotator implements Annotator {
             return;
         }
 
-        annotateThrowableType(
-                psiClass,
-                className,
-                ThrowableHighlightingContext.JAVADOC,
-                annotationHolder
-        );
+        annotateThrowableType(psiClass, className, ThrowableHighlightingContext.JAVADOC, annotationHolder);
     }
 
-    private ThrowableHighlightingContext getReferenceHighlightingContext(
-            PsiJavaCodeReferenceElement referenceElement
-    ) {
+    private ThrowableHighlightingContext getReferenceHighlightingContext(PsiJavaCodeReferenceElement referenceElement) {
         if (isCatchParameterType(referenceElement)) {
             return ThrowableHighlightingContext.CATCH;
         }
@@ -199,36 +155,16 @@ public final class ThrowableAnnotator implements Annotator {
                 : ThrowableHighlightingContext.CLASS;
     }
 
-    private boolean isThrowsType(
-            PsiJavaCodeReferenceElement referenceElement
-    ) {
+    private boolean isThrowsType(PsiJavaCodeReferenceElement referenceElement) {
         PsiMethod method = PsiTreeUtil.getParentOfType(
-                referenceElement,
-                PsiMethod.class,
-                true,
-                PsiCodeBlock.class,
-                PsiClass.class
-        );
+                referenceElement, PsiMethod.class, true, PsiCodeBlock.class, PsiClass.class);
 
-        return method != null
-                && PsiTreeUtil.isAncestor(
-                method.getThrowsList(),
-                referenceElement,
-                false
-        );
+        return method != null && PsiTreeUtil.isAncestor(method.getThrowsList(), referenceElement, false);
     }
 
-    private boolean isCatchParameterType(
-            PsiJavaCodeReferenceElement referenceElement
-    ) {
+    private boolean isCatchParameterType(PsiJavaCodeReferenceElement referenceElement) {
         PsiCatchSection catchSection = PsiTreeUtil.getParentOfType(
-                referenceElement,
-                PsiCatchSection.class,
-                true,
-                PsiCodeBlock.class,
-                PsiMethod.class,
-                PsiClass.class
-        );
+                referenceElement, PsiCatchSection.class, true, PsiCodeBlock.class, PsiMethod.class, PsiClass.class);
 
         if (catchSection == null) {
             return false;
@@ -242,46 +178,57 @@ public final class ThrowableAnnotator implements Annotator {
 
         PsiTypeElement typeElement = parameter.getTypeElement();
 
-        return PsiTreeUtil.isAncestor(
-                typeElement,
-                referenceElement,
-                false
-        );
+        return PsiTreeUtil.isAncestor(typeElement, referenceElement, false);
     }
 
     private void annotateThrowableType(
             PsiClass psiClass,
             PsiElement range,
             ThrowableHighlightingContext context,
-            AnnotationHolder annotationHolder
-    ) {
-        if (!shouldApplyHighlighting(context) || !isThrowableType(psiClass)) {
+            AnnotationHolder annotationHolder) {
+        if (!shouldApplyHighlighting(context)) {
             return;
         }
 
-        applyHighlight(range, context, annotationHolder);
+        TextAttributesKey textAttributesKey;
+
+        if (context == ThrowableHighlightingContext.CLASS) {
+            ThrowableCategory category = ThrowableTypeClassifier.classify(psiClass);
+
+            if (category == null) {
+                return;
+            }
+
+            textAttributesKey = category.getTextAttributesKey();
+        } else {
+            if (!isThrowableType(psiClass)) {
+                return;
+            }
+
+            textAttributesKey = context.getTextAttributesKey();
+        }
+
+        applyHighlight(range, context, textAttributesKey, annotationHolder);
     }
 
     private boolean shouldApplyHighlighting(ThrowableHighlightingContext context) {
-        return ThrowableHighlightingSettings.getInstance()
-                .getHighlightingSource(context) == ThrowableHighlightingSource.PLUGIN;
+        return ThrowableHighlightingSettings.getInstance().getHighlightingSource(context)
+                == ThrowableHighlightingSource.PLUGIN;
     }
 
     private void applyHighlight(
             PsiElement range,
             ThrowableHighlightingContext context,
-            AnnotationHolder annotationHolder
-    ) {
-        annotationHolder.newSilentAnnotation(context.getSeverity())
+            TextAttributesKey textAttributesKey,
+            AnnotationHolder annotationHolder) {
+        annotationHolder
+                .newSilentAnnotation(context.getSeverity())
                 .range(range)
-                .textAttributes(context.getTextAttributesKey())
+                .textAttributes(textAttributesKey)
                 .create();
     }
 
     private boolean isThrowableType(PsiClass psiClass) {
-        return InheritanceUtil.isInheritor(
-                psiClass,
-                Throwable.class.getName()
-        );
+        return InheritanceUtil.isInheritor(psiClass, Throwable.class.getName());
     }
 }

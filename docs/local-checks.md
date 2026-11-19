@@ -80,7 +80,10 @@ Hook запускает `.ci/check-staged.cjs`.
 
 Сначала выполняются все тесты механизма локальной проверки.
 
-Для IntelliJ-плагина запускаются задачи `test verifyPlugin buildPlugin --no-daemon` через Gradle Wrapper.
+Для IntelliJ-плагина запускаются задачи `check verifyPlugin buildPlugin --no-daemon` через Gradle Wrapper.
+
+Java-код IntelliJ-расширения форматируется через Spotless с Palantir Java Format. Команда `spotlessApply` применяет форматирование,
+`spotlessCheck` проверяет его. Проверка форматирования входит в задачу `check` вместе с тестами.
 
 Для расширения VS Code последовательно выполняются:
 

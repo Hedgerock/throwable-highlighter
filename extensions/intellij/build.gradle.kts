@@ -1,6 +1,7 @@
 plugins {
     id("java")
     id("org.jetbrains.intellij.platform") version "2.19.0"
+    id("com.diffplug.spotless") version "8.11.0"
 }
 
 group = "io.github.hedgerock"
@@ -47,5 +48,20 @@ intellijPlatform {
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+spotless {
+    lineEndings = com.diffplug.spotless.LineEnding.UNIX
+
+    java {
+        target(
+            "src/main/java/**/*.java",
+            "src/test/java/**/*.java"
+        )
+
+        palantirJavaFormat("2.102.0")
+        trimTrailingWhitespace()
+        endWithNewline()
     }
 }

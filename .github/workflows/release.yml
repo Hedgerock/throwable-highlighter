@@ -32,7 +32,7 @@ jobs:
           test "intellij-v$version" = "$GITHUB_REF_NAME"
 
       - name: Test, verify, and build
-        run: ./gradlew -p extensions/intellij test verifyPlugin buildPlugin --no-daemon
+        run: ./gradlew -p extensions/intellij check verifyPlugin buildPlugin --no-daemon
 
       - name: Publish to JetBrains Marketplace
         env:

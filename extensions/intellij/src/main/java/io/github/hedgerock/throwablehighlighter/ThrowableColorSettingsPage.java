@@ -7,22 +7,18 @@ import com.intellij.openapi.options.colors.AttributesDescriptor;
 import com.intellij.openapi.options.colors.ColorDescriptor;
 import com.intellij.openapi.options.colors.ColorSettingsPage;
 import com.intellij.openapi.util.NlsContexts;
+import java.util.Arrays;
+import java.util.Map;
+import javax.swing.*;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.swing.*;
-import java.util.Arrays;
-import java.util.Map;
-
 public final class ThrowableColorSettingsPage implements ColorSettingsPage {
 
     private static final AttributesDescriptor[] DESCRIPTIONS = Arrays.stream(ThrowableHighlightingContext.values())
-        .map(context -> new AttributesDescriptor(
-                context.getDisplayName(),
-                context.getTextAttributesKey()
-        ))
-        .toArray(AttributesDescriptor[]::new);
+            .map(context -> new AttributesDescriptor(context.getDisplayName(), context.getTextAttributesKey()))
+            .toArray(AttributesDescriptor[]::new);
 
     @Override
     public @Nullable Icon getIcon() {
@@ -71,8 +67,7 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
                 "throwableImport", ThrowableHighlighting.THROWABLE_IMPORT,
                 "throwableCatch", ThrowableHighlighting.THROWABLE_CATCH,
                 "throwableThrows", ThrowableHighlighting.THROWABLE_THROWS,
-                "throwableJavadoc", ThrowableHighlighting.THROWABLE_JAVADOC
-        );
+                "throwableJavadoc", ThrowableHighlighting.THROWABLE_JAVADOC);
     }
 
     @Override

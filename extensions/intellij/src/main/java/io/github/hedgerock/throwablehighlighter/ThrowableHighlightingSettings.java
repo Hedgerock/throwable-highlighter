@@ -6,20 +6,15 @@ import com.intellij.openapi.components.RoamingType;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.EnumMap;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @Service(Service.Level.APP)
 @State(
         name = "io.github.hedgerock.throwablehighlighter.ThrowableHighlightingSettings",
-        storages = @Storage(
-                value = "throwable-highlighter.xml",
-                roamingType = RoamingType.DISABLED
-        )
-)
+        storages = @Storage(value = "throwable-highlighter.xml", roamingType = RoamingType.DISABLED))
 public final class ThrowableHighlightingSettings
         implements PersistentStateComponent<ThrowableHighlightingSettings.SettingsState> {
 
@@ -27,22 +22,16 @@ public final class ThrowableHighlightingSettings
             readSources(new SettingsState());
 
     public static @NotNull ThrowableHighlightingSettings getInstance() {
-        return ApplicationManager.getApplication()
-                .getService(ThrowableHighlightingSettings.class);
+        return ApplicationManager.getApplication().getService(ThrowableHighlightingSettings.class);
     }
 
-    public @NotNull ThrowableHighlightingSource getHighlightingSource(
-            @NotNull ThrowableHighlightingContext context
-    ) {
+    public @NotNull ThrowableHighlightingSource getHighlightingSource(@NotNull ThrowableHighlightingContext context) {
         return sources.getOrDefault(context, ThrowableHighlightingSource.PLUGIN);
     }
 
     synchronized void setHighlightingSource(
-            @NotNull ThrowableHighlightingContext context,
-            @NotNull ThrowableHighlightingSource source
-    ) {
-        EnumMap<ThrowableHighlightingContext, ThrowableHighlightingSource> updatedSources =
-                new EnumMap<>(sources);
+            @NotNull ThrowableHighlightingContext context, @NotNull ThrowableHighlightingSource source) {
+        EnumMap<ThrowableHighlightingContext, ThrowableHighlightingSource> updatedSources = new EnumMap<>(sources);
 
         updatedSources.put(context, source);
         sources = Map.copyOf(updatedSources);
@@ -75,35 +64,26 @@ public final class ThrowableHighlightingSettings
         sources = readSources(settingsState);
     }
 
-    private static Map<ThrowableHighlightingContext, ThrowableHighlightingSource> readSources(
-            SettingsState state
-    ) {
+    private static Map<ThrowableHighlightingContext, ThrowableHighlightingSource> readSources(SettingsState state) {
         return Map.of(
                 ThrowableHighlightingContext.CLASS, sourceOrDefault(state.classHighlightingSource),
                 ThrowableHighlightingContext.IMPORT, sourceOrDefault(state.importHighlightingSource),
                 ThrowableHighlightingContext.CATCH, fromCatchSource(state.catchHighlightingSource),
                 ThrowableHighlightingContext.THROWS, sourceOrDefault(state.throwsHighlightingSource),
-                ThrowableHighlightingContext.JAVADOC, sourceOrDefault(state.javadocHighlightingSource)
-        );
+                ThrowableHighlightingContext.JAVADOC, sourceOrDefault(state.javadocHighlightingSource));
     }
 
-    private static @NotNull ThrowableHighlightingSource sourceOrDefault(
-       @Nullable ThrowableHighlightingSource source
-    ) {
+    private static @NotNull ThrowableHighlightingSource sourceOrDefault(@Nullable ThrowableHighlightingSource source) {
         return source == null ? ThrowableHighlightingSource.PLUGIN : source;
     }
 
-    private static @NotNull ThrowableHighlightingSource fromCatchSource(
-            @Nullable CatchHighlightingSource source
-    ) {
+    private static @NotNull ThrowableHighlightingSource fromCatchSource(@Nullable CatchHighlightingSource source) {
         return source == CatchHighlightingSource.JAVA
                 ? ThrowableHighlightingSource.JAVA
                 : ThrowableHighlightingSource.PLUGIN;
     }
 
-    private static @NotNull CatchHighlightingSource toCatchSource(
-            @Nullable ThrowableHighlightingSource source
-    ) {
+    private static @NotNull CatchHighlightingSource toCatchSource(@Nullable ThrowableHighlightingSource source) {
         return source == ThrowableHighlightingSource.JAVA
                 ? CatchHighlightingSource.JAVA
                 : CatchHighlightingSource.THROWABLE_CATCH;
@@ -111,25 +91,20 @@ public final class ThrowableHighlightingSettings
 
     public static final class SettingsState {
 
-        public @Nullable ThrowableHighlightingSource classHighlightingSource =
-                ThrowableHighlightingSource.PLUGIN;
-        public @Nullable ThrowableHighlightingSource importHighlightingSource =
-                ThrowableHighlightingSource.PLUGIN;
-        public @Nullable CatchHighlightingSource catchHighlightingSource =
-                CatchHighlightingSource.THROWABLE_CATCH;
-        public @Nullable ThrowableHighlightingSource throwsHighlightingSource =
-                ThrowableHighlightingSource.PLUGIN;
-        public @Nullable ThrowableHighlightingSource javadocHighlightingSource =
-                ThrowableHighlightingSource.PLUGIN;
+        public @Nullable ThrowableHighlightingSource classHighlightingSource = ThrowableHighlightingSource.PLUGIN;
+        public @Nullable ThrowableHighlightingSource importHighlightingSource = ThrowableHighlightingSource.PLUGIN;
+        public @Nullable CatchHighlightingSource catchHighlightingSource = CatchHighlightingSource.THROWABLE_CATCH;
+        public @Nullable ThrowableHighlightingSource throwsHighlightingSource = ThrowableHighlightingSource.PLUGIN;
+        public @Nullable ThrowableHighlightingSource javadocHighlightingSource = ThrowableHighlightingSource.PLUGIN;
     }
 
-    @NotNull Map<ThrowableHighlightingContext, ThrowableHighlightingSource> getHighlightingSources() {
+    @NotNull
+    Map<ThrowableHighlightingContext, ThrowableHighlightingSource> getHighlightingSources() {
         return sources;
     }
 
     synchronized boolean updateHighlightingSources(
-            @NotNull Map<ThrowableHighlightingContext, ThrowableHighlightingSource> selectedSources
-    ) {
+            @NotNull Map<ThrowableHighlightingContext, ThrowableHighlightingSource> selectedSources) {
         Map<ThrowableHighlightingContext, ThrowableHighlightingSource> snapshot = Map.copyOf(selectedSources);
 
         if (snapshot.size() != ThrowableHighlightingContext.values().length) {
