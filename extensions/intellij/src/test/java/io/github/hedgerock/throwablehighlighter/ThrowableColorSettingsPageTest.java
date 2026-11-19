@@ -3,7 +3,10 @@ package io.github.hedgerock.throwablehighlighter;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.openapi.options.colors.AttributesDescriptor;
 import com.intellij.psi.JavaTokenType;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import junit.framework.TestCase;
 
 public final class ThrowableColorSettingsPageTest extends TestCase {
@@ -57,25 +60,29 @@ public final class ThrowableColorSettingsPageTest extends TestCase {
         assertEquals(ThrowableHighlighting.THROWABLE_IMPORT, highlighting.get("throwableImport"));
     }
 
-    public void testShouldExposeThrowableHighlightingDescriptor() {
+    public void testShouldExposeCatalogStylesAsDescriptors() {
+        Map<TextAttributesKey, String> expected = ThrowableHighlightingStyles.allStyles().stream()
+                .collect(Collectors.toMap(
+                        ThrowableHighlightingStyles.StyleDefinition::attributesKey,
+                        ThrowableHighlightingStyles.StyleDefinition::settingsPath));
+
         AttributesDescriptor[] descriptors = page.getAttributeDescriptors();
+        Map<TextAttributesKey, String> actual = Arrays.stream(descriptors)
+                .collect(Collectors.toMap(AttributesDescriptor::getKey, AttributesDescriptor::getDisplayName));
 
-        assertEquals(11, descriptors.length);
-        assertEquals(ThrowableHighlighting.THROWABLE_CLASS, descriptors[0].getKey());
-        assertEquals(ThrowableHighlighting.THROWABLE_IMPORT, descriptors[1].getKey());
-        assertEquals(ThrowableHighlighting.THROWABLE_CATCH, descriptors[2].getKey());
-        assertEquals(ThrowableHighlighting.THROWABLE_THROWS, descriptors[3].getKey());
-        assertEquals(ThrowableHighlighting.THROWABLE_JAVADOC, descriptors[4].getKey());
-        assertEquals(ThrowableHighlighting.THROWABLE_CHECKED, descriptors[5].getKey());
-        assertEquals(ThrowableHighlighting.THROWABLE_RUNTIME_EXCEPTION, descriptors[6].getKey());
-        assertEquals(ThrowableHighlighting.THROWABLE_ERROR, descriptors[7].getKey());
-        assertEquals(ThrowableHighlighting.THROWABLE_CATCH_CHECKED, descriptors[8].getKey());
-        assertEquals(ThrowableHighlighting.THROWABLE_CATCH_RUNTIME_EXCEPTION, descriptors[9].getKey());
-        assertEquals(ThrowableHighlighting.THROWABLE_CATCH_ERROR, descriptors[10].getKey());
+        assertEquals(expected.size(), descriptors.length);
+        assertEquals(expected, actual);
+    }
 
-        assertEquals("Throwable catch checked", descriptors[8].getDisplayName());
-        assertEquals("Throwable catch runtime exception", descriptors[9].getDisplayName());
-        assertEquals("Throwable catch error", descriptors[10].getDisplayName());
+    public void testShouldUseDescriptorKeysForEveryPreviewTag() {
+        Set<TextAttributesKey> descriptorKeys = Arrays.stream(page.getAttributeDescriptors())
+                .map(AttributesDescriptor::getKey)
+                .collect(Collectors.toSet());
+
+        Map<String, TextAttributesKey> tags = page.getAdditionalHighlightingTagToDescriptorMap();
+
+        assertEquals(9, tags.size());
+        assertTrue(descriptorKeys.containsAll(tags.values()));
     }
 
     public void testShouldPreviewMixedCatchCategories() {

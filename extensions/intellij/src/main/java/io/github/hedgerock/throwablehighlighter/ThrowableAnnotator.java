@@ -190,22 +190,24 @@ public final class ThrowableAnnotator implements Annotator {
             return;
         }
 
+        ThrowableHighlightingStyles.ContextStyles styles = ThrowableHighlightingStyles.forContext(context);
+
         TextAttributesKey textAttributesKey;
 
-        if (context == ThrowableHighlightingContext.CLASS || context == ThrowableHighlightingContext.CATCH) {
+        if (styles.hasCategories()) {
             ThrowableCategory category = ThrowableTypeClassifier.classify(psiClass);
 
             if (category == null) {
                 return;
             }
 
-            textAttributesKey = category.getTextAttributesKey(context);
+            textAttributesKey = styles.categoryStyle(category).attributesKey();
         } else {
             if (!isThrowableType(psiClass)) {
                 return;
             }
 
-            textAttributesKey = context.getTextAttributesKey();
+            textAttributesKey = styles.baseStyleDefinition().attributesKey();
         }
 
         applyHighlight(range, context, textAttributesKey, annotationHolder);

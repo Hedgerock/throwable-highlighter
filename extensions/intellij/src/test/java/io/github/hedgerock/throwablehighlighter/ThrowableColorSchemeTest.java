@@ -4,12 +4,12 @@ import com.intellij.openapi.editor.colors.EditorColorsScheme;
 import com.intellij.openapi.editor.colors.impl.EditorColorsSchemeImpl;
 import com.intellij.openapi.editor.colors.impl.EmptyColorScheme;
 import com.intellij.openapi.editor.markup.TextAttributes;
-import com.intellij.testFramework.LightPlatformTestCase;
+import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import java.awt.Color;
 import java.awt.Font;
 import org.jdom.Element;
 
-public final class ThrowableColorSchemeTest extends LightPlatformTestCase {
+public final class ThrowableColorSchemeTest extends BasePlatformTestCase {
 
     public void testShouldApplySavedCatchAttributesToEveryCategory() {
         EditorColorsSchemeImpl original = createScheme();

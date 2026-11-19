@@ -7,9 +7,8 @@ import com.intellij.openapi.options.colors.AttributesDescriptor;
 import com.intellij.openapi.options.colors.ColorDescriptor;
 import com.intellij.openapi.options.colors.ColorSettingsPage;
 import com.intellij.openapi.util.NlsContexts;
-import java.util.Arrays;
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 import javax.swing.*;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
@@ -17,15 +16,18 @@ import org.jetbrains.annotations.Nullable;
 
 public final class ThrowableColorSettingsPage implements ColorSettingsPage {
 
-    private static final AttributesDescriptor[] DESCRIPTIONS = Stream.concat(
-                    Arrays.stream(ThrowableHighlightingContext.values())
-                            .map(context ->
-                                    new AttributesDescriptor(context.getDisplayName(), context.getTextAttributesKey())),
-                    Stream.of(ThrowableHighlightingContext.CLASS, ThrowableHighlightingContext.CATCH)
-                            .flatMap(context -> Arrays.stream(ThrowableCategory.values())
-                                    .map(category -> new AttributesDescriptor(
-                                            category.getDisplayName(context), category.getTextAttributesKey(context)))))
-            .toArray(AttributesDescriptor[]::new);
+    private static final AttributesDescriptor[] ATTRIBUTES_DESCRIPTORS =
+            ThrowableHighlightingStyles.allStyles().stream()
+                    .map(styleDefinition ->
+                            new AttributesDescriptor(styleDefinition.settingsPath(), styleDefinition.attributesKey()))
+                    .toArray(AttributesDescriptor[]::new);
+
+    private static final Map<String, TextAttributesKey> HIGHLIGHTING_TAGS =
+            ThrowableHighlightingStyles.allStyles().stream()
+                    .filter(styleDefinition -> styleDefinition.previewTag() != null)
+                    .collect(Collectors.toUnmodifiableMap(
+                            ThrowableHighlightingStyles.StyleDefinition::previewTag,
+                            ThrowableHighlightingStyles.StyleDefinition::attributesKey));
 
     @Override
     public @Nullable Icon getIcon() {
@@ -87,21 +89,12 @@ public final class ThrowableColorSettingsPage implements ColorSettingsPage {
 
     @Override
     public @NotNull Map<String, TextAttributesKey> getAdditionalHighlightingTagToDescriptorMap() {
-        return Map.of(
-                "throwableChecked", ThrowableHighlighting.THROWABLE_CHECKED,
-                "throwableRuntimeException", ThrowableHighlighting.THROWABLE_RUNTIME_EXCEPTION,
-                "throwableError", ThrowableHighlighting.THROWABLE_ERROR,
-                "throwableImport", ThrowableHighlighting.THROWABLE_IMPORT,
-                "throwableCatchChecked", ThrowableHighlighting.THROWABLE_CATCH_CHECKED,
-                "throwableCatchRuntimeException", ThrowableHighlighting.THROWABLE_CATCH_RUNTIME_EXCEPTION,
-                "throwableCatchError", ThrowableHighlighting.THROWABLE_CATCH_ERROR,
-                "throwableThrows", ThrowableHighlighting.THROWABLE_THROWS,
-                "throwableJavadoc", ThrowableHighlighting.THROWABLE_JAVADOC);
+        return HIGHLIGHTING_TAGS;
     }
 
     @Override
     public AttributesDescriptor @NotNull [] getAttributeDescriptors() {
-        return DESCRIPTIONS;
+        return ATTRIBUTES_DESCRIPTORS;
     }
 
     @Override

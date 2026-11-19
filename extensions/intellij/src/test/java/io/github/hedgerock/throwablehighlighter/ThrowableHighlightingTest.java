@@ -45,14 +45,6 @@ public final class ThrowableHighlightingTest {
     }
 
     @Test
-    public void testShouldUseJavadocStyleForJavadocContext() {
-        assertEquals(HighlightSeverity.INFORMATION, ThrowableHighlightingContext.JAVADOC.getSeverity());
-
-        assertEquals(
-                ThrowableHighlighting.THROWABLE_JAVADOC, ThrowableHighlightingContext.JAVADOC.getTextAttributesKey());
-    }
-
-    @Test
     public void testShouldFallbackToThrowableClassHighlighting() {
         assertEquals(
                 ThrowableHighlighting.THROWABLE_CLASS,
@@ -60,18 +52,8 @@ public final class ThrowableHighlightingTest {
     }
 
     @Test
-    public void testShouldUseThrowsStyleForThrowsContext() {
-        assertEquals(HighlightSeverity.INFORMATION, ThrowableHighlightingContext.THROWS.getSeverity());
-
-        assertEquals(
-                ThrowableHighlighting.THROWABLE_THROWS, ThrowableHighlightingContext.THROWS.getTextAttributesKey());
-    }
-
-    @Test
-    public void testShouldUseCatchStyleForCatchContext() {
-        assertEquals(HighlightSeverity.INFORMATION, ThrowableHighlightingContext.CATCH.getSeverity());
-
-        assertEquals(ThrowableHighlighting.THROWABLE_CATCH, ThrowableHighlightingContext.CATCH.getTextAttributesKey());
+    public void testShouldUseInformationSeverityForJavadoc() {
+        assertEquals(HighlightSeverity.INFORMATION, ThrowableHighlightingContext.JAVADOC.getSeverity());
     }
 
     @Test
@@ -81,18 +63,23 @@ public final class ThrowableHighlightingTest {
     }
 
     @Test
-    public void testShouldUseClassStyleForClassContext() {
-        assertEquals(HighlightSeverity.INFORMATION, ThrowableHighlightingContext.CLASS.getSeverity());
-
-        assertEquals(ThrowableHighlighting.THROWABLE_CLASS, ThrowableHighlightingContext.CLASS.getTextAttributesKey());
+    public void testShouldUseInformationSeverityForThrows() {
+        assertEquals(HighlightSeverity.INFORMATION, ThrowableHighlightingContext.THROWS.getSeverity());
     }
 
     @Test
-    public void testShouldUseImportStyleForImportContext() {
-        assertEquals(HighlightSeverity.TEXT_ATTRIBUTES, ThrowableHighlightingContext.IMPORT.getSeverity());
+    public void testShouldUseInformationSeverityForCatch() {
+        assertEquals(HighlightSeverity.INFORMATION, ThrowableHighlightingContext.CATCH.getSeverity());
+    }
 
-        assertEquals(
-                ThrowableHighlighting.THROWABLE_IMPORT, ThrowableHighlightingContext.IMPORT.getTextAttributesKey());
+    @Test
+    public void testShouldUseInformationSeverityForClass() {
+        assertEquals(HighlightSeverity.INFORMATION, ThrowableHighlightingContext.CLASS.getSeverity());
+    }
+
+    @Test
+    public void testShouldUseTextAttributesSeverityForImport() {
+        assertEquals(HighlightSeverity.TEXT_ATTRIBUTES, ThrowableHighlightingContext.IMPORT.getSeverity());
     }
 
     @Test

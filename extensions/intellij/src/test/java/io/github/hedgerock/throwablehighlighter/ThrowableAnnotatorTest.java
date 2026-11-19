@@ -933,7 +933,9 @@ public final class ThrowableAnnotatorTest extends LightJavaCodeInsightFixtureTes
             List<TextAttributesKey> keys = switch (context) {
                 case CLASS -> CLASS_HIGHLIGHT_KEYS;
                 case CATCH -> CATCH_HIGHLIGHT_KEYS;
-                default -> List.of(context.getTextAttributesKey());
+                case IMPORT -> List.of(ThrowableHighlighting.THROWABLE_IMPORT);
+                case THROWS -> List.of(ThrowableHighlighting.THROWABLE_THROWS);
+                case JAVADOC -> List.of(ThrowableHighlighting.THROWABLE_JAVADOC);
             };
 
             long enabledCount = context == ThrowableHighlightingContext.CLASS ? 3 : 1;

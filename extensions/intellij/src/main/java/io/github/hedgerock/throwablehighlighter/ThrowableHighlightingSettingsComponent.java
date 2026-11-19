@@ -27,7 +27,7 @@ public final class ThrowableHighlightingSettingsComponent {
             comboBox.setRenderer(createSourceRenderer(context));
 
             sourceComboBoxes.put(context, comboBox);
-            formBuilder.addLabeledComponent(context.getDisplayName() + ":", comboBox);
+            formBuilder.addLabeledComponent(context.getSourceDisplayName() + ":", comboBox);
         }
 
         JBLabel description = new JBLabel("""
@@ -79,7 +79,7 @@ public final class ThrowableHighlightingSettingsComponent {
                     source == null
                             ? ""
                             : switch (source) {
-                                case PLUGIN -> context.getDisplayName();
+                                case PLUGIN -> context.getSourceDisplayName();
                                 case JAVA -> "Java highlighting";
                             });
             return renderer;
