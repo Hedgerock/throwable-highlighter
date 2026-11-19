@@ -163,6 +163,7 @@ NNNN-краткое-название.md
 - [ADR-0036: Организовать расширения по платформам](0036-platform-extension-layout.md)
 - [ADR-0037: Различать категории исключений в контексте CLASS](0037-intellij-throwable-categories.md)
 - [ADR-0038: Различать категории исключений в контексте CATCH](0038-intellij-catch-throwable-categories.md)
+- [ADR-0039: Разделить контексты, категории и оформление IntelliJ-подсветки](0039-intellij-highlighting-style-catalog.md)
 
 ---
 
