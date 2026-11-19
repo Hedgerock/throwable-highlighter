@@ -12,6 +12,8 @@ Also available for [VS Code on Windows](https://marketplace.visualstudio.com/ite
 
 ![Throwable Highlighter preview](docs/images/throwable-highlighting.png)
 
+The preview uses custom category colors.
+
 ## IntelliJ Platform Features
 
 - Highlights Throwable types in `catch` clauses with a separate configurable color.
@@ -23,9 +25,8 @@ Also available for [VS Code on Windows](https://marketplace.visualstudio.com/ite
 - Highlights the class name in explicit imports of Throwable and its subclasses.
 - Does not highlight package names or wildcard imports.
 - Provides configurable highlighting through the IDE color scheme.
-- Uses the standard Java class color as the default for `Throwable class`.
-- Uses the `Throwable class` color as the default for `Throwable import`, `Throwable catch`, `Throwable throws`
-  and `Throwable Javadoc`.
+- Inherits standard Java class attributes through `Class > Base attributes` by default.
+- Supports inherited or custom attributes for individual categories and contexts.
 - Provides separate attributes for checked types, runtime exceptions, and errors
   in class declarations, references, and `catch` parameters.
 
@@ -35,22 +36,22 @@ Configure highlighting under:
 
 `Settings | Editor | Color Scheme | Throwable Highlighter`
 
-The color scheme provides five base keys:
+`Class` and `Catch` each contain four settings:
 
-- `Throwable class` for the default attributes of class categories and other contexts;
-- `Throwable import` for class names in explicit imports;
-- `Throwable catch` for the default attributes of catch categories;
-- `Throwable throws` for Throwable types in `throws` clauses;
-- `Throwable Javadoc` for class names in Javadoc `@throws` and `@exception` tags on methods and constructors.
+- `Base attributes`;
+- `Checked`;
+- `Runtime exception`;
+- `Error`.
 
-`Throwable import`, `Throwable catch`, `Throwable throws` and `Throwable Javadoc` inherit
-the `Throwable class` color until they receive explicit color settings.
+Class declarations and references use the category settings under `Class`.
+Catch parameters use the category settings under `Catch`. Each type in a multi-catch
+parameter receives its category's attributes.
 
-Class declarations and references use `Throwable checked`, `Throwable runtime exception`, and `Throwable error`.
-These category keys inherit `Throwable class`.
+Category settings inherit `Base attributes` from their group by default.
+`Catch > Base attributes`, `Import`, `Throws`, and `Javadoc` inherit
+`Class > Base attributes`.
 
-Catch parameters use `Throwable catch checked`, `Throwable catch runtime exception`, and `Throwable catch error`.
-These category keys inherit `Throwable catch`. Each type in a multi-catch parameter receives its category's attributes.
+Grouping preserves existing color keys and configured attributes.
 
 Choose a source for each context under `Settings | Tools | Throwable Highlighter`.
 

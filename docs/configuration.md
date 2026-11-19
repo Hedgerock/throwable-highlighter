@@ -8,50 +8,61 @@
 Settings | Editor | Color Scheme | Throwable Highlighter
 ```
 
-Раздел содержит одиннадцать цветовых ключей:
+Раздел содержит одиннадцать настроек. Базовые атрибуты и категории контекстов
+`CLASS` и `CATCH` объединены в группы:
 
-- `Throwable class`;
-- `Throwable checked`;
-- `Throwable runtime exception`;
-- `Throwable error`;
-- `Throwable import`;
-- `Throwable catch`;
-- `Throwable catch checked`;
-- `Throwable catch runtime exception`;
-- `Throwable catch error`;
-- `Throwable throws`;
-- `Throwable Javadoc`.
+```text
+Throwable Highlighter
+├─ Catch
+│  ├─ Base attributes
+│  ├─ Checked
+│  ├─ Error
+│  └─ Runtime exception
+├─ Class
+│  ├─ Base attributes
+│  ├─ Checked
+│  ├─ Error
+│  └─ Runtime exception
+├─ Import
+├─ Javadoc
+└─ Throws
+```
 
-### `Throwable class`
+Группировка определяет расположение настроек. Наследование атрибутов задаётся
+связями цветовых ключей.
 
-Ключ `Throwable class` соответствует `THROWABLE_CLASS`.
+### `Class > Base attributes`
+
+Настройка `Class > Base attributes` соответствует ключу `THROWABLE_CLASS`.
 
 `THROWABLE_CLASS` задаёт родительские атрибуты категорий типов и остальных контекстов подсветки.
 
 По умолчанию ключ наследует стандартный цвет Java-класса из активной цветовой схемы IDE.
 
-![Настройка цвета Throwable class](images/throwable-class-color.png)
+![Базовые атрибуты Class](images/throwable-class-color.png)
 
 ### Категории CLASS
 
 Объявления и ссылки контекста `CLASS` используют цветовой ключ категории разрешённого Java-класса.
 
-| Настройка                     | Цветовой ключ                 | Типы                                                                 |
-|-------------------------------|-------------------------------|----------------------------------------------------------------------|
-| `Throwable checked`           | `THROWABLE_CHECKED`           | `Throwable` и его наследники вне ветвей `RuntimeException` и `Error` |
-| `Throwable runtime exception` | `THROWABLE_RUNTIME_EXCEPTION` | `RuntimeException` и его наследники                                  |
-| `Throwable error`             | `THROWABLE_ERROR`             | `Error` и его наследники                                             |
+| Настройка                   | Цветовой ключ                 | Типы                                                                 |
+| --------------------------- | ----------------------------- | -------------------------------------------------------------------- |
+| `Class > Checked`           | `THROWABLE_CHECKED`           | `Throwable` и его наследники вне ветвей `RuntimeException` и `Error` |
+| `Class > Runtime exception` | `THROWABLE_RUNTIME_EXCEPTION` | `RuntimeException` и его наследники                                  |
+| `Class > Error`             | `THROWABLE_ERROR`             | `Error` и его наследники                                             |
 
 Все три ключа по умолчанию наследуют атрибуты `THROWABLE_CLASS`.
 
 Собственные атрибуты категории применяются к объявлениям и ссылкам контекста `CLASS`.
 При выборе `Java highlighting` для `CLASS` используется стандартное оформление IDE.
 
-### `Throwable import`
+![Настройка категорий Class и Catch](images/throwable-category-colors.png)
 
-Ключ `Throwable import` соответствует `THROWABLE_IMPORT`.
+### `Import`
 
-Он применяется к имени класса в явном импорте.
+Настройка `Import` соответствует ключу `THROWABLE_IMPORT`.
+
+Настройка применяется к имени класса в явном импорте.
 
 ```java
 import java.io.IOException;
@@ -62,24 +73,24 @@ import java.io.IOException;
 
 Импорты с символом `*` не подсвечиваются.
 
-### `Throwable catch`
+### `Catch > Base attributes`
 
-Ключ `Throwable catch` соответствует `THROWABLE_CATCH` и задаёт родительские атрибуты
+Настройка `Catch > Base attributes` соответствует ключу `THROWABLE_CATCH` и задаёт родительские атрибуты
 категорий контекста `CATCH`.
 
 При источнике `Throwable catch` типы в параметрах `catch` используют ключи своих категорий.
 
-| Настройка                           | Цветовой ключ                       |
-|-------------------------------------|-------------------------------------|
-| `Throwable catch checked`           | `THROWABLE_CATCH_CHECKED`           |
-| `Throwable catch runtime exception` | `THROWABLE_CATCH_RUNTIME_EXCEPTION` |
-| `Throwable catch error`             | `THROWABLE_CATCH_ERROR`             |
+| Настройка                   | Цветовой ключ                       |
+| --------------------------- | ----------------------------------- |
+| `Catch > Checked`           | `THROWABLE_CATCH_CHECKED`           |
+| `Catch > Runtime exception` | `THROWABLE_CATCH_RUNTIME_EXCEPTION` |
+| `Catch > Error`             | `THROWABLE_CATCH_ERROR`             |
 
 Категории определяются по тем же правилам, что и для `CLASS`.
 В multi-catch каждый тип классифицируется и подсвечивается отдельно.
 
 Все три ключа по умолчанию наследуют атрибуты `THROWABLE_CATCH`.
-Ранее настроенное оформление `Throwable catch` применяется к категориям,
+Ранее сохранённые атрибуты `THROWABLE_CATCH` применяются к категориям,
 пока для них сохраняется наследование.
 
 При выборе `Java highlighting` для `CATCH` все категории параметров `catch`
@@ -91,13 +102,13 @@ catch (IOException exception) {
 }
 ```
 
-![Наследование цвета Throwable catch](images/throwable-catch-inheritance.png)
+![Наследование базовых атрибутов Catch от Class](images/throwable-catch-inheritance.png)
 
-### `Throwable throws`
+### `Throws`
 
-Ключ `Throwable throws` соответствует `THROWABLE_THROWS`.
+Настройка `Throws` соответствует ключу `THROWABLE_THROWS`.
 
-Он применяется к `Throwable` и его наследникам в списке `throws` метода или конструктора.
+Настройка применяется к `Throwable` и его наследникам в списке `throws` метода или конструктора.
 
 ```java
 import java.io.IOException;
@@ -107,11 +118,11 @@ void execute() throws IOException {
 }
 ```
 
-### `Throwable Javadoc`
+### `Javadoc`
 
-Ключ `Throwable Javadoc` соответствует `THROWABLE_JAVADOC`.
+Настройка `Javadoc` соответствует ключу `THROWABLE_JAVADOC`.
 
-Он применяется к имени класса `Throwable` или его наследника в блочных
+Настройка применяется к имени класса `Throwable` или его наследника в блочных
 Javadoc-тегах `@throws` и `@exception` методов и конструкторов.
 
 ```java
@@ -150,6 +161,14 @@ void execute() throws java.io.IOException {
 Атрибуты хранятся в цветовой схеме отдельно от источников.
 Предпросмотр цветовой схемы показывает атрибуты плагина для всех контекстов.
 
+Подписи источников сохраняются: `Throwable class`, `Throwable import`,
+`Throwable catch`, `Throwable throws` и `Throwable Javadoc`.
+
+В цветовой схеме этим контекстам соответствуют группы `Class` и `Catch`,
+а также настройки `Import`, `Throws` и `Javadoc`.
+
+![Выбор источников подсветки](images/throwable-highlighting-sources.png)
+
 Например, для `Throwable class` можно выбрать `Java highlighting`, а для `Throwable throws`
 оставить источник плагина. Тогда обычные ссылки на классы получают стандартное оформление IDE,
 а типы в `throws` используют атрибуты `THROWABLE_THROWS`. Если для этого ключа включено наследование,
@@ -171,7 +190,7 @@ void execute() throws java.io.IOException {
 Изменение родительских атрибутов применяется к наследующим ключам,
 пока для них сохраняется наследование.
 
-![Наследование цвета Throwable import](images/throwable-import-inheritance.png)
+![Наследование атрибутов Import от Class](images/throwable-import-inheritance.png)
 
 ---
 

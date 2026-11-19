@@ -11,11 +11,13 @@ The project follows Semantic Versioning.
 - Separate color scheme attributes for checked types, runtime exceptions, and errors
   in class declarations and references.
 - Separate category attributes for catch parameters, including mixed multi-catch.
-  Existing `Throwable catch` attributes are inherited by default.
+  Existing catch attributes are inherited by default.
 
 ### Changed
 
 - The color scheme preview demonstrates all three categories in class and catch contexts.
+- Color settings are grouped under `Class` and `Catch`, with base and category attributes.
+- Existing color keys and configured attributes are preserved.
 
 ## [1.5.0] - 2026-11-07
 

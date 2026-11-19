@@ -8,28 +8,30 @@
     Highlights <code>Throwable</code> and Java classes that inherit from it.
 
     <p>
-        Highlights Throwable types in <code>catch</code> and <code>throws</code>
-        clauses with separate configurable colors. The <code>Throwable catch</code>
-        and <code>Throwable throws</code> colors inherit
-        <code>Throwable class</code> by default.
-    </p>
-
-    <p>
-        Highlights class names in Javadoc <code>@throws</code> and
+        Highlights class declarations and references, class names in explicit
+        imports, types in <code>catch</code> parameters and <code>throws</code>
+        clauses, and class names in Javadoc <code>@throws</code> and
         <code>@exception</code> tags on methods and constructors.
-        The <code>Throwable Javadoc</code> color inherits
-        <code>Throwable class</code> by default.
     </p>
 
     <p>
-        Highlights class declarations and references, including uses in fields,
-        local variables, constructor calls, and inheritance declarations.
+        Provides separate attributes for checked types, runtime exceptions,
+        and errors in class declarations, references, and catch parameters.
+        Each type in a multi-catch parameter receives its category's attributes.
     </p>
 
     <p>
-        Highlights the class name in explicit imports of <code>Throwable</code>
-        and its subclasses. Import highlighting inherits the
-        <code>Throwable class</code> color by default.
+        Configure colors under
+        <b>Editor | Color Scheme | Throwable Highlighter</b>.
+        The <code>Class</code> and <code>Catch</code> groups contain base
+        and category attributes. Separate settings are available for
+        <code>Import</code>, <code>Throws</code>, and <code>Javadoc</code>.
+    </p>
+
+    <p>
+        Category attributes inherit the base attributes of their group.
+        Catch base attributes, imports, throws clauses, and Javadoc inherit
+        class base attributes by default.
     </p>
 
     <p>
@@ -38,11 +40,6 @@
         The plugin source uses the configured color scheme attributes.
         Choose <code>Java highlighting</code> to use the IDE's standard
         highlighting for that context.
-    </p>
-
-    <p>
-        Configure colors under
-        <b>Editor | Color Scheme | Throwable Highlighter</b>.
     </p>
     ]]>
     </description>
