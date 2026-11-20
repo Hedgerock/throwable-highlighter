@@ -1,0 +1,36 @@
+{
+  "environment": {
+    "kind": "extension-host",
+    "sourceCommit": "74dd1079f1f8710f0bb90d5a4f65b7a2c1c48845",
+    "sourceState": "working-tree-before-commit",
+    "vscodeVersion": "1.144.0",
+    "javaExtensionVersion": "1.58.0",
+    "javaServerMode": "Standard"
+  },
+  "scenario": {
+    "fixture": "HierarchyResolutionUsage.java",
+    "repetitions": 10
+  },
+  "measurements": [
+    {"repetition": 1, "path": "definition", "coldCacheMs": 42.339, "warmCacheMs": 0.045},
+    {"repetition": 1, "path": "type-hierarchy", "coldCacheMs": 57.848, "warmCacheMs": 0.077},
+    {"repetition": 2, "path": "type-hierarchy", "coldCacheMs": 54.579, "warmCacheMs": 0.034},
+    {"repetition": 2, "path": "definition", "coldCacheMs": 36.6, "warmCacheMs": 0.156},
+    {"repetition": 3, "path": "definition", "coldCacheMs": 42.309, "warmCacheMs": 0.022},
+    {"repetition": 3, "path": "type-hierarchy", "coldCacheMs": 49.864, "warmCacheMs": 0.023},
+    {"repetition": 4, "path": "type-hierarchy", "coldCacheMs": 47.974, "warmCacheMs": 0.026},
+    {"repetition": 4, "path": "definition", "coldCacheMs": 31.146, "warmCacheMs": 0.027},
+    {"repetition": 5, "path": "definition", "coldCacheMs": 29.655, "warmCacheMs": 0.023},
+    {"repetition": 5, "path": "type-hierarchy", "coldCacheMs": 45.49, "warmCacheMs": 0.035},
+    {"repetition": 6, "path": "type-hierarchy", "coldCacheMs": 45.409, "warmCacheMs": 0.042},
+    {"repetition": 6, "path": "definition", "coldCacheMs": 21.013, "warmCacheMs": 0.014},
+    {"repetition": 7, "path": "definition", "coldCacheMs": 39.339, "warmCacheMs": 0.035},
+    {"repetition": 7, "path": "type-hierarchy", "coldCacheMs": 61.052, "warmCacheMs": 0.153},
+    {"repetition": 8, "path": "type-hierarchy", "coldCacheMs": 50.612, "warmCacheMs": 0.044},
+    {"repetition": 8, "path": "definition", "coldCacheMs": 27.812, "warmCacheMs": 0.022},
+    {"repetition": 9, "path": "definition", "coldCacheMs": 30.641, "warmCacheMs": 0.028},
+    {"repetition": 9, "path": "type-hierarchy", "coldCacheMs": 48.368, "warmCacheMs": 0.037},
+    {"repetition": 10, "path": "type-hierarchy", "coldCacheMs": 47.52, "warmCacheMs": 0.067},
+    {"repetition": 10, "path": "definition", "coldCacheMs": 29.685, "warmCacheMs": 0.022}
+  ]
+}

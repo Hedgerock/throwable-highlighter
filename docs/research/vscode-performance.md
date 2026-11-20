@@ -112,6 +112,39 @@ refresh не считается завершением асинхронной р
 
 Время ожидания Java-поддержки отделяется от вычислений расширения.
 
+### Сравнение Definition Provider и Type Hierarchy
+
+В Extension Host VS Code `1.144.0` с `redhat.java` `1.58.0` в режиме `Standard` измерено время разрешения двух ссылок
+из `HierarchyResolutionUsage.java`. Ссылка на `BaseException` проходит обычный обход через Definition Provider.
+Для `AnnotatedFailure` аннотация в `extends` приводит к запуску резервного обхода Type Hierarchy по
+[ADR-0040](../decisions/0040-vscode-throwable-type-hierarchy.md). Замер выполнен на рабочей версии, реализация и тесты
+которой затем вошли в коммит `74dd107`.
+
+После прогрева JDT выполнено десять пар измерений с чередованием порядка сценариев. Для каждой ссылки измерялся первый
+вызов `isThrowableType` после очистки кэша resolver (`coldCacheMs`) и сразу следующий вызов той же ссылки (`warmCacheMs`).
+
+| Путь                | После очистки кэша, медиана, мс | Диапазон после очистки, мс | Повтор из кэша, медиана, мс |
+|---------------------|-------------------------------:|---------------------------:|----------------------------:|
+| Definition Provider |                         30,894 |              21,013–42,339 |                       0,025 |
+| Type Hierarchy      |                         49,116 |              45,409–61,052 |                       0,040 |
+
+После очистки кэша Type Hierarchy занимал больше времени во всех десяти парах. Медиана попарной разницы составила
+17,781 мс при диапазоне 7,555–24,396 мс. Время полного применения подсветки и память проверяются отдельным нагрузочным
+прогоном по [ADR-0031](../decisions/0031-vscode-release-performance-budgets.md).
+
+Для повторения замера выполни из корня репозитория следующую команду.
+
+```powershell
+$env:THROWABLE_HIGHLIGHTER_MEASURE_JAVA = '1'
+try {
+    npm --prefix extensions/vscode run test:extension-host -- --grep measures.Type.Hierarchy.fallback
+} finally {
+    Remove-Item Env:THROWABLE_HIGHLIGHTER_MEASURE_JAVA
+}
+```
+
+[Исходные измерения](data/vscode-type-hierarchy-resolution.json)
+
 ### Задержка от правки до применения подсветки
 
 Режим локальных замеров реализован в коммите `fb63435` согласно ADR-0025.
