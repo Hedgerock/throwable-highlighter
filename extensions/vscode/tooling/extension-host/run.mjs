@@ -32,13 +32,15 @@ async function main() {
     try {
         await cp(fixtureDirectory, workspaceDirectory, {recursive: true});
         await cp(throwsFixture, join(workspaceDirectory, "src", "ThrowsContextFixture.java"));
+        await prepareFixtureLibrary(runDirectory, workspaceDirectory);
         await mkdir(join(workspaceDirectory, ".vscode"), {recursive: true});
         await writeFile(
             join(workspaceDirectory, ".vscode", "settings.json"),
             JSON.stringify(
                 {
                     "java.server.launchMode": "Standard",
-                    "java.project.sourcePaths": ["src"]
+                    "java.project.sourcePaths": ["src"],
+                    "java.project.referencedLibraries": ["lib/fixture-library.jar"]
                 },
                 null,
                 2
@@ -88,6 +90,36 @@ async function main() {
         } else {
             console.error("[extension-host] Test data retained: " + runDirectory);
         }
+    }
+}
+
+async function prepareFixtureLibrary(runDirectory, workspaceDirectory) {
+    const sources = fileURLToPath(
+        new URL("../../../../docs/specification/fixtures/java/library/src/", import.meta.url)
+    );
+    const source = join(sources, "throwablehighlighter", "fixture", "library", "LibraryException.java");
+    const classes = join(runDirectory, "library-classes");
+    const libraries = join(workspaceDirectory, "lib");
+
+    await mkdir(classes);
+    await mkdir(libraries);
+
+    runJdkTool("javac", ["--release", "21", "-d", classes, source]);
+    runJdkTool("jar", ["--create", "--file", join(libraries, "fixture-library.jar"), "-C", classes, "."]);
+    runJdkTool("jar", ["--create", "--file", join(libraries, "fixture-library-sources.jar"), "-C", sources, "."]);
+}
+
+function runJdkTool(tool, args) {
+    const javaHome = process.env.JAVA_HOME;
+    const executable = process.platform === "win32" ? tool + ".exe" : tool;
+    const command = javaHome ? join(javaHome, "bin", executable) : executable;
+    const result = spawnSync(command, args, {stdio: "inherit", windowsHide: true});
+
+    if (result.error !== undefined) {
+        throw new Error("Unable to start " + tool + ": " + result.error.message, {cause: result.error});
+    }
+    if (result.status !== 0) {
+        throw new Error(tool + " failed: " + (result.signal ?? "exit code " + result.status));
     }
 }
 

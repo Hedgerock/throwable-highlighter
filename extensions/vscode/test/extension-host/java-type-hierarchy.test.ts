@@ -13,6 +13,27 @@ suite("Java type hierarchy", () => {
         await waitForJavaSupport();
     });
 
+    test("finds Throwable through an exception from a library JAR", async () => {
+        const document = await openJavaFixture("hierarchy", "AnnotatedLibraryFailure.java");
+        const [, libraryException, , , throwable] = await waitForSuperclassChain(document, [
+            "AnnotatedLibraryFailure",
+            "LibraryException",
+            "RuntimeException",
+            "Exception",
+            "Throwable"
+        ]);
+        assert.ok(libraryException);
+        assert.ok(throwable);
+        assert.equal(libraryException.uri.scheme, "jdt");
+
+        const reader = new JavaClassDeclarationReader(new JavaCodeMask());
+        assert.equal(
+            await readQualifiedName(reader, libraryException),
+            "throwablehighlighter.fixture.library.LibraryException"
+        );
+        assert.equal(await readQualifiedName(reader, throwable), "java.lang.Throwable");
+    });
+
     test("finds Throwable through AssertionError from the JDK", async () => {
         const document = await openJavaFixture("hierarchy", "AnnotatedAssertionFailure.java");
         const [, assertionError, , throwable] = await waitForSuperclassChain(document, [
