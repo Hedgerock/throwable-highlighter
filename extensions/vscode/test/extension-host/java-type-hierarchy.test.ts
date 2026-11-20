@@ -13,6 +13,24 @@ suite("Java type hierarchy", () => {
         await waitForJavaSupport();
     });
 
+    test("distinguishes a project class named Throwable from java.lang.Throwable", async () => {
+        const document = await openJavaFixture("hierarchy", "AnnotatedOrdinary.java");
+        const [, projectThrowable, object] = await waitForSuperclassChain(document, [
+            "AnnotatedOrdinary",
+            "Throwable",
+            "Object"
+        ]);
+        assert.ok(projectThrowable);
+        assert.ok(object);
+
+        const reader = new JavaClassDeclarationReader(new JavaCodeMask());
+        assert.equal(
+            await readQualifiedName(reader, projectThrowable),
+            "throwablehighlighter.fixture.hierarchy.Throwable"
+        );
+        assert.equal(await readQualifiedName(reader, object), "java.lang.Object");
+    });
+
     test("provides a superclass chain from a workspace class to Throwable", async () => {
         const document = await openJavaFixture("exception", "BaseException.java");
         await waitForSuperclassChain(document, ["BaseException", "RuntimeException", "Exception", "Throwable"]);
@@ -30,14 +48,7 @@ suite("Java type hierarchy", () => {
         const chain = await waitForSuperclassChain(document, expected);
         const throwable = chain.at(-1);
         assert.ok(throwable);
-
-        const source = await vscode.workspace.openTextDocument(throwable.uri);
-        const position = reader.findTopLevelClassNamePosition(source, throwable.name);
-        assert.ok(position, "The Java standard library declaration could not be found.");
-
-        const throwableReference = reader.readTypeReference(source, position);
-        assert.ok(throwableReference);
-        assert.equal(reader.readClassDeclaration(throwableReference)?.qualifiedName, "java.lang.Throwable");
+        assert.equal(await readQualifiedName(reader, throwable), "java.lang.Throwable");
     });
 });
 
@@ -74,6 +85,18 @@ async function waitForSuperclassChain(
     }
 
     return assert.fail(`Expected superclass chain ${expected.join(" -> ")}, received ${lastNames.join(" -> ")}.`);
+}
+
+async function readQualifiedName(reader: JavaClassDeclarationReader, item: vscode.TypeHierarchyItem): Promise<string> {
+    const source = await vscode.workspace.openTextDocument(item.uri);
+    const position = reader.findTopLevelClassNamePosition(source, item.name);
+    assert.ok(position, `The declaration of ${item.name} could not be found.`);
+
+    const reference = reader.readTypeReference(source, position);
+    assert.ok(reference);
+    const qualifiedName = reader.readClassDeclaration(reference)?.qualifiedName;
+    assert.ok(qualifiedName, `The qualified name of ${item.name} could not be read.`);
+    return qualifiedName;
 }
 
 async function readSuperclassChain(
