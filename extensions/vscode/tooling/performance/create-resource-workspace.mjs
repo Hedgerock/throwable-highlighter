@@ -1,7 +1,28 @@
 import {mkdir, mkdtemp, writeFile} from "node:fs/promises";
 import path from "node:path";
+import process from "node:process";
 import {fileURLToPath} from "node:url";
+import {parseArgs} from "node:util";
 
+const {values} = parseArgs({
+    args: process.argv.slice(2),
+    strict: true,
+    allowPositionals: false,
+    options: {
+        profile: {
+            type: "string",
+            default: "definition"
+        }
+    }
+});
+const {profile} = values;
+
+if (profile !== "definition" && profile !== "type-hierarchy") {
+    throw new Error("Unknown workspace profile: " + profile);
+}
+
+const usesTypeHierarchy = profile === "type-hierarchy";
+const superclass = usesTypeHierarchy ? "@SuperclassType RuntimeException" : "RuntimeException";
 const prototypeRoot = fileURLToPath(new URL("../../", import.meta.url));
 const workspacesRoot = path.join(prototypeRoot, ".vscode-test", "resource-workspaces");
 const exceptionCount = 100;
@@ -20,6 +41,21 @@ for (const directory of [settingsRoot, exceptionsRoot, usagesRoot]) {
     await mkdir(directory, {recursive: true});
 }
 
+if (usesTypeHierarchy) {
+    const source = [
+        "package " + exceptionPackage + ";",
+        "",
+        "import java.lang.annotation.ElementType;",
+        "import java.lang.annotation.Target;",
+        "",
+        "@Target(ElementType.TYPE_USE)",
+        "@interface SuperclassType {}",
+        ""
+    ].join("\n");
+
+    await writeFile(path.join(exceptionsRoot, "SuperclassType.java"), source, "utf8");
+}
+
 const exceptionNames = Array.from(
     {length: exceptionCount},
     (_, index) => "ProbeException" + String(index + 1).padStart(4, "0")
@@ -29,7 +65,7 @@ for (const name of exceptionNames) {
     const source = [
         "package " + exceptionPackage + ";",
         "",
-        "public final class " + name + " extends RuntimeException {",
+        "public final class " + name + " extends " + superclass + " {",
         "    private static final long serialVersionUID = 1L;",
         "}",
         ""
@@ -65,7 +101,9 @@ const settings = {
 
 const manifest = {
     formatVersion: 1,
+    profile,
     exceptionCount,
+    annotatedExceptionCount: usesTypeHierarchy ? exceptionCount : 0,
     usageTypeCounts,
     usageFiles
 };
@@ -74,4 +112,5 @@ await writeFile(path.join(settingsRoot, "settings.json"), JSON.stringify(setting
 await writeFile(path.join(workspaceRoot, "resource-workspace.json"), JSON.stringify(manifest, null, 2) + "\n", "utf8");
 
 console.log("Resource workspace: " + workspaceRoot);
-console.log("Java files: " + (exceptionCount + usageFiles.length));
+console.log("Workspace profile: " + profile);
+console.log("Java files: " + (exceptionCount + usageFiles.length + (usesTypeHierarchy ? 1 : 0)));

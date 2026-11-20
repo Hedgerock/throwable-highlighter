@@ -671,6 +671,44 @@ Java-провайдеров и карта незавершённых опред�
 
 [Архив первого импорта с VSIX 0.1.0](data/vscode-java-startup-first-import-0.1.0.json)
 
+## Нагрузочное сравнение Definition Provider и Type Hierarchy
+
+На коммите `2df1c3d` выполнены четыре прогона в Extension Development Host на Windows x64. Использовались VS Code `1.146.0`,
+`redhat.java` `1.58.0` в режиме `Standard`, Java `25.0.4.1`, параметры JVM `-Xms100m` и `-Xmx2G` и подробная
+трассировка Java LSP.
+
+Оба профиля содержат 100 исключений и файлы `Usage010`, `Usage050` и `Usage100`. В `definition` исключения наследуют
+`RuntimeException` напрямую. В `type-hierarchy` все 100 объявлений содержат `extends @SuperclassType RuntimeException`,
+чтобы задействовать резервный обход по [ADR-0040](../decisions/0040-vscode-throwable-type-hierarchy.md).
+
+Первую пару измерили после первого импорта рабочих областей. Вторую измерили в тех же областях с новыми процессами Java
+и обратным порядком запуска профилей. Каждый прогон включал 270 секунд наблюдения, первые открытия трёх файлов
+и три повторных цикла. В таблице приведено время применения подсветки для `Usage100`.
+
+| Прогон | Первое открытие, мс | Медиана повторов, мс | Пик RSS Extension Host, МиБ | Пик Working Set Java, МиБ |
+| --- | ---: | ---: | ---: | ---: |
+| `definition`, первый | 4 205,84 | 500,94 | 413,63 | 1 007,53 |
+| `type-hierarchy`, первый | 7 868,92 | 525,24 | 413,19 | 935,24 |
+| `type-hierarchy`, повторный | 8 356,08 | 531,65 | 409,57 | 842,34 |
+| `definition`, повторный | 4 244,36 | 580,55 | 414,55 | 969,92 |
+
+В профиле `definition` первое открытие `Usage100` превысило ориентир 4 000 мс в обоих прогонах. В профиле
+`type-hierarchy` первое открытие заняло на 3,66 и 4,11 с больше соответственно. Во всех прогонах медиана повторных
+открытий и пиковый RSS Extension Host уложились в пределы 750 мс и 550 МиБ по
+[ADR-0031](../decisions/0031-vscode-release-performance-budgets.md).
+
+После перезапуска Java пиковый Working Set снизился в обоих профилях. До открытия `Usage010` он уже составлял
+691,52–691,94 МиБ в `definition` и 676,95–677,04 МиБ в `type-hierarchy`. Эти значения описывают процесс JDT целиком.
+
+Для оценки влияния подключения Type Hierarchy на обычный сценарий нужен парный замер `definition` на `97c02d0`
+и `2df1c3d` в одной предварительно импортированной рабочей области, с одинаковой настройкой трассировки
+и новым процессом Java для каждой сборки.
+
+- [`definition`, первый прогон](data/vscode-type-hierarchy-resources-definition-1.json)
+- [`type-hierarchy`, первый прогон](data/vscode-type-hierarchy-resources-type-hierarchy-1.json)
+- [`type-hierarchy`, повторный прогон](data/vscode-type-hierarchy-resources-type-hierarchy-2.json)
+- [`definition`, повторный прогон](data/vscode-type-hierarchy-resources-definition-2.json)
+
 ## Запуск контролируемых измерений
 
 Команда выполняется из каталога extensions/vscode:
