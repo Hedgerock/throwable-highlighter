@@ -3,49 +3,89 @@ import {setTimeout as delay} from "node:timers/promises";
 
 import * as vscode from "vscode";
 
+import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
+import {JavaClassDeclarationReader} from "@throwable-highlighter/resolution/JavaClassDeclarationReader";
+
 import {openJavaFixture, positionOf, waitForJavaSupport} from "./support/javaSupport";
 
-suite("Java type hierarchy", async () => {
+suite("Java type hierarchy", () => {
     suiteSetup(async () => {
         await waitForJavaSupport();
     });
 
-    test("provides a superclass chain from a workspace to Throwable", async () => {
+    test("provides a superclass chain from a workspace class to Throwable", async () => {
         const document = await openJavaFixture("exception", "BaseException.java");
-        const position = positionOf(document, "BaseException");
-        const expected = ["BaseException", "RuntimeException", "Exception", "Throwable"];
-        const deadline = performance.now() + 30_000;
-        let lastPath: string[] = [];
+        await waitForSuperclassChain(document, ["BaseException", "RuntimeException", "Exception", "Throwable"]);
+    });
 
-        while (performance.now() < deadline) {
-            lastPath = await readSuperclassNames(document, position);
+    test("finds Throwable through an annotated superclass", async () => {
+        const document = await openJavaFixture("hierarchy", "AnnotatedFailure.java");
+        const expected = ["AnnotatedFailure", "RuntimeException", "Exception", "Throwable"];
+        const reader = new JavaClassDeclarationReader(new JavaCodeMask());
 
-            if (lastPath.join(" -> ") === expected.join(" -> ")) {
-                return;
-            }
+        const reference = reader.readTypeReference(document, positionOf(document, expected[0]));
+        assert.ok(reference);
+        assert.equal(reader.readClassDeclaration(reference)?.directSuperclass.kind, "unavailable");
 
-            await delay(100);
-        }
+        const chain = await waitForSuperclassChain(document, expected);
+        const throwable = chain.at(-1);
+        assert.ok(throwable);
 
-        assert.deepEqual(lastPath, expected, "Java type Hierarchy did not return the expected superclass chain.");
+        const source = await vscode.workspace.openTextDocument(throwable.uri);
+        const position = reader.findTopLevelClassNamePosition(source, throwable.name);
+        assert.ok(position, "The Java standard library declaration could not be found.");
+
+        const throwableReference = reader.readTypeReference(source, position);
+        assert.ok(throwableReference);
+        assert.equal(reader.readClassDeclaration(throwableReference)?.qualifiedName, "java.lang.Throwable");
     });
 });
 
-async function readSuperclassNames(document: vscode.TextDocument, position: vscode.Position): Promise<string[]> {
-    const roots = await vscode.commands.executeCommand<vscode.TypeHierarchyItem[]>(
-        "vscode.prepareTypeHierarchy",
-        document.uri,
-        position
-    );
+async function waitForSuperclassChain(
+    document: vscode.TextDocument,
+    expected: readonly string[]
+): Promise<readonly vscode.TypeHierarchyItem[]> {
+    const name = expected[0];
+    const position = positionOf(document, name);
+    const deadline = performance.now() + 30_000;
+    let lastNames: string[] = [];
 
-    let current = roots?.find(item => item.kind === vscode.SymbolKind.Class && item.name === "BaseException");
+    while (performance.now() < deadline) {
+        const roots = await vscode.commands.executeCommand<vscode.TypeHierarchyItem[]>(
+            "vscode.prepareTypeHierarchy",
+            document.uri,
+            position
+        );
+        const root = roots?.find(
+            item =>
+                item.kind === vscode.SymbolKind.Class &&
+                item.name === name &&
+                item.uri.toString() === document.uri.toString() &&
+                item.selectionRange.contains(position)
+        );
+        const chain = await readSuperclassChain(root, expected.length);
+        lastNames = chain.map(item => item.name);
 
-    const names: string[] = [];
+        if (lastNames.length === expected.length && lastNames.every((item, index) => item === expected[index])) {
+            return chain;
+        }
 
-    for (let depth = 0; current !== undefined && depth < 4; depth++) {
-        names.push(current.name);
+        await delay(100);
+    }
 
-        if (current.name === "Throwable") {
+    return assert.fail(`Expected superclass chain ${expected.join(" -> ")}, received ${lastNames.join(" -> ")}.`);
+}
+
+async function readSuperclassChain(
+    root: vscode.TypeHierarchyItem | undefined,
+    limit: number
+): Promise<readonly vscode.TypeHierarchyItem[]> {
+    const chain: vscode.TypeHierarchyItem[] = [];
+    let current = root;
+
+    while (current !== undefined) {
+        chain.push(current);
+        if (chain.length === limit) {
             break;
         }
 
@@ -53,9 +93,9 @@ async function readSuperclassNames(document: vscode.TextDocument, position: vsco
             "vscode.provideSupertypes",
             current
         );
-
-        current = parents?.find(item => item.kind === vscode.SymbolKind.Class);
+        const classes = parents?.filter(item => item.kind === vscode.SymbolKind.Class) ?? [];
+        current = classes.length === 1 ? classes[0] : undefined;
     }
 
-    return names;
+    return chain;
 }
