@@ -1,6 +1,7 @@
 const VSCODE_DIRECTORY = "extensions/vscode/";
 const INTELLIJ_DIRECTORY = "extensions/intellij/";
 const SHARED_FIXTURES_DIRECTORY = "docs/specification/fixtures/";
+const JAVA_FIXTURES_DIRECTORY = SHARED_FIXTURES_DIRECTORY + "java/";
 const DOCUMENTATION_IMAGE_EXTENSION = /\.(?:png|svg|jpe?g|webp)$/i;
 
 const INTELLIJ_FILES = new Set([
@@ -53,7 +54,7 @@ class CheckPlanBuilder {
                     throw new TypeError("A changed path must be a non-empty string.");
                 }
 
-                if (isDocumentation(path)) {
+                if (isDocumentation(path) || (path.startsWith(JAVA_FIXTURES_DIRECTORY) && path.endsWith(".java"))) {
                     continue;
                 }
 

@@ -42,9 +42,24 @@ const cases = [
         expected: {intellij: true, vscode: true, formatting: "changed"}
     },
     {
-        name: "checks both platforms for a deleted shared fixture",
+        name: "skips platform checks for a new Java specification fixture",
+        changes: [
+            {status: "A", path: "docs/specification/fixtures/java/transitive/src/example/AnnotatedOrdinary.java"}
+        ],
+        expected: {intellij: false, vscode: false, formatting: "none"}
+    },
+    {
+        name: "skips platform checks for a deleted Java specification fixture",
         changes: [{status: "D", path: "docs/specification/fixtures/java/class-context.java"}],
-        expected: {intellij: true, vscode: true, formatting: "all"}
+        expected: {intellij: false, vscode: false, formatting: "none"}
+    },
+    {
+        name: "checks only VS Code for a Java specification fixture and an Extension Host test",
+        changes: [
+            {status: "M", path: "docs/specification/fixtures/java/throws-context.java"},
+            {status: "M", path: "extensions/vscode/test/extension-host/java-type-hierarchy.test.ts"}
+        ],
+        expected: {intellij: false, vscode: true, formatting: "changed"}
     },
     {
         name: "does not exclude shared fixture documentation",

@@ -69,7 +69,8 @@ Hook запускает `.ci/check-staged.cjs`.
 | `extensions/intellij/build.gradle.kts`, `extensions/intellij/settings.gradle.kts`, `gradle.properties` | IntelliJ-плагин    |
 | `gradlew`, `gradlew.bat`                                                                               | IntelliJ-плагин    |
 | Остальные файлы в `extensions/vscode/**`                                                               | Расширение VS Code |
-| `docs/specification/fixtures/**`, `.githooks/**`, `.ci/**`, `.github/workflows/**`                     | Обе платформы      |
+| `docs/specification/fixtures/java/**/*.java`                                                           | Не выполняются     |
+| Остальные файлы в `docs/specification/fixtures/**`, а также `.githooks/**`, `.ci/**`, `.github/workflows/**` | Обе платформы |
 | Путь без отдельного правила                                                                            | Обе платформы      |
 | JSON-отчёты в docs/research/data                                                                       | Не выполняются     |
 | Изображения PNG, SVG, JPG, JPEG и WebP в `docs/images/` и `docs/research/figures/`                     | Не выполняются     |
