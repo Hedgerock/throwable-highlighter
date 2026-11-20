@@ -12,7 +12,7 @@ if (workspaceDirectory === undefined || userDataDirectory === undefined) {
 
 export default defineConfig({
     label: "extension-host",
-    version: "1.144.0",
+    version: process.env.THROWABLE_HIGHLIGHTER_TEST_VSCODE_VERSION ?? "1.144.0",
     files: ".vscode-test/out/test/extension-host/**/*.test.js",
     extensionDevelopmentPath: fileURLToPath(new URL(".", import.meta.url)),
     workspaceFolder: workspaceDirectory,

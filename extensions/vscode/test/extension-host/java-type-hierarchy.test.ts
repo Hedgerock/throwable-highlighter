@@ -6,6 +6,7 @@ import * as vscode from "vscode";
 import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
 import {JavaClassDeclarationReader} from "@throwable-highlighter/resolution/JavaClassDeclarationReader";
 import {JavaProviderRequestLimiter} from "@throwable-highlighter/resolution/JavaProviderRequestLimiter";
+import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
 import {JavaTypeHierarchyResolver} from "@throwable-highlighter/resolution/JavaTypeHierarchyResolver";
 import type {TypeHierarchyFallbackStart} from "@throwable-highlighter/resolution/hierarchy/index";
 import type {VsCodeTypeReference} from "@throwable-highlighter/resolution/JavaClassDeclarationReader";
@@ -104,6 +105,13 @@ suite("Java type hierarchy", () => {
             assert.deepEqual(result, {kind: "confirmed", isThrowable: true});
         } finally {
             requests.dispose();
+        }
+
+        const definitionResolver = new JavaTypeDefinitionResolver(new JavaCodeMask());
+        try {
+            assert.equal(await definitionResolver.isThrowableType(document, reference.range.start), true);
+        } finally {
+            definitionResolver.dispose();
         }
     });
 

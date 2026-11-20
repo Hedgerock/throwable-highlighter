@@ -9,6 +9,7 @@ import {
 import {JavaDefinitionClassLocator} from "@throwable-highlighter/resolution/JavaDefinitionClassLocator";
 import {JavaProviderRequestCounter} from "@throwable-highlighter/resolution/JavaProviderRequestCounter";
 import {JavaProviderRequestLimiter} from "@throwable-highlighter/resolution/JavaProviderRequestLimiter";
+import {JavaTypeHierarchyResolver} from "@throwable-highlighter/resolution/JavaTypeHierarchyResolver";
 import {JavaTypeResolutionCache} from "@throwable-highlighter/resolution/JavaTypeResolutionCache";
 import {ThrowableTypeCatalog} from "@throwable-highlighter/resolution/ThrowableTypeCatalog";
 import type {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
@@ -51,6 +52,7 @@ export class JavaTypeDefinitionResolver {
     private readonly documentSymbolRequests = new JavaProviderRequestCounter();
 
     private readonly providerRequestLimiter: JavaProviderRequestLimiter;
+    private readonly typeHierarchyResolver: JavaTypeHierarchyResolver;
     private isDisposed = false;
 
     constructor(
@@ -61,6 +63,10 @@ export class JavaTypeDefinitionResolver {
         this.classDeclarationReader = new JavaClassDeclarationReader(codeMask);
         this.providerRequestLimiter = new JavaProviderRequestLimiter(maximumConcurrentRequests);
         this.cacheResolutions = new JavaTypeResolutionCache(maximumCachedResolutions);
+        this.typeHierarchyResolver = new JavaTypeHierarchyResolver(
+            this.classDeclarationReader,
+            this.providerRequestLimiter
+        );
     }
 
     public clearCache(): void {
@@ -201,7 +207,21 @@ export class JavaTypeDefinitionResolver {
                 this.resolveReference(parentReference, {...parentContext, isCurrent: context.isCurrent})
         );
 
-        return context.isCurrent() ? resolution : {kind: "unavailable"};
+        if (!context.isCurrent()) {
+            return {
+                kind: "unavailable"
+            };
+        }
+
+        if (
+            context.visitedDeclarations.size === 0 &&
+            resolution.kind === "unavailable" &&
+            resolution.fallback !== undefined
+        ) {
+            return this.typeHierarchyResolver.resolve(resolution.fallback, context.isCurrent);
+        }
+
+        return resolution;
     }
 
     private async resolveDeclarations(
@@ -366,6 +386,7 @@ export class JavaTypeDefinitionResolver {
         this.cacheGeneration++;
         this.cacheResolutions.clear();
         this.pendingResolutions.clear();
+        this.typeHierarchyResolver.cancelPending();
     }
 
     private toDefinitionSymbols(

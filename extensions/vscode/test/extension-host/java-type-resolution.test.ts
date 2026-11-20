@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 
+import * as vscode from "vscode";
+
 import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
+import {JavaClassDeclarationReader} from "@throwable-highlighter/resolution/JavaClassDeclarationReader";
 import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
 
 import {openJavaFixture, positionOf, waitForJavaSupport} from "./support/javaSupport";
@@ -48,6 +51,76 @@ suite("Java type resolution", () => {
     });
 
     if (process.env.THROWABLE_HIGHLIGHTER_MEASURE_JAVA === "1") {
+        test("measures Type Hierarchy fallback with real Java support", async () => {
+            const usage = await openJavaFixture("usage", "HierarchyResolutionUsage.java");
+            const scenarios = [
+                {
+                    path: "definition",
+                    declaration: ["exception", "BaseException.java"],
+                    name: "BaseException",
+                    reference: "BaseException directFailure",
+                    superclassKind: "found"
+                },
+                {
+                    path: "type-hierarchy",
+                    declaration: ["hierarchy", "AnnotatedFailure.java"],
+                    name: "AnnotatedFailure",
+                    reference: "AnnotatedFailure annotatedFailure",
+                    superclassKind: "unavailable"
+                }
+            ] as const;
+
+            const codeMask = new JavaCodeMask();
+            const reader = new JavaClassDeclarationReader(codeMask);
+            const targets = await Promise.all(
+                scenarios.map(async scenario => {
+                    const document = await openJavaFixture(...scenario.declaration);
+                    const reference = reader.readTypeReference(document, positionOf(document, scenario.name));
+                    assert.ok(reference);
+                    assert.equal(
+                        reader.readClassDeclaration(reference)?.directSuperclass.kind,
+                        scenario.superclassKind
+                    );
+                    return {path: scenario.path, position: positionOf(usage, scenario.reference)};
+                })
+            );
+
+            const resolver = new JavaTypeDefinitionResolver(codeMask);
+            const measure = async (position: vscode.Position): Promise<number> => {
+                const startedAt = performance.now();
+                const confirmed = await resolver.isThrowableType(usage, position);
+                const elapsedMs = performance.now() - startedAt;
+                assert.equal(confirmed, true);
+                return Number(elapsedMs.toFixed(3));
+            };
+
+            const repetitions = 10;
+            const measurements = [];
+
+            try {
+                for (const {position} of targets) {
+                    await waitForThrowableType(resolver, usage, position);
+                }
+
+                for (let repetition = 1; repetition <= repetitions; repetition++) {
+                    const order = repetition % 2 === 1 ? targets : [...targets].reverse();
+                    for (const {path, position} of order) {
+                        resolver.clearCache();
+                        const coldCacheMs = await measure(position);
+                        const warmCacheMs = await measure(position);
+                        measurements.push({repetition, path, coldCacheMs, warmCacheMs});
+                    }
+                }
+
+                console.log(
+                    "[java-type-hierarchy-benchmark] " +
+                        JSON.stringify({vscodeVersion: vscode.version, repetitions, measurements})
+                );
+            } finally {
+                resolver.dispose();
+            }
+        });
+
         test("measures transitive Throwable resolution with real Java support", async () => {
             const document = await openJavaFixture("usage", "TransitiveContextFixture.java");
             const position = positionOf(document, "NestedException nestedException");

@@ -22,6 +22,10 @@ export class JavaTypeHierarchyResolver {
         private readonly requests: JavaProviderRequestLimiter
     ) {}
 
+    public cancelPending(): void {
+        this.walkLimiter.cancelPending();
+    }
+
     public async resolve(
         start: TypeHierarchyFallbackStart<VsCodeTypeReference>,
         isCurrent: () => boolean

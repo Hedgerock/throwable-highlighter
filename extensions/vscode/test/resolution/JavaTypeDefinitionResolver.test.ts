@@ -15,6 +15,65 @@ type MockCallSource = {
     };
 };
 
+test("shares a retryable Type Hierarchy fallback from the last confirmed class", async context => {
+    const usage = createFixture("class Usage { |ChildException value; }");
+    const child = createFixture("class |ChildException extends AnnotatedFailure {}", "file:///ChildException.java");
+    const parent = createFixture(
+        "class |AnnotatedFailure extends @SuperclassType Throwable {}",
+        "file:///AnnotatedFailure.java"
+    );
+    const throwable = createFixture("package java.lang; class |Throwable {}", "jdt://contents/Throwable.java");
+    const root = createTypeHierarchyItem("AnnotatedFailure", parent);
+    const terminal = createTypeHierarchyItem("Throwable", throwable);
+    let hierarchyAvailable = false;
+
+    const provider = context.mock.method(
+        vscode.commands,
+        "executeCommand",
+        async (command: string, resource: unknown) => {
+            switch (command) {
+                case "vscode.executeDefinitionProvider":
+                    if (resource === usage.document.uri) {
+                        return [new vscode.Location(child.document.uri, child.range)];
+                    }
+                    assert.equal(resource, child.document.uri);
+                    return [new vscode.Location(parent.document.uri, parent.range)];
+                case "vscode.prepareTypeHierarchy":
+                    return hierarchyAvailable ? [root] : [];
+                case "vscode.provideSupertypes":
+                    assert.equal(resource, root);
+                    return [terminal];
+                default:
+                    throw new Error("Unexpected command: " + command);
+            }
+        }
+    );
+    mockDocumentProvider(context, [child.document, parent.document, throwable.document]);
+
+    const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask(), 1);
+    context.after(() => resolver.dispose());
+
+    const resolve = () => resolver.isThrowableType(usage.document, usage.range.start);
+    assert.equal(await resolve(), false);
+    assert.equal(resolver.getResourceSnapshot().cachedResolutionCount, 0);
+
+    hierarchyAvailable = true;
+    assert.deepEqual(await Promise.all([resolve(), resolve()]), [true, true]);
+    assert.equal(await resolve(), true);
+    assert.equal(resolver.getResourceSnapshot().cachedResolutionCount, 1);
+
+    const attempt = [
+        ["vscode.executeDefinitionProvider", usage.document.uri, usage.range.start],
+        [
+            "vscode.executeDefinitionProvider",
+            child.document.uri,
+            child.document.positionAt(child.document.getText().indexOf("AnnotatedFailure"))
+        ],
+        ["vscode.prepareTypeHierarchy", parent.document.uri, parent.range.start]
+    ];
+    assertMockCalls(provider, [...attempt, ...attempt, ["vscode.provideSupertypes", root]]);
+});
+
 test("caches confirmed results after resolving a class declaration", async context => {
     const cases = [
         {
@@ -1448,6 +1507,23 @@ function rangeOf(document: vscode.TextDocument, text: string): vscode.Range {
         start: document.positionAt(offset),
         end: document.positionAt(offset + text.length)
     } as vscode.Range;
+}
+
+function createTypeHierarchyItem(name: string, fixture: ReturnType<typeof createFixture>): vscode.TypeHierarchyItem {
+    const {document, range} = fixture;
+    return {
+        name,
+        detail: "",
+        kind: vscode.SymbolKind.Class,
+        uri: document.uri,
+        range,
+        selectionRange: {
+            ...range,
+            isEqual: (other: vscode.Range): boolean =>
+                document.offsetAt(other.start) === document.offsetAt(range.start) &&
+                document.offsetAt(other.end) === document.offsetAt(range.end)
+        } as vscode.Range
+    };
 }
 
 function createFixture(
