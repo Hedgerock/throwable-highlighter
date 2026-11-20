@@ -9,9 +9,11 @@ import type {VsCodeTypeReference} from "@throwable-highlighter/resolution/JavaCl
 
 test("includes the package in a class declaration", () => {
     const reader = new JavaClassDeclarationReader(new JavaCodeMask());
-    const declaration = reader.readClassDeclaration(createReference("package java.lang; class |RuntimeException {}"));
+    const reference = createReference("package java.lang; class |RuntimeException {}");
+    const declaration = reader.readClassDeclaration(reference);
 
     assert.equal(declaration?.qualifiedName, "java.lang.RuntimeException");
+    assert.equal(declaration?.nameReference, reference);
 });
 
 test("preserves a class name without a package", () => {

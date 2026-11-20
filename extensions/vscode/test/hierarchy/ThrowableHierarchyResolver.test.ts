@@ -13,31 +13,59 @@ import type {
 
 type Reference = TypeReference;
 
-test("returns unavailable when the direct superclass cannot be read", async () => {
+test("keeps the last confirmed declaration when its superclass cannot be read", async () => {
     const resolver = createResolver();
-    let parentWasResolved = false;
+    const child = declarationWithSuperclass("ChildException", "ParentException");
+    const parent: ClassDeclaration<Reference> = {
+        ...declarationWithoutSuperclass("ParentException"),
+        directSuperclass: {kind: "unavailable"}
+    };
 
     const result = await resolver.resolve(
-        reference("UnreadableException"),
-        context(),
-        async () =>
-            declarationsOf([
-                {
-                    identity: "UnreadableException",
-                    qualifiedName: "example.UnreadableException",
-                    directSuperclass: {
-                        kind: "unavailable"
-                    }
-                }
-            ]),
-        async () => {
-            parentWasResolved = true;
-            return confirmed(true);
-        }
+        child.nameReference,
+        context(3),
+        async () => declarationsOf([child]),
+        async (parentReference, parentContext) =>
+            resolver.resolve(
+                parentReference,
+                parentContext,
+                async () => declarationsOf([parent]),
+                async () => assert.fail("The unreadable superclass must not be resolved by the primary traversal.")
+            )
     );
 
-    assert.deepEqual(result, unavailable());
-    assert.equal(parentWasResolved, false);
+    assert.deepEqual(result, {
+        kind: "unavailable",
+        fallback: {
+            declaration: parent,
+            visitedDeclarations: new Set(["ChildException"]),
+            remainingDepth: 2
+        }
+    });
+});
+
+test("returns no fallback for ambiguous declarations or exhausted depth", async () => {
+    const resolver = createResolver();
+    const unreadable: ClassDeclaration<Reference> = {
+        ...declarationWithoutSuperclass("UnreadableException"),
+        directSuperclass: {kind: "unavailable"}
+    };
+    const scenarios = [
+        {declarations: declarationsOf([unreadable, declarationWithoutSuperclass("OtherException")]), depth: 3},
+        {declarations: declarationsOf([unreadable], true), depth: 3},
+        {declarations: declarationsOf([unreadable]), depth: 0}
+    ];
+
+    for (const scenario of scenarios) {
+        const result = await resolver.resolve(
+            unreadable.nameReference,
+            context(scenario.depth),
+            async () => scenario.declarations,
+            async () => assert.fail("The primary traversal must not resolve an unreadable superclass.")
+        );
+
+        assert.deepEqual(result, unavailable());
+    }
 });
 
 test("returns unavailable when declarations cannot be resolved", async () => {
@@ -210,6 +238,7 @@ test("confirms known types by the qualified name of their declarations", async (
                 declarationsOf([
                     {
                         identity: qualifiedName,
+                        nameReference: reference(name),
                         qualifiedName,
                         directSuperclass: {
                             kind: "unavailable"
@@ -314,6 +343,7 @@ function unavailableDeclarations(): ClassDeclarationResolution<Reference> {
 function declarationWithoutSuperclass(identity: string): ClassDeclaration<Reference> {
     return {
         identity,
+        nameReference: reference(identity),
         qualifiedName: "example." + identity,
         directSuperclass: {
             kind: "none"
@@ -325,6 +355,7 @@ function declarationWithSuperclass(identity: string, parentName: string): ClassD
     return {
         identity,
         qualifiedName: "example." + identity,
+        nameReference: reference(identity),
         directSuperclass: {
             kind: "found",
             reference: reference(parentName)

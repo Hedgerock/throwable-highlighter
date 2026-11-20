@@ -15,7 +15,7 @@ export class ThrowableHierarchyResolver<TReference extends TypeReference> {
         context: HierarchyResolutionContext,
         resolveDeclarations: ClassDeclarationResolver<TReference>,
         resolveParent: ParentTypeResolver<TReference>
-    ): Promise<ThrowableTypeResolution> {
+    ): Promise<ThrowableTypeResolution<TReference>> {
         const declarationResolution = await resolveDeclarations(reference);
 
         if (declarationResolution.kind === "unavailable" || declarationResolution.declarations.length === 0) {
@@ -25,11 +25,16 @@ export class ThrowableHierarchyResolver<TReference extends TypeReference> {
         }
 
         let hasUnavailable = declarationResolution.hasUnavailable;
+        const canUseFallback = !hasUnavailable && declarationResolution.declarations.length === 1;
 
         for (const declaration of declarationResolution.declarations) {
             const resolution = await this.resolveDeclaration(declaration, context, resolveParent);
 
             if (resolution.kind === "unavailable") {
+                if (canUseFallback) {
+                    return resolution;
+                }
+
                 hasUnavailable = true;
                 continue;
             }
@@ -46,7 +51,7 @@ export class ThrowableHierarchyResolver<TReference extends TypeReference> {
         declaration: ClassDeclaration<TReference>,
         context: HierarchyResolutionContext,
         resolveParent: ParentTypeResolver<TReference>
-    ): Promise<ThrowableTypeResolution> {
+    ): Promise<ThrowableTypeResolution<TReference>> {
         if (context.visitedDeclarations.has(declaration.identity)) {
             return {
                 kind: "unavailable"
@@ -60,22 +65,22 @@ export class ThrowableHierarchyResolver<TReference extends TypeReference> {
             };
         }
 
-        if (declaration.directSuperclass.kind === "unavailable") {
-            return {
-                kind: "unavailable"
-            };
-        }
-
         if (declaration.directSuperclass.kind === "none") {
-            return {
-                kind: "confirmed",
-                isThrowable: false
-            };
+            return {kind: "confirmed", isThrowable: false};
         }
 
         if (context.remainingDepth === 0) {
+            return {kind: "unavailable"};
+        }
+
+        if (declaration.directSuperclass.kind === "unavailable") {
             return {
-                kind: "unavailable"
+                kind: "unavailable",
+                fallback: {
+                    declaration,
+                    visitedDeclarations: context.visitedDeclarations,
+                    remainingDepth: context.remainingDepth
+                }
             };
         }
 

@@ -107,6 +107,7 @@ export class JavaClassDeclarationReader {
 
         return {
             identity: this.createDeclarationIdentity(document, reference.range),
+            nameReference: reference,
             qualifiedName: this.classNameReader.readQualifiedName(source, typeNameOffset),
             directSuperclass: this.readDirectSuperclass(document, source, headerStart, openingBrace)
         };

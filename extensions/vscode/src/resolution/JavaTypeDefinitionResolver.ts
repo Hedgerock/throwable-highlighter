@@ -44,7 +44,7 @@ export class JavaTypeDefinitionResolver {
         ThrowableTypeCatalog.isKnownThrowableType(typeName)
     );
     private readonly cacheResolutions: JavaTypeResolutionCache;
-    private readonly pendingResolutions = new Map<string, Promise<ThrowableTypeResolution>>();
+    private readonly pendingResolutions = new Map<string, Promise<ThrowableTypeResolution<VsCodeTypeReference>>>();
     private cacheGeneration = 0;
     private readonly definitionClassLocator = new JavaDefinitionClassLocator();
     private readonly definitionRequests = new JavaProviderRequestCounter();
@@ -114,7 +114,7 @@ export class JavaTypeDefinitionResolver {
         document: vscode.TextDocument,
         position: vscode.Position,
         context: JavaTypeResolutionContext
-    ): Promise<ThrowableTypeResolution> {
+    ): Promise<ThrowableTypeResolution<VsCodeTypeReference>> {
         const reference = this.classDeclarationReader.readTypeReference(document, position);
 
         if (reference === undefined) {
@@ -129,7 +129,7 @@ export class JavaTypeDefinitionResolver {
     private async resolveReference(
         reference: VsCodeTypeReference,
         context: JavaTypeResolutionContext
-    ): Promise<ThrowableTypeResolution> {
+    ): Promise<ThrowableTypeResolution<VsCodeTypeReference>> {
         if (!context.isCurrent()) {
             return {kind: "unavailable"};
         }
@@ -156,7 +156,7 @@ export class JavaTypeDefinitionResolver {
         cacheKey: string,
         reference: VsCodeTypeReference,
         context: JavaTypeResolutionContext
-    ): Promise<ThrowableTypeResolution> {
+    ): Promise<ThrowableTypeResolution<VsCodeTypeReference>> {
         const isTopLevelRequest = context.visitedDeclarations.size === 0;
         const pendingResolution = isTopLevelRequest ? this.pendingResolutions.get(cacheKey) : undefined;
 
@@ -192,7 +192,7 @@ export class JavaTypeDefinitionResolver {
     private async resolveHierarchy(
         reference: VsCodeTypeReference,
         context: JavaTypeResolutionContext
-    ): Promise<ThrowableTypeResolution> {
+    ): Promise<ThrowableTypeResolution<VsCodeTypeReference>> {
         const resolution = await this.hierarchyResolver.resolve(
             reference,
             context,

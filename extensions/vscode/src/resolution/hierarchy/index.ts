@@ -1,6 +1,12 @@
 export const MAXIMUM_INHERITANCE_DEPTH = 16;
 
-export type ThrowableTypeResolution = {kind: "confirmed"; isThrowable: boolean} | {kind: "unavailable"};
+export type ThrowableTypeResolution<TReference extends TypeReference = TypeReference> =
+    | {kind: "confirmed"; isThrowable: boolean}
+    | {kind: "unavailable"; fallback?: TypeHierarchyFallbackStart<TReference>};
+
+export type TypeHierarchyFallbackStart<TReference extends TypeReference> = HierarchyResolutionContext & {
+    declaration: ClassDeclaration<TReference>;
+};
 
 export type TypeReference = {
     name: string;
@@ -11,6 +17,7 @@ export type DirectSuperclassResolution<TReference extends TypeReference> =
 
 export type ClassDeclaration<TReference extends TypeReference> = {
     identity: string;
+    nameReference: TReference;
     qualifiedName: string | undefined;
     directSuperclass: DirectSuperclassResolution<TReference>;
 };
@@ -31,4 +38,4 @@ export type ClassDeclarationResolver<TReference extends TypeReference> = (
 export type ParentTypeResolver<TReference extends TypeReference> = (
     reference: TReference,
     context: HierarchyResolutionContext
-) => Promise<ThrowableTypeResolution>;
+) => Promise<ThrowableTypeResolution<TReference>>;
