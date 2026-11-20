@@ -13,6 +13,22 @@ suite("Java type hierarchy", () => {
         await waitForJavaSupport();
     });
 
+    test("finds Throwable through AssertionError from the JDK", async () => {
+        const document = await openJavaFixture("hierarchy", "AnnotatedAssertionFailure.java");
+        const [, assertionError, , throwable] = await waitForSuperclassChain(document, [
+            "AnnotatedAssertionFailure",
+            "AssertionError",
+            "Error",
+            "Throwable"
+        ]);
+        assert.ok(assertionError);
+        assert.ok(throwable);
+
+        const reader = new JavaClassDeclarationReader(new JavaCodeMask());
+        assert.equal(await readQualifiedName(reader, assertionError), "java.lang.AssertionError");
+        assert.equal(await readQualifiedName(reader, throwable), "java.lang.Throwable");
+    });
+
     test("distinguishes a project class named Throwable from java.lang.Throwable", async () => {
         const document = await openJavaFixture("hierarchy", "AnnotatedOrdinary.java");
         const [, projectThrowable, object] = await waitForSuperclassChain(document, [
