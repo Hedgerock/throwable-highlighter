@@ -3,6 +3,9 @@ import {setTimeout as delay} from "node:timers/promises";
 
 import * as vscode from "vscode";
 
+import {JavaCodeMask} from "@throwable-highlighter/java/JavaCodeMask";
+import {JavaTypeDefinitionResolver} from "@throwable-highlighter/resolution/JavaTypeDefinitionResolver";
+
 import {openJavaFixture, positionOf, waitForJavaSupport} from "./support/javaSupport";
 
 type Definition = vscode.Location | vscode.LocationLink;
@@ -10,6 +13,29 @@ type Definition = vscode.Location | vscode.LocationLink;
 suite("Java definitions", () => {
     suiteSetup(async () => {
         await waitForJavaSupport();
+    });
+
+    test("does not resolve a method call as a same-named Throwable class", async () => {
+        const document = await openJavaFixture("hierarchy", "AnnotatedFailure.java");
+        const call = positionOf(document, "AnnotatedFailure();");
+        const declaration = positionOf(document, "void AnnotatedFailure()");
+        const definitions = await waitForDefinitions(document, call);
+        const foundMethod = definitions.some(definition => {
+            const location = toLocation(definition);
+            return (
+                location.uri.toString() === document.uri.toString() && location.range.start.line === declaration.line
+            );
+        });
+
+        assert.ok(foundMethod, "Definition Provider did not return the AnnotatedFailure method declaration.");
+
+        const resolver = new JavaTypeDefinitionResolver(new JavaCodeMask());
+
+        try {
+            assert.equal(await resolver.isThrowableType(document, call), false);
+        } finally {
+            resolver.dispose();
+        }
     });
 
     test("resolves a cross-file reference to its class declaration", async () => {

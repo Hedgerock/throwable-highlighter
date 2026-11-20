@@ -6,4 +6,11 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE_USE)
 @interface SuperclassType {}
 
-public class AnnotatedFailure extends @SuperclassType RuntimeException {}
+public class AnnotatedFailure extends @SuperclassType RuntimeException {
+
+    private static void AnnotatedFailure() {}
+
+    static void invokeMethod() {
+        AnnotatedFailure();
+    }
+}
