@@ -2,7 +2,7 @@
 
 [![Build](https://github.com/Hedgerock/throwable-highlighter/actions/workflows/build.yml/badge.svg)](https://github.com/Hedgerock/throwable-highlighter/actions/workflows/build.yml)
 [![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/34660-throwable-highlighter.svg?label=JetBrains%20Marketplace)](https://plugins.jetbrains.com/plugin/34660-throwable-highlighter)
-[![VS Code Marketplace](https://img.shields.io/badge/VS%20Code%20Marketplace-v0.1.0-blue)](https://marketplace.visualstudio.com/items?itemName=hedgerock.throwable-highlighter)
+[![VS Code Marketplace](https://img.shields.io/badge/VS%20Code%20Marketplace-v0.2.0-blue)](https://marketplace.visualstudio.com/items?itemName=hedgerock.throwable-highlighter)
 
 Highlights Throwable and Java classes that inherit from it.
 
