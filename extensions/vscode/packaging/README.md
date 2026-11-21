@@ -3,6 +3,12 @@
 Highlights Java types derived from `Throwable` in class declarations and references, imports, `catch` parameters, and
 `throws` clauses.
 
+## What's new in 0.2.0
+
+Throwable Highlighter recognizes more Java exception types, including classes with an annotated superclass.
+
+[Changelog](https://github.com/Hedgerock/throwable-highlighter/blob/master/extensions/vscode/CHANGELOG.md)
+
 ## Preview
 
 ![Throwable types highlighted in Java code](https://raw.githubusercontent.com/Hedgerock/throwable-highlighter/master/docs/images/vs-code/title.png)

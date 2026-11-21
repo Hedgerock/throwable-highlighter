@@ -23,7 +23,7 @@ async function main() {
 
         const packageManifest = {...manifest};
         delete packageManifest["web-types"];
-        packageManifest.files = ["out/**", "webview/**", "LICENSE", "icon.png"];
+        packageManifest.files = ["out/**", "webview/**", "CHANGELOG.md", "LICENSE", "icon.png"];
 
         await writeFile(join(packageDirectory, "package.json"), JSON.stringify(packageManifest, null, 2) + "\n");
 
@@ -37,6 +37,7 @@ async function main() {
 
         await cp(join(extensionDirectory, "webview"), join(packageDirectory, "webview"), {recursive: true});
         await copyFile(join(extensionDirectory, "../../LICENSE"), join(packageDirectory, "LICENSE"));
+        await copyFile(join(extensionDirectory, "CHANGELOG.md"), join(packageDirectory, "CHANGELOG.md"));
         await copyFile(join(extensionDirectory, "packaging", "README.md"), join(packageDirectory, "README.md"));
         await copyFile(join(extensionDirectory, "icon.png"), join(packageDirectory, "icon.png"));
 
